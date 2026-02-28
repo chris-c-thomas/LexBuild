@@ -1,5 +1,19 @@
 /** law2md CLI — Convert U.S. legislative XML to structured Markdown */
 
-import { USLM_NAMESPACE } from "@law2md/core";
+import { createRequire } from "node:module";
+import { Command } from "commander";
+import { convertCommand } from "./commands/convert.js";
 
-console.log(`law2md v0.1.0 (USLM namespace: ${USLM_NAMESPACE})`);
+const require = createRequire(import.meta.url);
+const pkg = require("../package.json") as { version: string };
+
+const program = new Command();
+
+program
+  .name("law2md")
+  .description("Convert U.S. legislative XML (USLM) to structured Markdown for AI/RAG ingestion")
+  .version(pkg.version);
+
+program.addCommand(convertCommand);
+
+program.parse();

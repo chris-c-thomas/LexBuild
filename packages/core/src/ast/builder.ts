@@ -100,6 +100,8 @@ export class ASTBuilder {
   private quotedContentDepth = 0;
   /** Active XHTML table collector (null when not inside a table) */
   private tableCollector: TableCollector | null = null;
+  /** Active USLM layout collector (null when not inside a layout) */
+  private layoutCollector: TableCollector | null = null;
   /** Current meta field being collected (e.g., "dc:title", "docNumber") */
   private metaField: string | null = null;
   /** Attributes of the current meta property element */
@@ -218,6 +220,32 @@ export class ASTBuilder {
       return;
     }
 
+    // Handle USLM layout elements (inside <toc> or standalone)
+    if (name === "layout") {
+      this.layoutCollector = {
+        headers: [],
+        rows: [],
+        currentRow: [],
+        cellText: "",
+        inHead: false,
+        inCell: false,
+        isComplex: false,
+        cellDepth: 0,
+      };
+      return;
+    }
+
+    if (this.layoutCollector) {
+      this.handleLayoutOpen(name, attrs);
+      return;
+    }
+
+    // Skip <toc> container — layout inside it handles the content
+    if (name === "toc") {
+      this.stack.push({ kind: "ignore", node: null, elementName: name, textBuffer: "" });
+      return;
+    }
+
     // Handle <p> elements — they're content-like within their parent
     if (name === "p") {
       // p elements don't create separate AST nodes; their text flows
@@ -226,8 +254,7 @@ export class ASTBuilder {
       return;
     }
 
-    // TOC, layout, table elements — skip for now (Phase 2)
-    // Push an ignore frame so close events balance
+    // Remaining unhandled elements — push ignore frame so close events balance
     this.stack.push({ kind: "ignore", node: null, elementName: name, textBuffer: "" });
   }
 
@@ -260,6 +287,17 @@ export class ASTBuilder {
 
     if (this.tableCollector) {
       this.handleTableClose(name);
+      return;
+    }
+
+    // Handle USLM layout close
+    if (name === "layout" && this.layoutCollector) {
+      this.finishLayout();
+      return;
+    }
+
+    if (this.layoutCollector) {
+      this.handleLayoutClose(name);
       return;
     }
 
@@ -344,6 +382,17 @@ export class ASTBuilder {
 
     // Skip all text inside tables but outside cells (whitespace between elements)
     if (this.tableCollector) {
+      return;
+    }
+
+    // Collect text inside layout cells
+    if (this.layoutCollector?.inCell) {
+      this.layoutCollector.cellText += text;
+      return;
+    }
+
+    // Skip text inside layout but outside cells
+    if (this.layoutCollector) {
       return;
     }
 
@@ -854,6 +903,77 @@ export class ASTBuilder {
       variant: "xhtml",
       headers: tc.headers,
       rows: tc.rows,
+    };
+
+    this.addToParent(node);
+  }
+
+  // ---------------------------------------------------------------------------
+  // USLM layout handling
+  // ---------------------------------------------------------------------------
+
+  private handleLayoutOpen(name: string, _attrs: Attributes): void {
+    const lc = this.layoutCollector;
+    if (!lc) return;
+
+    switch (name) {
+      case "header":
+        lc.inHead = true;
+        lc.currentRow = [];
+        break;
+      case "tocItem":
+      case "row":
+        lc.currentRow = [];
+        break;
+      case "column":
+        lc.inCell = true;
+        lc.cellText = "";
+        break;
+      default:
+        // Sub-elements inside column (ref, etc.) — just collect text
+        break;
+    }
+  }
+
+  private handleLayoutClose(name: string): void {
+    const lc = this.layoutCollector;
+    if (!lc) return;
+
+    switch (name) {
+      case "header":
+        lc.headers.push(lc.currentRow);
+        lc.currentRow = [];
+        lc.inHead = false;
+        break;
+      case "tocItem":
+      case "row":
+        lc.rows.push(lc.currentRow);
+        lc.currentRow = [];
+        break;
+      case "column":
+        lc.currentRow.push(lc.cellText.trim());
+        lc.inCell = false;
+        lc.cellText = "";
+        break;
+      default:
+        break;
+    }
+  }
+
+  private finishLayout(): void {
+    const lc = this.layoutCollector;
+    if (!lc) return;
+
+    this.layoutCollector = null;
+
+    // Only emit a table if there are actual data rows
+    if (lc.rows.length === 0 && lc.headers.length === 0) return;
+
+    const node: TableNode = {
+      type: "table",
+      variant: "layout",
+      headers: lc.headers,
+      rows: lc.rows,
     };
 
     this.addToParent(node);

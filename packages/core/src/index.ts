@@ -46,6 +46,10 @@ export type {
   FrontmatterData,
 } from "./ast/types.js";
 
+// AST builder
+export { ASTBuilder } from "./ast/builder.js";
+export type { ASTBuilderOptions } from "./ast/builder.js";
+
 // Legacy aliases for backward compatibility with existing tests
 export { USLM_NS as USLM_NAMESPACE } from "./xml/namespace.js";
 export { XHTML_NS as XHTML_NAMESPACE } from "./xml/namespace.js";

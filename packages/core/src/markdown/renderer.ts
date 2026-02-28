@@ -11,6 +11,7 @@ import type {
   InlineNode,
   NoteNode,
   SourceCreditNode,
+  TableNode,
   NotesContainerNode,
   QuotedContentNode,
   FrontmatterData,
@@ -90,10 +91,10 @@ export function renderNode(node: ASTNode, options: RenderOptions = DEFAULT_RENDE
       return renderNotesContainer(node, options);
     case "quotedContent":
       return renderQuotedContent(node, options);
+    case "table":
+      return renderTable(node);
     case "toc":
     case "tocItem":
-    case "table":
-      // Phase 2: tables and TOC rendering
       return "";
     default:
       return "";
@@ -321,6 +322,62 @@ function buildOlrcUrl(identifier: string): string {
     return `https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title${titleNum}`;
   }
   return `https://uscode.house.gov/view.xhtml?req=${encodeURIComponent(identifier)}`;
+}
+
+// ---------------------------------------------------------------------------
+// Table rendering
+// ---------------------------------------------------------------------------
+
+/**
+ * Render a table node to Markdown.
+ * Simple tables (no colspan/rowspan) → Markdown pipe table.
+ * Complex tables → skipped with a placeholder comment.
+ */
+function renderTable(node: TableNode): string {
+  // Determine column count from the widest row
+  const allRows = [...node.headers, ...node.rows];
+  if (allRows.length === 0) return "";
+
+  let colCount = 0;
+  for (const row of allRows) {
+    if (row.length > colCount) colCount = row.length;
+  }
+
+  if (colCount === 0) return "";
+
+  // Build the Markdown table
+  const lines: string[] = [];
+
+  // Use the last header row as the actual column headers (skip title rows with colspan)
+  // If no usable header rows, use the first body row as implicit header
+  let headerRow: string[] | undefined;
+  for (let i = node.headers.length - 1; i >= 0; i--) {
+    const row = node.headers[i];
+    if (row && row.length === colCount) {
+      headerRow = row;
+      break;
+    }
+  }
+
+  if (!headerRow) {
+    // No header row matching column count — use empty headers
+    headerRow = Array.from({ length: colCount }, () => "");
+  }
+
+  // Header line
+  lines.push(`| ${headerRow.map((cell) => cell.replace(/\|/g, "\\|")).join(" | ")} |`);
+
+  // Separator line
+  lines.push(`| ${Array.from({ length: colCount }, () => "---").join(" | ")} |`);
+
+  // Body rows
+  for (const row of node.rows) {
+    // Pad row to column count if needed
+    const paddedRow = Array.from({ length: colCount }, (_, i) => row[i] ?? "");
+    lines.push(`| ${paddedRow.map((cell) => cell.replace(/\|/g, "\\|")).join(" | ")} |`);
+  }
+
+  return lines.join("\n");
 }
 
 // ---------------------------------------------------------------------------

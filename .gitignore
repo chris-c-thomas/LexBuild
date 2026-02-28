@@ -1,1 +1,190 @@
+# =============================================================================
+# law2md .gitignore
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Dependencies
+# -----------------------------------------------------------------------------
+node_modules/
+
+# npm
+package-lock.json is committed (not ignored), but lock debugging artifacts are not
+*.npm-debug.log
+npm-debug.log*
+
+# -----------------------------------------------------------------------------
+# Build outputs
+# -----------------------------------------------------------------------------
+dist/
+*.tsbuildinfo
+*.tsbuildinfo.*
+
+# tsup / esbuild
+*.metafile.json
+
+# -----------------------------------------------------------------------------
+# Turborepo
+# -----------------------------------------------------------------------------
+.turbo/
+
+# -----------------------------------------------------------------------------
+# TypeScript
+# -----------------------------------------------------------------------------
+*.js.map
+*.d.ts.map
+
+# Don't ignore .js and .d.ts globally — only dist/ matters.
+# Source is TypeScript-only; emitted JS lives exclusively in dist/.
+
+# -----------------------------------------------------------------------------
+# Testing & coverage
+# -----------------------------------------------------------------------------
+coverage/
+.vitest/
+*.lcov
+
+# -----------------------------------------------------------------------------
+# AI coding agents
+# -----------------------------------------------------------------------------
+
+# Claude Code runtime state (personal MCP config, settings, local overrides)
+/.claude/
+
+# Cursor
+.cursorignore
+.cursorindexingignore
+
+# Aider
+.aider*
+
+# Codex / OpenAI
+.codex/
+
+# Shared MCP config (.mcp.json) is intentionally NOT ignored — it contains
+# no secrets and is committed so all contributors get shared MCP servers.
+
+# -----------------------------------------------------------------------------
+# Environment & secrets
+# -----------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+
+# -----------------------------------------------------------------------------
+# OS metadata
+# -----------------------------------------------------------------------------
+
+# macOS
 .DS_Store
+._*
+.Spotlight-V100
+.Trashes
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Linux
+*~
+.directory
+
+# -----------------------------------------------------------------------------
+# IDEs & editors
+# -----------------------------------------------------------------------------
+
+# VS Code — workspace settings are personal; extensions.json can be committed
+# separately if the team agrees on shared recommendations.
+.vscode/*
+!.vscode/extensions.json
+
+# JetBrains (WebStorm, IntelliJ)
+.idea/
+*.iml
+
+# Vim / Neovim
+*.swp
+*.swo
+*.swn
+*~
+Session.vim
+.netrwhist
+tags
+
+# Emacs
+\#*\#
+.\#*
+*~
+*.elc
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Zed
+.zed/
+
+# -----------------------------------------------------------------------------
+# law2md operational outputs
+# -----------------------------------------------------------------------------
+
+# Downloaded XML source files (large, regenerable from OLRC)
+downloads/
+
+# Converted Markdown output (regenerable from source XML)
+output/
+
+# Test output from local development runs
+test-output/
+
+# -----------------------------------------------------------------------------
+# Logs
+# -----------------------------------------------------------------------------
+*.log
+logs/
+pino-*.log
+
+# -----------------------------------------------------------------------------
+# Archives & binaries (shouldn't be in repo, but just in case)
+# -----------------------------------------------------------------------------
+*.zip
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+
+# Exception: .changeset files are not archives despite being in a dot-directory
+!.changeset/
+
+# -----------------------------------------------------------------------------
+# npm publish artifacts
+# -----------------------------------------------------------------------------
+*.tgz
+
+# Verdaccio local registry (if used for testing publishes locally)
+.verdaccio/
+storage/
+
+# -----------------------------------------------------------------------------
+# Miscellaneous
+# -----------------------------------------------------------------------------
+
+# Yarn (not used, but prevent accidental adoption)
+.yarn/
+.yarnrc.yml
+yarn.lock
+.pnp.*
+
+# pnpm (not used, but same rationale)
+pnpm-lock.yaml
+.pnpm-store/
+
+# Bun (not used)
+bun.lockb
+bun.lock

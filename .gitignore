@@ -137,6 +137,9 @@ tags
 # Downloaded XML source files (large, regenerable from OLRC)
 downloads/
 
+# Full USC XML fixtures (large, user-provided — not committed to repo)
+fixtures/xml/
+
 # Converted Markdown output (regenerable from source XML)
 output/
 

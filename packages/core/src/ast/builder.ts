@@ -18,6 +18,7 @@ import type {
   InlineType,
   NoteNode,
   SourceCreditNode,
+  TableNode,
   NotesContainerNode,
   QuotedContentNode,
   ASTNode,
@@ -64,6 +65,26 @@ interface StackFrame {
   textBuffer: string;
 }
 
+/** State for collecting an XHTML table */
+interface TableCollector {
+  /** Header rows (from thead) */
+  headers: string[][];
+  /** Body rows (from tbody or bare tr) */
+  rows: string[][];
+  /** Current row being built */
+  currentRow: string[];
+  /** Current cell text accumulator */
+  cellText: string;
+  /** Whether we're currently inside thead */
+  inHead: boolean;
+  /** Whether we're currently inside a cell (th or td) */
+  inCell: boolean;
+  /** Whether this table has colspan or rowspan (complex) */
+  isComplex: boolean;
+  /** Nesting depth for sub-elements inside cells */
+  cellDepth: number;
+}
+
 /**
  * Builds an AST from XML parser events, emitting completed subtrees at the configured level.
  */
@@ -77,6 +98,12 @@ export class ASTBuilder {
   private inMeta = false;
   /** Nesting depth inside <quotedContent> — levels inside quotes are not emitted */
   private quotedContentDepth = 0;
+  /** Active XHTML table collector (null when not inside a table) */
+  private tableCollector: TableCollector | null = null;
+  /** Active USLM layout collector (null when not inside a layout) */
+  private layoutCollector: TableCollector | null = null;
+  /** Nesting depth inside <toc> — elements inside toc are handled by layout collector only */
+  private tocDepth = 0;
   /** Current meta field being collected (e.g., "dc:title", "docNumber") */
   private metaField: string | null = null;
   /** Attributes of the current meta property element */
@@ -119,6 +146,42 @@ export class ASTBuilder {
     if (name === "main") {
       return;
     }
+
+    // --- Collector zones: checked BEFORE normal element handlers ---
+
+    if (name === "xhtml:table") {
+      this.tableCollector = {
+        headers: [], rows: [], currentRow: [], cellText: "",
+        inHead: false, inCell: false, isComplex: false, cellDepth: 0,
+      };
+      return;
+    }
+    if (this.tableCollector) {
+      this.handleTableOpen(name, attrs);
+      return;
+    }
+
+    if (name === "layout") {
+      this.layoutCollector = {
+        headers: [], rows: [], currentRow: [], cellText: "",
+        inHead: false, inCell: false, isComplex: false, cellDepth: 0,
+      };
+      return;
+    }
+    if (this.layoutCollector) {
+      this.handleLayoutOpen(name, attrs);
+      return;
+    }
+
+    if (name === "toc") {
+      this.tocDepth++;
+      return;
+    }
+    if (this.tocDepth > 0) {
+      return;
+    }
+
+    // --- Normal element handlers ---
 
     // Handle level elements (title, chapter, section, subsection, etc.)
     if (LEVEL_ELEMENTS.has(name)) {
@@ -183,8 +246,7 @@ export class ASTBuilder {
       return;
     }
 
-    // TOC, layout, table elements — skip for now (Phase 2)
-    // Push an ignore frame so close events balance
+    // Remaining unhandled elements — push ignore frame so close events balance
     this.stack.push({ kind: "ignore", node: null, elementName: name, textBuffer: "" });
   }
 
@@ -206,6 +268,39 @@ export class ASTBuilder {
 
     // Skip structural containers
     if (name === "uscDoc" || name === "main") {
+      return;
+    }
+
+    // Handle XHTML table close
+    if (name === "xhtml:table" && this.tableCollector) {
+      this.finishTable();
+      return;
+    }
+
+    if (this.tableCollector) {
+      this.handleTableClose(name);
+      return;
+    }
+
+    // Handle </toc> close
+    if (name === "toc") {
+      this.tocDepth = Math.max(0, this.tocDepth - 1);
+      return;
+    }
+
+    // Handle USLM layout close
+    if (name === "layout" && this.layoutCollector) {
+      this.finishLayout();
+      return;
+    }
+
+    if (this.layoutCollector) {
+      this.handleLayoutClose(name);
+      return;
+    }
+
+    // Skip elements inside toc that aren't in a layout
+    if (this.tocDepth > 0) {
       return;
     }
 
@@ -282,6 +377,33 @@ export class ASTBuilder {
    * Handle a text event from the parser.
    */
   onText(text: string): void {
+    // Collect text inside XHTML table cells
+    if (this.tableCollector?.inCell) {
+      this.tableCollector.cellText += text;
+      return;
+    }
+
+    // Skip all text inside tables but outside cells (whitespace between elements)
+    if (this.tableCollector) {
+      return;
+    }
+
+    // Collect text inside layout cells
+    if (this.layoutCollector?.inCell) {
+      this.layoutCollector.cellText += text;
+      return;
+    }
+
+    // Skip text inside layout but outside cells
+    if (this.layoutCollector) {
+      return;
+    }
+
+    // Skip text inside toc but outside layout
+    if (this.tocDepth > 0) {
+      return;
+    }
+
     if (this.inMeta) {
       // Accumulate text for meta fields
       const frame = this.peekFrame();
@@ -317,6 +439,8 @@ export class ASTBuilder {
     }
 
     if (frame.kind === "content" || frame.kind === "sourceCredit") {
+      // Skip whitespace-only text between <p> elements (XML formatting noise)
+      if (!text.trim()) return;
       // Create a text inline node and append to parent
       const textNode: InlineNode = { type: "inline", inlineType: "text", text };
       const parent = frame.node;
@@ -678,15 +802,15 @@ export class ASTBuilder {
     if (!parentFrame) return;
 
     if (parentFrame.kind === "content" || parentFrame.kind === "sourceCredit") {
-      // Add text as inline child
       const textNode: InlineNode = { type: "inline", inlineType: "text", text };
       const parent = parentFrame.node;
       if (parent && "children" in parent && Array.isArray(parent.children)) {
-        // Add paragraph break if not the first child
-        if ((parent.children as InlineNode[]).length > 0) {
-          (parent.children as InlineNode[]).push({ type: "inline", inlineType: "text", text: "\n\n" });
+        const children = parent.children as InlineNode[];
+        // Add paragraph break before this <p>'s text if there are prior children
+        if (children.length > 0) {
+          children.push({ type: "inline", inlineType: "text", text: "\n\n" });
         }
-        (parent.children as InlineNode[]).push(textNode);
+        children.push(textNode);
       }
     } else if (parentFrame.kind === "note" || parentFrame.kind === "level" || parentFrame.kind === "quotedContent") {
       // Wrap in a ContentNode
@@ -704,6 +828,165 @@ export class ASTBuilder {
    * This handles patterns like <heading><b>Editorial Notes</b></heading>
    * where the text is inside an inline child but needs to be collected by the heading frame.
    */
+  // ---------------------------------------------------------------------------
+  // XHTML table handling
+  // ---------------------------------------------------------------------------
+
+  private handleTableOpen(name: string, attrs: Attributes): void {
+    const tc = this.tableCollector;
+    if (!tc) return;
+
+    switch (name) {
+      case "xhtml:thead":
+        tc.inHead = true;
+        break;
+      case "xhtml:tbody":
+        tc.inHead = false;
+        break;
+      case "xhtml:tr":
+        tc.currentRow = [];
+        break;
+      case "xhtml:th":
+      case "xhtml:td":
+        tc.inCell = true;
+        tc.cellText = "";
+        tc.cellDepth = 0;
+        // Detect complex tables
+        if (attrs["colspan"] && attrs["colspan"] !== "1") {
+          tc.isComplex = true;
+        }
+        if (attrs["rowspan"] && attrs["rowspan"] !== "1") {
+          tc.isComplex = true;
+        }
+        break;
+      // Sub-elements inside cells (p, span, i, a, etc.) — track depth
+      default:
+        if (tc.inCell) {
+          tc.cellDepth++;
+        }
+        break;
+    }
+  }
+
+  private handleTableClose(name: string): void {
+    const tc = this.tableCollector;
+    if (!tc) return;
+
+    switch (name) {
+      case "xhtml:thead":
+        tc.inHead = false;
+        break;
+      case "xhtml:tbody":
+        break;
+      case "xhtml:tr":
+        if (tc.inHead) {
+          tc.headers.push(tc.currentRow);
+        } else {
+          tc.rows.push(tc.currentRow);
+        }
+        tc.currentRow = [];
+        break;
+      case "xhtml:th":
+      case "xhtml:td":
+        tc.currentRow.push(tc.cellText.trim());
+        tc.inCell = false;
+        tc.cellText = "";
+        break;
+      default:
+        if (tc.inCell) {
+          tc.cellDepth = Math.max(0, tc.cellDepth - 1);
+        }
+        break;
+    }
+  }
+
+  private finishTable(): void {
+    const tc = this.tableCollector;
+    if (!tc) return;
+
+    this.tableCollector = null;
+
+    const node: TableNode = {
+      type: "table",
+      variant: "xhtml",
+      headers: tc.headers,
+      rows: tc.rows,
+    };
+
+    this.addToParent(node);
+  }
+
+  // ---------------------------------------------------------------------------
+  // USLM layout handling
+  // ---------------------------------------------------------------------------
+
+  private handleLayoutOpen(name: string, _attrs: Attributes): void {
+    const lc = this.layoutCollector;
+    if (!lc) return;
+
+    switch (name) {
+      case "header":
+        lc.inHead = true;
+        lc.currentRow = [];
+        break;
+      case "tocItem":
+      case "row":
+        lc.currentRow = [];
+        break;
+      case "column":
+        lc.inCell = true;
+        lc.cellText = "";
+        break;
+      default:
+        // Sub-elements inside column (ref, etc.) — just collect text
+        break;
+    }
+  }
+
+  private handleLayoutClose(name: string): void {
+    const lc = this.layoutCollector;
+    if (!lc) return;
+
+    switch (name) {
+      case "header":
+        lc.headers.push(lc.currentRow);
+        lc.currentRow = [];
+        lc.inHead = false;
+        break;
+      case "tocItem":
+      case "row":
+        lc.rows.push(lc.currentRow);
+        lc.currentRow = [];
+        break;
+      case "column":
+        lc.currentRow.push(lc.cellText.trim());
+        lc.inCell = false;
+        lc.cellText = "";
+        break;
+      default:
+        break;
+    }
+  }
+
+  private finishLayout(): void {
+    const lc = this.layoutCollector;
+    if (!lc) return;
+
+    this.layoutCollector = null;
+
+    // Only emit a table if there are actual data rows
+    if (lc.rows.length === 0 && lc.headers.length === 0) return;
+
+    const node: TableNode = {
+      type: "table",
+      variant: "layout",
+      headers: lc.headers,
+      rows: lc.rows,
+    };
+
+    this.addToParent(node);
+  }
+
   private bubbleTextToCollector(text: string): void {
     for (let i = this.stack.length - 2; i >= 0; i--) {
       const f = this.stack[i];

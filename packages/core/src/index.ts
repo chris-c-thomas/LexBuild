@@ -52,6 +52,8 @@ export type { ASTBuilderOptions } from "./ast/builder.js";
 
 // Markdown rendering
 export { renderDocument, renderSection, renderNode } from "./markdown/renderer.js";
-export type { RenderOptions } from "./markdown/renderer.js";
+export type { RenderOptions, NotesFilter } from "./markdown/renderer.js";
 export { generateFrontmatter, FORMAT_VERSION, GENERATOR } from "./markdown/frontmatter.js";
+export { createLinkResolver, parseIdentifier } from "./markdown/links.js";
+export type { LinkResolver, ParsedIdentifier } from "./markdown/links.js";
 

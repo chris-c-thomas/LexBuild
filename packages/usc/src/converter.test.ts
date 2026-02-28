@@ -4,8 +4,20 @@ import { mkdtemp, rm, readFile, readdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { convertTitle } from "./converter.js";
+import type { ConvertOptions } from "./converter.js";
 
 const FIXTURES_DIR = resolve(import.meta.dirname, "../../../fixtures/fragments");
+
+/** Default options for tests */
+const DEFAULTS: Omit<ConvertOptions, "input" | "output"> = {
+  granularity: "section",
+  linkStyle: "plaintext",
+  includeSourceCredits: true,
+  includeNotes: true,
+  includeEditorialNotes: false,
+  includeStatutoryNotes: false,
+  includeAmendments: false,
+};
 
 describe("convertTitle", () => {
   let outputDir: string;
@@ -20,10 +32,9 @@ describe("convertTitle", () => {
 
   it("converts simple-section.xml and writes one section file", async () => {
     const result = await convertTitle({
+      ...DEFAULTS,
       input: resolve(FIXTURES_DIR, "simple-section.xml"),
       output: outputDir,
-      linkStyle: "plaintext",
-      includeSourceCredits: true,
     });
 
     expect(result.sectionsWritten).toBe(1);
@@ -57,10 +68,9 @@ describe("convertTitle", () => {
 
   it("converts section-with-subsections.xml", async () => {
     const result = await convertTitle({
+      ...DEFAULTS,
       input: resolve(FIXTURES_DIR, "section-with-subsections.xml"),
       output: outputDir,
-      linkStyle: "plaintext",
-      includeSourceCredits: true,
     });
 
     expect(result.sectionsWritten).toBe(1);
@@ -79,10 +89,9 @@ describe("convertTitle", () => {
 
   it("creates correct directory structure", async () => {
     await convertTitle({
+      ...DEFAULTS,
       input: resolve(FIXTURES_DIR, "simple-section.xml"),
       output: outputDir,
-      linkStyle: "plaintext",
-      includeSourceCredits: true,
     });
 
     // Check directory structure
@@ -99,10 +108,9 @@ describe("convertTitle", () => {
 
   it("generates valid YAML frontmatter with correct fields", async () => {
     const result = await convertTitle({
+      ...DEFAULTS,
       input: resolve(FIXTURES_DIR, "simple-section.xml"),
       output: outputDir,
-      linkStyle: "plaintext",
-      includeSourceCredits: true,
     });
 
     const content = await readFile(result.files[0]!, "utf-8");
@@ -120,13 +128,89 @@ describe("convertTitle", () => {
 
   it("strips source credits when includeSourceCredits is false", async () => {
     const result = await convertTitle({
+      ...DEFAULTS,
       input: resolve(FIXTURES_DIR, "simple-section.xml"),
       output: outputDir,
-      linkStyle: "plaintext",
       includeSourceCredits: false,
     });
 
     const content = await readFile(result.files[0]!, "utf-8");
     expect(content).not.toContain("**Source Credit**");
+  });
+
+  it("excludes all notes when includeNotes is false", async () => {
+    const result = await convertTitle({
+      ...DEFAULTS,
+      input: resolve(FIXTURES_DIR, "section-with-notes.xml"),
+      output: outputDir,
+      includeNotes: false,
+    });
+
+    const content = await readFile(result.files[0]!, "utf-8");
+    // Should not contain note headings
+    expect(content).not.toContain("## Editorial Notes");
+    expect(content).not.toContain("### Amendments");
+    expect(content).not.toContain("### Severability");
+    // Should still contain section content and source credit
+    expect(content).toContain("**(a)**");
+    expect(content).toContain("**Source Credit**");
+  });
+
+  it("includes only amendments when includeAmendments is set", async () => {
+    const result = await convertTitle({
+      ...DEFAULTS,
+      input: resolve(FIXTURES_DIR, "section-with-notes.xml"),
+      output: outputDir,
+      includeNotes: false,
+      includeAmendments: true,
+    });
+
+    const content = await readFile(result.files[0]!, "utf-8");
+    // Should contain editorial cross-heading and amendments
+    expect(content).toContain("## Editorial Notes");
+    expect(content).toContain("### Amendments");
+    // Should not contain statutory notes
+    expect(content).not.toContain("### Severability");
+    expect(content).not.toContain("### Findings");
+  });
+
+  it("includes only statutory notes when includeStatutoryNotes is set", async () => {
+    const result = await convertTitle({
+      ...DEFAULTS,
+      input: resolve(FIXTURES_DIR, "section-with-notes.xml"),
+      output: outputDir,
+      includeNotes: false,
+      includeStatutoryNotes: true,
+    });
+
+    const content = await readFile(result.files[0]!, "utf-8");
+    // Should contain statutory notes
+    expect(content).toContain("## Statutory Notes");
+    expect(content).toContain("### Severability");
+    expect(content).toContain("### Findings");
+    // Should not contain editorial/amendment notes
+    expect(content).not.toContain("### Amendments");
+  });
+
+  it("outputs chapter-level files when granularity is chapter", async () => {
+    const result = await convertTitle({
+      ...DEFAULTS,
+      input: resolve(FIXTURES_DIR, "simple-section.xml"),
+      output: outputDir,
+      granularity: "chapter",
+    });
+
+    expect(result.sectionsWritten).toBeGreaterThan(0);
+    expect(result.files).toHaveLength(1);
+
+    // Should be a chapter file, not a section file in a subdirectory
+    const filePath = result.files[0]!;
+    expect(filePath).toContain("chapter-01.md");
+    expect(filePath).not.toContain("chapter-01/");
+
+    // Content should have chapter heading and section as H2
+    const content = await readFile(filePath, "utf-8");
+    expect(content).toContain("# Chapter 1");
+    expect(content).toContain("## § 2.");
   });
 });

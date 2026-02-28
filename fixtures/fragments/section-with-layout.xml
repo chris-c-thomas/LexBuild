@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<uscDoc xmlns="http://xml.house.gov/schemas/uslm/1.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" identifier="/us/usc/t99">
+<meta>
+  <dc:title>Title 99</dc:title>
+  <dc:type>USCTitle</dc:type>
+  <docNumber>99</docNumber>
+  <property role="is-positive-law">yes</property>
+  <dcterms:created>2025-12-03T10:11:39</dcterms:created>
+</meta>
+<main>
+<title identifier="/us/usc/t99"><num value="99">Title 99—</num><heading>TEST</heading>
+<chapter identifier="/us/usc/t99/ch1"><num value="1">CHAPTER 1—</num><heading>TEST CHAPTER</heading>
+<toc role="twoColumnTOC">
+<layout>
+<header>
+<column>Sec.</column>
+<column>Description</column>
+</header>
+<tocItem>
+<column>1.</column><column>Section with layout table</column>
+</tocItem>
+</layout>
+</toc>
+<section identifier="/us/usc/t99/s1"><num value="1">§ 1.</num><heading> Section with layout table</heading>
+<content>
+<p>The following schedule applies:</p>
+</content>
+<notes type="uscNote">
+<note topic="miscellaneous"><heading>Pay Schedule</heading>
+<layout>
+<header>
+<column>Grade</column>
+<column>Step 1</column>
+<column>Step 2</column>
+</header>
+<row>
+<column>GS-1</column>
+<column>$20,000</column>
+<column>$21,000</column>
+</row>
+<row>
+<column>GS-2</column>
+<column>$25,000</column>
+<column>$26,500</column>
+</row>
+</layout>
+</note>
+</notes>
+<sourceCredit>(Test source.)</sourceCredit>
+</section>
+</chapter>
+</title>
+</main>
+</uscDoc>

@@ -11,12 +11,23 @@ import type {
   InlineNode,
   NoteNode,
   SourceCreditNode,
+  TableNode,
   NotesContainerNode,
   QuotedContentNode,
   FrontmatterData,
 } from "../ast/types.js";
 import { SMALL_LEVELS } from "../ast/types.js";
 import { generateFrontmatter } from "./frontmatter.js";
+
+/** Notes filtering configuration */
+export interface NotesFilter {
+  /** Include editorial notes (codification, dispositionOfSections, etc.) */
+  editorial: boolean;
+  /** Include statutory notes (changeOfName, regulations, miscellaneous, repeals, etc.) */
+  statutory: boolean;
+  /** Include amendment history (amendments, effectiveDateOfAmendment) */
+  amendments: boolean;
+}
 
 /** Options for controlling Markdown rendering */
 export interface RenderOptions {
@@ -26,6 +37,8 @@ export interface RenderOptions {
   linkStyle: "relative" | "canonical" | "plaintext";
   /** Function to resolve a USLM identifier to a relative file path (for linkStyle "relative") */
   resolveLink?: ((identifier: string) => string | null) | undefined;
+  /** Notes filtering. Undefined = include all notes. */
+  notesFilter?: NotesFilter | undefined;
 }
 
 /** Default render options */
@@ -90,10 +103,10 @@ export function renderNode(node: ASTNode, options: RenderOptions = DEFAULT_RENDE
       return renderNotesContainer(node, options);
     case "quotedContent":
       return renderQuotedContent(node, options);
+    case "table":
+      return renderTable(node);
     case "toc":
     case "tocItem":
-    case "table":
-      // Phase 2: tables and TOC rendering
       return "";
     default:
       return "";
@@ -195,9 +208,12 @@ function renderSmallLevel(node: LevelNode, options: RenderOptions): string {
 
 /**
  * Render a content block (content, chapeau, continuation, proviso).
+ * Normalizes whitespace: collapses runs of whitespace between paragraphs
+ * into clean double-newline paragraph breaks, and trims edges.
  */
 function renderContent(node: ContentNode): string {
-  return renderInlineChildren(node.children);
+  const raw = renderInlineChildren(node.children);
+  return normalizeWhitespace(raw);
 }
 
 /**
@@ -205,6 +221,15 @@ function renderContent(node: ContentNode): string {
  */
 function renderInlineChildren(children: InlineNode[], options?: RenderOptions): string {
   return children.map((child) => renderInline(child, options)).join("");
+}
+
+/**
+ * Normalize whitespace in rendered text:
+ * - Trim leading/trailing whitespace
+ * - Collapse 2+ consecutive newlines (with optional spaces) into double-newline
+ */
+function normalizeWhitespace(text: string): string {
+  return text.trim().replace(/\n\s*\n/g, "\n\n");
 }
 
 // ---------------------------------------------------------------------------
@@ -312,6 +337,62 @@ function buildOlrcUrl(identifier: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// Table rendering
+// ---------------------------------------------------------------------------
+
+/**
+ * Render a table node to Markdown.
+ * Simple tables (no colspan/rowspan) → Markdown pipe table.
+ * Complex tables → skipped with a placeholder comment.
+ */
+function renderTable(node: TableNode): string {
+  // Determine column count from the widest row
+  const allRows = [...node.headers, ...node.rows];
+  if (allRows.length === 0) return "";
+
+  let colCount = 0;
+  for (const row of allRows) {
+    if (row.length > colCount) colCount = row.length;
+  }
+
+  if (colCount === 0) return "";
+
+  // Build the Markdown table
+  const lines: string[] = [];
+
+  // Use the last header row as the actual column headers (skip title rows with colspan)
+  // If no usable header rows, use the first body row as implicit header
+  let headerRow: string[] | undefined;
+  for (let i = node.headers.length - 1; i >= 0; i--) {
+    const row = node.headers[i];
+    if (row && row.length === colCount) {
+      headerRow = row;
+      break;
+    }
+  }
+
+  if (!headerRow) {
+    // No header row matching column count — use empty headers
+    headerRow = Array.from({ length: colCount }, () => "");
+  }
+
+  // Header line
+  lines.push(`| ${headerRow.map((cell) => cell.replace(/\|/g, "\\|")).join(" | ")} |`);
+
+  // Separator line
+  lines.push(`| ${Array.from({ length: colCount }, () => "---").join(" | ")} |`);
+
+  // Body rows
+  for (const row of node.rows) {
+    // Pad row to column count if needed
+    const paddedRow = Array.from({ length: colCount }, (_, i) => row[i] ?? "");
+    lines.push(`| ${paddedRow.map((cell) => cell.replace(/\|/g, "\\|")).join(" | ")} |`);
+  }
+
+  return lines.join("\n");
+}
+
+// ---------------------------------------------------------------------------
 // Source credit rendering
 // ---------------------------------------------------------------------------
 
@@ -332,16 +413,115 @@ function renderSourceCredit(node: SourceCreditNode, options: RenderOptions): str
  * Render a notes container (<notes type="uscNote">).
  */
 function renderNotesContainer(node: NotesContainerNode, options: RenderOptions): string {
+  const filter = options.notesFilter;
+
+  // No filter = include everything (default behavior)
+  if (!filter) {
+    const parts: string[] = [];
+    for (const child of node.children) {
+      const rendered = renderNode(child, options);
+      if (rendered) {
+        parts.push(rendered);
+      }
+    }
+    return parts.join("\n\n");
+  }
+
+  // Filter notes by category
   const parts: string[] = [];
+  let currentCategory: "editorial" | "statutory" | "unknown" = "unknown";
 
   for (const child of node.children) {
-    const rendered = renderNode(child, options);
-    if (rendered) {
-      parts.push(rendered);
+    if (child.type !== "note") {
+      const rendered = renderNode(child, options);
+      if (rendered) parts.push(rendered);
+      continue;
+    }
+
+    // Cross-heading notes set the category
+    if (child.role === "crossHeading") {
+      if (child.topic === "editorialNotes") {
+        currentCategory = "editorial";
+      } else if (child.topic === "statutoryNotes") {
+        currentCategory = "statutory";
+      }
+      // Only render the heading if we'll include notes in this category
+      if (shouldIncludeCategory(currentCategory, filter)) {
+        const rendered = renderNode(child, options);
+        if (rendered) parts.push(rendered);
+      }
+      continue;
+    }
+
+    // Regular notes — check if their topic/category passes the filter
+    if (shouldIncludeNote(child, currentCategory, filter)) {
+      const rendered = renderNode(child, options);
+      if (rendered) parts.push(rendered);
     }
   }
 
   return parts.join("\n\n");
+}
+
+/** Amendment-related topics */
+const AMENDMENT_TOPICS = new Set([
+  "amendments",
+  "effectiveDateOfAmendment",
+  "shortTitleOfAmendment",
+]);
+
+/** Editorial-specific topics */
+const EDITORIAL_TOPICS = new Set([
+  "codification",
+  "dispositionOfSections",
+]);
+
+/** Statutory-specific topics */
+const STATUTORY_TOPICS = new Set([
+  "changeOfName",
+  "regulations",
+  "miscellaneous",
+  "repeals",
+  "separability",
+  "crossReferences",
+]);
+
+/**
+ * Check if a category of notes should be included based on the filter.
+ */
+function shouldIncludeCategory(
+  category: "editorial" | "statutory" | "unknown",
+  filter: NotesFilter,
+): boolean {
+  if (category === "editorial") return filter.editorial || filter.amendments;
+  if (category === "statutory") return filter.statutory || filter.amendments;
+  // Unknown category — include if any filter is enabled
+  return filter.editorial || filter.statutory || filter.amendments;
+}
+
+/**
+ * Check if an individual note should be included based on its topic and category.
+ */
+function shouldIncludeNote(
+  node: NoteNode,
+  currentCategory: "editorial" | "statutory" | "unknown",
+  filter: NotesFilter,
+): boolean {
+  const topic = node.topic ?? "";
+
+  // Amendment topics included by amendments filter
+  if (AMENDMENT_TOPICS.has(topic)) return filter.amendments;
+
+  // Topic-specific classification takes precedence over category
+  if (EDITORIAL_TOPICS.has(topic)) return filter.editorial;
+  if (STATUTORY_TOPICS.has(topic)) return filter.statutory;
+
+  // Fall back to category from cross-heading
+  if (currentCategory === "editorial") return filter.editorial;
+  if (currentCategory === "statutory") return filter.statutory;
+
+  // Unknown — include if any filter is active
+  return filter.editorial || filter.statutory || filter.amendments;
 }
 
 /**

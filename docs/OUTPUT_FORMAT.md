@@ -46,11 +46,14 @@ This specification is versioned independently of the CLI. The current version is
 | Component | Pattern | Examples |
 |-----------|---------|----------|
 | Title directory | `title-{NN}` (2-digit zero-padded) | `title-01`, `title-26`, `title-54` |
+| Appendix directory | `title-{NN}-appendix` | `title-05-appendix`, `title-11-appendix` |
 | Chapter directory/file | `chapter-{NN}` (2-digit zero-padded) | `chapter-01`, `chapter-99` |
 | Subchapter directory | `subchapter-{ID}` | `subchapter-I`, `subchapter-II` |
 | Section file | `section-{ID}.md` (NOT zero-padded) | `section-1.md`, `section-7801.md`, `section-202a.md` |
 | Metadata sidecar | `_meta.json` | — |
 | Directory overview | `README.md` | — |
+
+Titles with appendices (5, 11, 18, 28) produce a sibling appendix directory containing compiled acts, court rules, and reorganization plans as separate documents.
 
 Section IDs match the `@value` attribute of the `<num>` element in the source XML. They are typically numeric but can be alphanumeric (e.g., `202a`, `7701-1`).
 
@@ -272,7 +275,7 @@ Complex tables (with colspan, rowspan, or nested content) render as fenced HTML:
 
 ### Token Estimation
 
-The `token_estimate` field uses a simple heuristic: `Math.ceil(characterCount / 4)`. This approximates GPT-4/Claude tokenization for English legal text. It is intentionally approximate — downstream pipelines should re-tokenize with their model's actual tokenizer for precise chunking.
+The `token_estimate` field uses `tiktoken` with the `cl100k_base` encoding (shared by GPT-4 and Claude) for accurate token counts. This enables downstream RAG pipelines to make precise chunk-planning decisions without re-tokenizing.
 
 ### Section Status Values
 

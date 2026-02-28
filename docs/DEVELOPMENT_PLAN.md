@@ -589,12 +589,12 @@ The `@role` attribute distinguishes `editorialNotes` from `statutoryNotes` cross
 
 ---
 
-## Open Questions
+## Resolved Decisions (formerly Open Questions)
 
-1. **Table of Disposition handling**: Title-level tables of disposition (mapping old section numbers to new) are rendered as XHTML `<table>` inside `<note>`. These are large and add noise. Default to excluding from section-level output but including in title README?
+1. **Table of Disposition handling**: Exclude from section-level output. Include in title-level README.md files where they provide useful context for the full title.
 
-2. **Appendix titles**: Titles 5, 11, 18, 28 have appendices that are separate documents (`<uscDoc>` with appendix content). These contain compiled acts, court rules, and reorganization plans. Treat as separate output directories (`title-05-appendix/`)?
+2. **Appendix titles**: Separate output directories. Titles with appendices (5, 11, 18, 28) produce a sibling directory, e.g., `title-05-appendix/`. Appendix content (`<compiledAct>`, `<courtRules>`, `<reorganizationPlan>`) is treated as a separate document with its own `_meta.json` and README.md.
 
-3. **Footnotes**: USLM footnotes use `<ref class="footnoteRef">` pointing to `<note type="footnote">`. Render as Markdown footnotes (`[^1]`) or inline parentheticals?
+3. **Footnotes**: Render as Markdown footnotes using `[^N]` syntax. `<ref class="footnoteRef">` maps to `[^N]` at the reference site, and `<note type="footnote">` maps to the `[^N]: footnote text` definition at the bottom of the section file.
 
-4. **Token estimation**: The 4-char-per-token heuristic is rough. Worth integrating `tiktoken` for accurate GPT-4 token counts in `_meta.json`? Adds a dependency but dramatically improves RAG pipeline planning.
+4. **Token estimation**: Use `tiktoken` (the `tiktoken` npm package) for accurate token counts in `_meta.json`. The `cl100k_base` encoding (used by GPT-4 / Claude) provides precise estimates that downstream RAG pipelines can rely on for chunk planning. Added as a dependency of `@law2md/core`.

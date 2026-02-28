@@ -12,7 +12,10 @@ law2md/
 │   ├── core/        # @law2md/core — XML parsing, AST, Markdown rendering, shared utilities
 │   ├── usc/         # @law2md/usc — U.S. Code-specific element handlers and downloader
 │   └── cli/         # law2md — CLI binary (the published npm package users install)
-├── fixtures/        # Test XML files and expected output snapshots
+├── fixtures/
+│   ├── xml/         # Full USC XML files (usc01.xml ... usc54.xml) — gitignored
+│   ├── fragments/   # Small synthetic XML snippets for unit tests
+│   └── expected/    # Expected output snapshots for integration tests
 ├── docs/            # Architecture, output format spec, extension guide
 ├── turbo.json       # Turborepo pipeline config
 └── CLAUDE.md        # This file
@@ -27,9 +30,12 @@ law2md/
 - **Validation**: `zod`
 - **YAML**: `yaml` package
 - **Zip**: `yauzl`
+- **Token Counting**: `tiktoken` (cl100k_base encoding)
 - **Logging**: `pino`
 - **Testing**: `vitest`
 - **Build**: `tsup`
+- **Linting**: ESLint + `@typescript-eslint`
+- **Formatting**: Prettier
 - **Monorepo**: Turborepo + npm workspaces
 
 ## Build & Dev Commands
@@ -97,9 +103,20 @@ node packages/cli/dist/index.js convert ./fixtures/usc01.xml -o ./test-output
 - Snapshot tests for Markdown output stability (update snapshots intentionally, not casually)
 - Name test cases descriptively: `it("converts <subsection> with chapeau to indented bold-lettered paragraph")`
 
+## Reference Materials
+
+Official USLM reference documents are in `docs/reference/uslm/`:
+
+- `uslm-user-guide.pdf` — OLRC user guide (v0.1.4, Oct 2013). Covers abstract/concrete model, identification, referencing, metadata, versioning, and presentation models.
+- `uslm-schema-and-css/USLM-1.0.xsd` — Original schema (July 2013)
+- `uslm-schema-and-css/USLM-1.0.15.xsd` — Patched schema (Sept 2013, adds remote namespace resolution for DC and XHTML)
+- `uslm-schema-and-css/usctitle.css` — Browser rendering stylesheet
+- `uslm-schema-and-css/dc.xsd`, `dcterms.xsd`, `dcmitype.xsd` — Dublin Core metadata schemas
+- `uslm-schema-and-css/xhtml-1.0.xsd`, `xml.xsd` — Supporting schemas
+
 ## USLM XML Schema — Key Facts
 
-The XML files use the USLM 1.0 schema. Namespace: `http://xml.house.gov/schemas/uslm/1.0`
+The XML files use the USLM 1.0 schema (patch level 1.0.15). Namespace: `http://xml.house.gov/schemas/uslm/1.0`
 
 ### Document Structure
 
@@ -134,10 +151,14 @@ The XML files use the USLM 1.0 schema. Namespace: `http://xml.house.gov/schemas/
 ### Element Hierarchy (Big → Small)
 
 ```
-title > subtitle > chapter > subchapter > part > subpart > division > subdivision
+title > subtitle > chapter > subchapter > article > subarticle > part > subpart > division > subdivision
   > section (PRIMARY LEVEL)
     > subsection > paragraph > subparagraph > clause > subclause > item > subitem > subsubitem
 ```
+
+Additional level elements: `<preliminary>` (outside main hierarchy), `<compiledAct>`, `<courtRules>`/`<courtRule>`, `<reorganizationPlans>`/`<reorganizationPlan>` (title appendices).
+
+**Important**: The schema intentionally does NOT enforce strict hierarchy — any `<level>` can nest inside any `<level>`. This is a deliberate design choice, not a bug.
 
 ### Critical Elements
 
@@ -151,7 +172,7 @@ title > subtitle > chapter > subchapter > part > subpart > division > subdivisio
 | `<heading>` | Element name/title | — |
 | `<content>` | Text content block | — |
 | `<chapeau>` | Text before sub-levels | — |
-| `<continuation>` | Text after sub-levels | — |
+| `<continuation>` | Text after or between sub-levels | — |
 | `<proviso>` | "Provided that..." text | — |
 | `<ref>` | Cross-reference | `href` (canonical URI) |
 | `<date>` | Date | `date` (ISO format) |
@@ -179,7 +200,12 @@ Examples:
 /us/usc/t1/s1/a/2   — Paragraph (2) of Subsection (a)
 ```
 
-Reference prefixes: `t` = title, `st` = subtitle, `ch` = chapter, `sch` = subchapter, `p` = part, `sp` = subpart, `d` = division, `sd` = subdivision, `s` = section.
+Reference prefixes (big levels): `t` = title, `st` = subtitle, `ch` = chapter, `sch` = subchapter, `art` = article, `p` = part, `sp` = subpart, `d` = division, `sd` = subdivision, `s` = section. Small levels (subsection and below) use their number directly without a prefix.
+
+Full reference URL structure: `[item][work][!lang][/portion][@temporal][.manifestation]`
+- Only `/us/usc/...` references are converted to relative Markdown links
+- `/us/stat/...` (Statutes at Large), `/us/pl/...` (Public Law) render as plain text citations
+- `@portion` on `<ref>` extends a reference established via `@idref` (composable)
 
 ### Namespaces in Use
 
@@ -195,12 +221,18 @@ Tables use the XHTML namespace. Always check namespace when handling `<table>` e
 
 ### Notes Taxonomy
 
-Notes appear as `<note>` elements within `<notes type="uscNote">` containers. They are categorized by:
+Notes have two independent classification axes:
 
-- `@role`: `"crossHeading"` (section divider, e.g., "Editorial Notes", "Statutory Notes and Related Subsidiaries")
-- `@topic`: `"amendments"`, `"codification"`, `"changeOfName"`, `"crossReferences"`, `"effectiveDateOfAmendment"`, `"miscellaneous"`, `"repeals"`, `"regulations"`, `"dispositionOfSections"`, `"enacting"`
+- `@type`: placement — `"inline"`, `"footnote"`, `"endnote"`, `"uscNote"` (after sourceCredit)
+- `@topic`: semantic category — `"amendments"`, `"codification"`, `"changeOfName"`, `"crossReferences"`, `"effectiveDateOfAmendment"`, `"miscellaneous"`, `"repeals"`, `"regulations"`, `"dispositionOfSections"`, `"enacting"`
 
-Cross-headings with `<heading>` containing "Editorial Notes" or "Statutory Notes" act as section dividers. The notes following a cross-heading belong to that category until the next cross-heading.
+The schema also defines concrete note subtypes: `<sourceCredit>`, `<statutoryNote>`, `<editorialNote>`, `<changeNote>` (records non-substantive changes, usually in square brackets).
+
+Within `<notes type="uscNote">` containers, `<note role="crossHeading">` elements with `<heading>` containing "Editorial Notes" or "Statutory Notes" act as section dividers. Notes following a cross-heading belong to that category until the next cross-heading.
+
+### Status Values
+
+Elements can carry `@status` indicating their legal state. The schema defines 18 values: `proposed`, `withdrawn`, `cancelled`, `pending`, `operational`, `suspended`, `renumbered`, `repealed`, `expired`, `terminated`, `hadItsEffect`, `omitted`, `notAdopted`, `transferred`, `redesignated`, `reserved`, `vacant`, `crossReference`, `unknown`.
 
 ## OLRC Download URLs
 
@@ -247,6 +279,14 @@ output/usc/title-{NN}/chapter-{NN}/section-{N}.md
 
 6. **Streaming output**: Sections are written to disk as they are parsed. The converter never holds an entire title's worth of AST in memory simultaneously.
 
+7. **Footnotes**: Rendered as Markdown footnotes (`[^N]` at reference site, `[^N]: text` at bottom of section file).
+
+8. **Appendix titles**: Separate output directories (e.g., `title-05-appendix/`) for titles with appendices (5, 11, 18, 28).
+
+9. **Token estimation**: Uses `tiktoken` (`cl100k_base` encoding) for accurate token counts in `_meta.json`, added as a dependency of `@law2md/core`.
+
+10. **Table of Disposition**: Excluded from section-level output. Included in title-level README.md.
+
 ## Common Pitfalls
 
 - **XHTML namespace tables**: `<table>` elements in USC XML are in the XHTML namespace, not the USLM namespace. The SAX parser must handle namespace-aware element names.
@@ -255,6 +295,9 @@ output/usc/title-{NN}/chapter-{NN}/section-{N}.md
 - **Roman numeral numbering**: Clauses use lowercase Roman numerals (i, ii, iii), subclauses use uppercase (I, II, III). The `<num>` element's `@value` attribute contains the normalized form.
 - **Inline XHTML in content**: `<b>`, `<i>`, `<sub>`, `<sup>` elements appear inline within text content. They are in the USLM namespace, not XHTML.
 - **Multiple `<p>` elements in content**: A single `<content>` or `<note>` may contain multiple `<p>` elements. Each should be a separate paragraph in Markdown output.
+- **Permissive content model**: `<content>` uses `processContents="lax"` with `namespace="##any"` — it can contain elements from any namespace, including embedded XHTML. The SAX parser must handle unexpected elements gracefully.
+- **`<continuation>` is interstitial**: Not just "after sub-levels" but also between elements of the same level. Handle as a text block in whatever position it appears.
+- **Element versioning**: Elements can have `@startPeriod`/`@endPeriod`/`@status` for point-in-time variants. Multiple versions of the same element may coexist in the document.
 
 ## When Adding New Source Types (CFR, State Statutes)
 

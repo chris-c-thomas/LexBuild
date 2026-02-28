@@ -2,7 +2,7 @@
 
 Convert U.S. legislative XML into structured Markdown for AI and RAG systems.
 
-> **Status: In Development** -- law2md is under active development. Phase 1 (foundation) is complete. The tool can convert U.S. Code XML to section-level Markdown with frontmatter metadata. See [Project Status](#project-status) for details on what works today and what is planned.
+> **Status: In Development** -- Phases 1 and 2 are complete. The tool converts U.S. Code XML to section-level or chapter-level Markdown with frontmatter, tables, filterable notes, cross-reference link resolution, and metadata indexes. See [Project Status](#project-status) for details.
 
 ---
 
@@ -20,9 +20,14 @@ Legal texts are among the most frequently cited sources in AI systems, yet there
 
 - **Streaming SAX parser** -- processes XML files of any size (including 100MB+ titles like Title 26) with bounded memory usage
 - **Section-level output** -- each section of the U.S. Code becomes its own Markdown file, sized appropriately for RAG chunk windows
-- **YAML frontmatter** -- every file includes structured metadata (identifier, title, chapter, section, positive law status, source credit, currency)
+- **Chapter-level output** -- optional mode that inlines all sections into per-chapter files
+- **YAML frontmatter** -- every file includes structured metadata (identifier, title, chapter, part, section, positive law status, source credit, currency)
 - **Structural fidelity** -- preserves the full USLM hierarchy from title down through subsubitem, using bold inline numbering that mirrors legal citation convention
-- **Source credits and notes** -- editorial notes, statutory notes, amendment history, and source credits are included with the statutory text
+- **Tables** -- XHTML tables and USLM layout tables converted to Markdown pipe tables
+- **Cross-reference links** -- resolve within the output corpus as relative links, or fall back to OLRC website URLs
+- **Filterable notes** -- editorial notes, statutory notes, and amendment history can be selectively included or excluded
+- **Metadata indexes** -- `_meta.json` sidecar files at title and chapter levels with section listings and token estimates
+- **Source credits** -- enactment source annotations included with each section
 
 ## Installation
 
@@ -53,10 +58,22 @@ Place the extracted XML files in a directory of your choice.
 ### Convert to Markdown
 
 ```bash
-# Convert a single title
+# Convert a single title (section-level output)
 node packages/cli/dist/index.js convert path/to/usc01.xml -o ./output
 
-# With verbose output
+# Chapter-level output (sections inlined into chapter files)
+node packages/cli/dist/index.js convert path/to/usc01.xml -o ./output -g chapter
+
+# With cross-reference links resolved to OLRC URLs
+node packages/cli/dist/index.js convert path/to/usc05.xml -o ./output --link-style canonical
+
+# Include only amendment notes
+node packages/cli/dist/index.js convert path/to/usc01.xml -o ./output --include-amendments
+
+# Exclude all notes
+node packages/cli/dist/index.js convert path/to/usc01.xml -o ./output --no-include-notes
+
+# Verbose output showing all written files
 node packages/cli/dist/index.js convert path/to/usc01.xml -o ./output -v
 ```
 
@@ -70,31 +87,54 @@ Arguments:
 
 Options:
   -o, --output <dir>             Output directory (default: "./output")
+  -g, --granularity <level>      Output granularity: "section" or "chapter"
+                                 (default: "section")
   --link-style <style>           Cross-reference style: "plaintext", "canonical",
                                  or "relative" (default: "plaintext")
   --no-include-source-credits    Exclude source credit annotations
+  --no-include-notes             Exclude all notes
+  --include-editorial-notes      Include editorial notes only
+  --include-statutory-notes      Include statutory notes only
+  --include-amendments           Include amendment history notes only
   -v, --verbose                  Enable verbose logging
   -h, --help                     Display help
 ```
 
+When multiple `--include-*-notes` flags are specified, they combine additively. Specifying any selective flag automatically switches from the default "include all notes" behavior to "include only selected categories."
+
 ## Output Format
 
-### Directory Structure
+### Section-Level Directory Structure (default)
 
 ```
 output/
   usc/
     title-01/
+      _meta.json
       chapter-01/
+        _meta.json
         section-1.md
         section-2.md
         ...
       chapter-02/
+        _meta.json
         section-101.md
         ...
 ```
 
-Title directories are zero-padded to two digits (`title-01` through `title-54`). Chapter directories follow the same convention. Section files use the section number as-is, which may be alphanumeric (e.g., `section-106a.md`, `section-7801.md`).
+### Chapter-Level Directory Structure (`--granularity chapter`)
+
+```
+output/
+  usc/
+    title-01/
+      _meta.json
+      chapter-01.md
+      chapter-02.md
+      chapter-03.md
+```
+
+Title directories are zero-padded to two digits (`title-01` through `title-54`). Chapter directories and files follow the same convention. Section files use the section number as-is, which may be alphanumeric (e.g., `section-106a.md`, `section-7801.md`).
 
 ### Markdown Structure
 
@@ -114,8 +154,8 @@ positive_law: true
 currency: "119-73"
 last_updated: "2025-12-03"
 format_version: "1.0.0"
-generator: "law2md@0.1.0"
-source_credit: "(Added Pub. L. 104–199, § 3(a), Sept. 21, 1996, ...)"
+generator: "law2md@0.2.0"
+source_credit: "(Added Pub. L. 104-199, § 3(a), Sept. 21, 1996, ...)"
 ---
 ```
 
@@ -130,35 +170,67 @@ Columbia, the Commonwealth of Puerto Rico, or any other territory...
 
 ---
 
-**Source Credit**: (Added Pub. L. 104–199, § 3(a), Sept. 21, 1996, ...)
+**Source Credit**: (Added Pub. L. 104-199, § 3(a), Sept. 21, 1996, ...)
 
 ## Editorial Notes
 
 ### Amendments
 
-2022— amended section generally. Prior to amendment, text read as follows: ...
+2022-- amended section generally. Prior to amendment, text read as follows: ...
 ```
 
 Subsections and below use bold inline numbering (`**(a)**`, `**(1)**`, `**(A)**`, `**(i)**`) rather than Markdown headings. This preserves a flat document structure that works well with embedding models and chunking strategies. The numbering scheme follows standard legal citation convention.
+
+### Metadata Indexes
+
+Each title and chapter directory includes a `_meta.json` file with structured metadata for programmatic access:
+
+```json
+{
+  "format_version": "1.0.0",
+  "identifier": "/us/usc/t5",
+  "title_number": 5,
+  "title_name": "Government Organization and Employees",
+  "stats": {
+    "chapter_count": 63,
+    "section_count": 1162,
+    "total_tokens_estimate": 2207855
+  },
+  "chapters": [
+    {
+      "identifier": "/us/usc/t5/ptI/ch1",
+      "number": 1,
+      "name": "Organization",
+      "directory": "chapter-01",
+      "sections": [
+        {
+          "identifier": "/us/usc/t5/s101",
+          "number": "101",
+          "name": "Executive departments",
+          "file": "section-101.md",
+          "token_estimate": 4200,
+          "has_notes": true,
+          "status": "current"
+        }
+      ]
+    }
+  ]
+}
+```
 
 For the complete output format specification, see [docs/OUTPUT_FORMAT.md](docs/OUTPUT_FORMAT.md).
 
 ## Project Status
 
-### Phase 1: Foundation -- Complete
+### Phase 1: Foundation -- Complete (v0.1.0)
 
-The core conversion pipeline is functional. `law2md` can convert any U.S. Code title XML file to section-level Markdown with frontmatter, source credits, editorial notes, and statutory notes.
+Core conversion pipeline: SAX streaming parser, AST builder with section-emit pattern, Markdown renderer, YAML frontmatter generator, USC converter, and CLI `convert` command.
 
-Verified against Title 1 (General Provisions): 39 sections across 3 chapters converted in under 1 second.
+### Phase 2: Content Fidelity -- Complete (v0.2.0)
 
-### Phase 2: Content Fidelity -- Planned
+Content quality improvements: whitespace normalization, cross-reference link resolver (relative/canonical/plaintext), XHTML and USLM layout table conversion, notes filtering with CLI flags, `_meta.json` sidecar index generation, and chapter-level granularity mode.
 
-- Cross-reference link resolution (relative links within the output corpus, OLRC fallback URLs)
-- XHTML table and USLM layout table conversion
-- Table of contents generation
-- Notes filtering (selective inclusion of editorial, statutory, amendment notes)
-- Chapter-level granularity mode
-- `_meta.json` sidecar index generation
+Verified against Title 1 (39 sections) and Title 5 (1162 sections across 63 chapters, converted in under 1 second).
 
 ### Phase 3: Scale and Download -- Planned
 
@@ -166,7 +238,8 @@ Verified against Title 1 (General Provisions): 39 sections across 3 chapters con
 - Memory profiling and optimization for large titles (Title 26, Title 42)
 - Concurrent file writes
 - Dry-run mode
-- Appendix title handling
+- Appendix title handling (Titles 5, 11, 18, 28)
+- Edge case handling for duplicate section numbers
 
 ### Phase 4: Polish and Publish -- Planned
 
@@ -174,6 +247,7 @@ Verified against Title 1 (General Provisions): 39 sections across 3 chapters con
 - GitHub Actions CI/CD
 - Snapshot test suite for output stability
 - Token estimation via `tiktoken` in metadata indexes
+- Title and chapter README.md generation
 
 ## Repository Structure
 
@@ -197,7 +271,7 @@ The project is structured as a monorepo managed with [pnpm](https://pnpm.io/) wo
 ```bash
 pnpm install               # Install dependencies
 pnpm turbo build            # Build all packages
-pnpm turbo test             # Run all tests
+pnpm turbo test             # Run all tests (103 tests)
 pnpm turbo lint             # Lint all packages
 pnpm turbo typecheck        # Type-check all packages
 ```

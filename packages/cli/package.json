@@ -1,0 +1,45 @@
+{
+  "name": "law2md",
+  "version": "0.1.0",
+  "description": "Convert U.S. legislative XML (USLM) to structured Markdown for AI/RAG ingestion",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "law2md": "./dist/index.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix"
+  },
+  "dependencies": {
+    "@law2md/core": "workspace:*",
+    "@law2md/usc": "workspace:*",
+    "commander": "^13.1.0",
+    "pino": "^9.6.0",
+    "pino-pretty": "^13.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.2",
+    "tsup": "^8",
+    "typescript": "^5.8",
+    "vitest": "^3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

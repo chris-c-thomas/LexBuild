@@ -178,14 +178,16 @@ storage/
 # Miscellaneous
 # -----------------------------------------------------------------------------
 
-# Yarn (not used, but prevent accidental adoption)
+# Yarn (not used)
 .yarn/
 .yarnrc.yml
 yarn.lock
 .pnp.*
 
-# pnpm (not used, but same rationale)
-pnpm-lock.yaml
+# npm (not used — this project uses pnpm)
+package-lock.json
+
+# pnpm
 .pnpm-store/
 
 # Bun (not used)

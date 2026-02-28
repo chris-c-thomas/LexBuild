@@ -1,0 +1,40 @@
+{
+  "name": "@law2md/usc",
+  "version": "0.1.0",
+  "description": "U.S. Code-specific element handlers and downloader for law2md",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix"
+  },
+  "dependencies": {
+    "@law2md/core": "workspace:*",
+    "yauzl": "^3.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.2",
+    "@types/yauzl": "^2.10.3",
+    "tsup": "^8",
+    "typescript": "^5.8",
+    "vitest": "^3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

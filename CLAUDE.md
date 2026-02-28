@@ -36,43 +36,44 @@ law2md/
 - **Build**: `tsup`
 - **Linting**: ESLint + `@typescript-eslint`
 - **Formatting**: Prettier
-- **Monorepo**: Turborepo + npm workspaces
+- **Monorepo**: Turborepo + pnpm workspaces
 
 ## Build & Dev Commands
 
 ```bash
 # Install dependencies (from repo root)
-npm install
+pnpm install
 
 # Build all packages
-npx turbo build
+pnpm turbo build
 
 # Build a specific package
-npx turbo build --filter=@law2md/core
+pnpm turbo build --filter=@law2md/core
 
 # Run all tests
-npx turbo test
+pnpm turbo test
 
 # Run tests for a specific package
-npx turbo test --filter=@law2md/usc
+pnpm turbo test --filter=@law2md/usc
 
 # Type check
-npx turbo typecheck
+pnpm turbo typecheck
 
 # Lint
-npx turbo lint
+pnpm turbo lint
 
 # Dev mode (watch + rebuild)
-npx turbo dev
+pnpm turbo dev
 
 # Run the CLI locally during development
-node packages/cli/dist/index.js convert ./fixtures/usc01.xml -o ./test-output
+node packages/cli/dist/index.js convert ./fixtures/xml/usc01.xml -o ./test-output
 ```
 
 ## Code Conventions
 
 ### TypeScript
 
+- pnpm workspaces with `workspace:*` protocol for internal deps
 - ESM only (`"type": "module"` in all package.json files)
 - Strict mode: `strict: true`, `noUncheckedIndexedAccess: true`, `exactOptionalPropertyTypes: true`
 - Use `import type` for type-only imports

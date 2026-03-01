@@ -306,8 +306,9 @@ async function writeMetaFiles(
 ): Promise<void> {
   if (sectionMetas.length === 0) return;
 
-  const titleNum = docMeta.docNumber ?? "0";
-  const titleDir = join(options.output, "usc", `title-${padTwo(titleNum)}`);
+  const docNum = docMeta.docNumber ?? "0";
+  const titleDirName = buildTitleDirFromDocNumber(docNum);
+  const titleDir = join(options.output, "usc", titleDirName);
   const currency = parseCurrency(docMeta.docPublicationName ?? "");
 
   // Group sections by chapter
@@ -362,7 +363,7 @@ async function writeMetaFiles(
       identifier: chapterId,
       chapter_number: parseIntSafe(first.chapterNumber),
       chapter_name: first.chapterName,
-      title_number: parseIntSafe(titleNum),
+      title_number: parseIntSafe(docNum),
       section_count: sections.length,
       sections,
     };
@@ -387,8 +388,8 @@ async function writeMetaFiles(
     format_version: FORMAT_VERSION,
     generator: GENERATOR,
     generated_at: new Date().toISOString(),
-    identifier: docMeta.identifier ?? `/us/usc/t${titleNum}`,
-    title_number: parseIntSafe(titleNum),
+    identifier: docMeta.identifier ?? `/us/usc/t${docNum}`,
+    title_number: parseIntSafe(docNum),
     title_name: docMeta.dcTitle ?? "",
     positive_law: docMeta.positivelaw ?? false,
     currency,
@@ -510,19 +511,77 @@ function buildOutputPath(
   sectionNum: string,
   outputRoot: string,
 ): string {
-  const titleNum = findAncestor(context.ancestors, "title")?.numValue ?? "00";
-  const chapterNum = findAncestor(context.ancestors, "chapter")?.numValue;
-
-  const titleDir = `title-${padTwo(titleNum)}`;
+  const titleDir = buildTitleDir(context);
+  const chapterDir = buildChapterDir(context);
   const sectionFile = `section-${sectionNum}.md`;
 
-  if (chapterNum) {
-    const chapterDir = `chapter-${padTwo(chapterNum)}`;
+  if (chapterDir) {
     return join(outputRoot, "usc", titleDir, chapterDir, sectionFile);
   }
 
-  // No chapter — section directly under title (unusual but handle it)
   return join(outputRoot, "usc", titleDir, sectionFile);
+}
+
+/**
+ * Build the title directory name from context.
+ * Handles appendix titles: docNumber "5a" → "title-05-appendix"
+ */
+function buildTitleDir(context: EmitContext): string {
+  // Check for appendix via docNumber (e.g., "5a", "11a")
+  const docNum = context.documentMeta.docNumber ?? "";
+  const appendixMatch = /^(\d+)a$/i.exec(docNum);
+  if (appendixMatch?.[1]) {
+    return `title-${padTwo(appendixMatch[1])}-appendix`;
+  }
+
+  // Check for appendix ancestor
+  const appendixAncestor = findAncestor(context.ancestors, "appendix");
+  if (appendixAncestor) {
+    const num = appendixAncestor.numValue ?? docNum;
+    const numericPart = /^(\d+)/.exec(num);
+    if (numericPart?.[1]) {
+      return `title-${padTwo(numericPart[1])}-appendix`;
+    }
+  }
+
+  // Normal title
+  const titleNum = findAncestor(context.ancestors, "title")?.numValue ?? "00";
+  return `title-${padTwo(titleNum)}`;
+}
+
+/**
+ * Build the chapter directory name from context.
+ * Handles chapter equivalents: compiledAct, reorganizationPlan.
+ */
+function buildChapterDir(context: EmitContext): string | undefined {
+  // Standard chapter
+  const chapterNum = findAncestor(context.ancestors, "chapter")?.numValue;
+  if (chapterNum) return `chapter-${padTwo(chapterNum)}`;
+
+  // Compiled act as chapter equivalent
+  const compiledAct = findAncestor(context.ancestors, "compiledAct");
+  if (compiledAct) {
+    const heading = compiledAct.heading?.trim() ?? "";
+    // Use a slug of the heading as directory name
+    const slug = heading.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 50);
+    return slug || "compiled-act";
+  }
+
+  // Reorganization plan as chapter equivalent
+  const reorgPlan = findAncestor(context.ancestors, "reorganizationPlan");
+  if (reorgPlan) {
+    const heading = reorgPlan.heading?.trim() ?? "";
+    const slug = heading.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 50);
+    return slug || "reorganization-plan";
+  }
+
+  // Reorganization plans container
+  const reorgPlans = findAncestor(context.ancestors, "reorganizationPlans");
+  if (reorgPlans) {
+    return "reorganization-plans";
+  }
+
+  return undefined;
 }
 
 /**
@@ -530,12 +589,15 @@ function buildOutputPath(
  */
 function buildFrontmatter(node: LevelNode, context: EmitContext): FrontmatterData {
   const meta = context.documentMeta;
-  const titleAncestor = findAncestor(context.ancestors, "title");
-  const chapterAncestor = findAncestor(context.ancestors, "chapter");
+  const titleAncestor = findAncestor(context.ancestors, "title") ?? findAncestor(context.ancestors, "appendix");
+  const chapterAncestor = findAncestor(context.ancestors, "chapter")
+    ?? findAncestor(context.ancestors, "compiledAct")
+    ?? findAncestor(context.ancestors, "reorganizationPlan");
   const subchapterAncestor = findAncestor(context.ancestors, "subchapter");
   const partAncestor = findAncestor(context.ancestors, "part");
 
-  const titleNum = parseIntSafe(meta.docNumber ?? titleAncestor?.numValue ?? "0");
+  const docNum = meta.docNumber ?? titleAncestor?.numValue ?? "0";
+  const titleNum = parseIntSafe(docNum.replace(/a$/i, ""));
   const sectionNum = node.numValue ?? "0";
   const sectionName = node.heading?.trim() ?? "";
   const titleName = titleAncestor?.heading?.trim() ?? meta.dcTitle ?? "";
@@ -673,6 +735,18 @@ function findAncestor(ancestors: readonly AncestorInfo[], levelType: string): An
 /**
  * Zero-pad a number string to 2 digits.
  */
+/**
+ * Build title directory name from docNumber.
+ * "5" → "title-05", "5a" → "title-05-appendix"
+ */
+function buildTitleDirFromDocNumber(docNum: string): string {
+  const appendixMatch = /^(\d+)a$/i.exec(docNum);
+  if (appendixMatch?.[1]) {
+    return `title-${padTwo(appendixMatch[1])}-appendix`;
+  }
+  return `title-${padTwo(docNum)}`;
+}
+
 function padTwo(num: string): string {
   const n = parseInt(num, 10);
   if (isNaN(n)) return num;

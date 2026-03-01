@@ -2,15 +2,17 @@
 
 [![CI](https://github.com/chris-c-thomas/law2md/actions/workflows/ci.yml/badge.svg)](https://github.com/chris-c-thomas/law2md/actions/workflows/ci.yml)
 
-Convert U.S. Code XML into structured Markdown for AI and RAG systems.
+Convert the United States Code into structured Markdown for AI and RAG Systems.
 
 ---
 
 ## Overview
 
-`law2md` is a command-line tool that converts official U.S. Code XML files (published in the [USLM schema](https://uscode.house.gov/download/resources/USLM-User-Guide.pdf) by the Office of the Law Revision Counsel) into clean, structured Markdown optimized for AI ingestion, retrieval-augmented generation (RAG), and legal research workflows.
+`law2md` is a command-line tool that converts [XML files](https://uscode.house.gov/download/download.shtml) of the United States Code published by the [Office of the Law Revision Counsel](https://uscode.house.gov/) into clean, structured Markdown optimized for AI ingestion, retrieval-augmented generation (RAG), and legal research workflows.
 
-The U.S. Code comprises 54 titles of federal statutory law. The official XML is deeply nested, laden with presentation markup, and difficult to work with directly. `law2md` transforms this XML into per-section Markdown files with YAML frontmatter, predictable file paths, and content sized for typical embedding models.
+The U.S. Code comprises 54 titles of federal statutory law. The official XML is deeply nested, laden with presentation markup, and difficult to work with directly. The OLRC provides a user guide for the [United States Legislative Markup](https://uscode.house.gov/download/resources/USLM-User-Guide.pdf).
+
+`law2md` transforms this XML into per-section, or optional per-chapter, Markdown files with YAML frontmatter, predictable file paths, and content sized for typical embedding models.
 
 ### Features
 

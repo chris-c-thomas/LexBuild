@@ -1,8 +1,8 @@
 # law2md
 
-Convert the U.S. Code source XML content into structured Markdown for use with AI and RAG systems.
+[![CI](https://github.com/chris-c-thomas/law2md/actions/workflows/ci.yml/badge.svg)](https://github.com/chris-c-thomas/law2md/actions/workflows/ci.yml)
 
-> **Status: In Development** -- Phases 1 through 3 are complete. The tool downloads and converts all 54 titles of the U.S. Code XML to section-level or chapter-level Markdown with frontmatter, tables, filterable notes, cross-reference link resolution, and metadata indexes. See [Project Status](#project-status) for details.
+Convert the U.S. Code source XML into structured Markdown for use with AI and RAG systems.
 
 ## Overview
 
@@ -32,17 +32,18 @@ Legal texts are among the most frequently cited sources in AI systems, yet there
 
 ## Installation
 
-> **Note:** `law2md` has not yet been published to npm. For now, clone the repository and build from source.
-
-### Prerequisites
-
-- [Node.js](https://nodejs.org/) >= 20 LTS
-- [pnpm](https://pnpm.io/) >= 10
-
-### Build from Source
+### From npm
 
 ```bash
-git clone https://github.com/your-username/law2md.git
+npm install -g law2md
+```
+
+### From Source
+
+Requires [Node.js](https://nodejs.org/) >= 20 and [pnpm](https://pnpm.io/) >= 10.
+
+```bash
+git clone https://github.com/chris-c-thomas/law2md.git
 cd law2md
 pnpm install
 pnpm turbo build
@@ -56,13 +57,13 @@ Use the built-in download command to fetch title XML files directly from OLRC:
 
 ```bash
 # Download a single title
-node packages/cli/dist/index.js download --title 1 -o ./fixtures/xml
+law2md download --title 1 -o ./xml
 
 # Download all 54 titles
-node packages/cli/dist/index.js download --all -o ./fixtures/xml
+law2md download --all -o ./xml
 
 # Use a specific release point
-node packages/cli/dist/index.js download --title 26 -o ./fixtures/xml --release-point 119-73not60
+law2md download --title 26 -o ./xml --release-point 119-73not60
 ```
 
 Or download manually from the [OLRC download page](https://uscode.house.gov/download/download.shtml). Each title is distributed as a zip file containing a single XML file (e.g., `usc01.xml` for Title 1).
@@ -71,25 +72,25 @@ Or download manually from the [OLRC download page](https://uscode.house.gov/down
 
 ```bash
 # Convert a single title (section-level output)
-node packages/cli/dist/index.js convert path/to/usc01.xml -o ./output
+law2md convert ./xml/usc01.xml -o ./output
 
 # Chapter-level output (sections inlined into chapter files)
-node packages/cli/dist/index.js convert path/to/usc01.xml -o ./output -g chapter
+law2md convert ./xml/usc01.xml -o ./output -g chapter
 
 # With cross-reference links resolved to OLRC URLs
-node packages/cli/dist/index.js convert path/to/usc05.xml -o ./output --link-style canonical
+law2md convert ./xml/usc05.xml -o ./output --link-style canonical
 
 # Include only amendment notes
-node packages/cli/dist/index.js convert path/to/usc01.xml -o ./output --include-amendments
+law2md convert ./xml/usc01.xml -o ./output --include-amendments
 
 # Exclude all notes
-node packages/cli/dist/index.js convert path/to/usc01.xml -o ./output --no-include-notes
+law2md convert ./xml/usc01.xml -o ./output --no-include-notes
 
 # Verbose output showing all written files
-node packages/cli/dist/index.js convert path/to/usc01.xml -o ./output -v
+law2md convert ./xml/usc01.xml -o ./output -v
 
 # Dry-run: preview stats without writing files
-node packages/cli/dist/index.js convert path/to/usc42.xml -o ./output --dry-run
+law2md convert ./xml/usc42.xml -o ./output --dry-run
 ```
 
 ### CLI Options
@@ -135,6 +136,7 @@ When multiple `--include-*-notes` flags are specified, they combine additively. 
 output/
   usc/
     title-01/
+      README.md
       _meta.json
       chapter-01/
         _meta.json
@@ -179,7 +181,7 @@ positive_law: true
 currency: "119-73"
 last_updated: "2025-12-03"
 format_version: "1.0.0"
-generator: "law2md@0.3.0"
+generator: "law2md@0.4.0"
 source_credit: "(Added Pub. L. 104-199, § 3(a), Sept. 21, 1996, ...)"
 ---
 ```
@@ -261,13 +263,9 @@ Built-in OLRC downloader with zip extraction (`law2md download`), dry-run mode f
 
 E2E verified: all 54 titles (58 files including appendices), 60,261 sections, 25 seconds total.
 
-### Phase 4: Polish and Publish -- Planned
+### Phase 4: Polish and Publish -- Complete
 
-- npm package publication
-- GitHub Actions CI/CD
-- Snapshot test suite for output stability
-- Token estimation via `tiktoken` in metadata indexes
-- Title and chapter README.md generation
+Snapshot test suite for output stability (15 pinned fixtures), title-level README.md generation in output directories, CONTRIBUTING.md, GitHub Actions CI (Node 20/22 matrix), changesets-based npm publish workflow.
 
 ## Repository Structure
 
@@ -291,12 +289,12 @@ The project is structured as a monorepo managed with [pnpm](https://pnpm.io/) wo
 ```bash
 pnpm install               # Install dependencies
 pnpm turbo build            # Build all packages
-pnpm turbo test             # Run all tests (121 tests)
+pnpm turbo test             # Run all tests (137 tests)
 pnpm turbo lint             # Lint all packages
 pnpm turbo typecheck        # Type-check all packages
 ```
 
-See [CLAUDE.md](CLAUDE.md) for detailed code conventions, schema reference, and design decisions.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full contributor guide, and [CLAUDE.md](CLAUDE.md) for detailed code conventions, schema reference, and design decisions.
 
 ## Data Sources
 

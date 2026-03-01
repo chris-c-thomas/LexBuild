@@ -95,22 +95,29 @@ export const convertCommand = new Command("convert")
       });
 
       const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
+      const memMB = (result.peakMemoryBytes / 1024 / 1024).toFixed(1);
 
       if (result.dryRun) {
         console.log(`[dry-run] ${result.titleName} (Title ${result.titleNumber})`);
-        console.log(`  Chapters: ${result.chapterCount}`);
-        console.log(`  Sections: ${result.sectionsWritten}`);
+        console.log(`  Chapters:         ${result.chapterCount}`);
+        console.log(`  Sections:         ${result.sectionsWritten}`);
         console.log(`  Estimated tokens: ${result.totalTokenEstimate.toLocaleString()}`);
-        console.log(`  Parsed in ${elapsed}s`);
+        console.log(`  Parse time:       ${elapsed}s`);
+        console.log(`  Peak memory:      ${memMB} MB`);
       } else {
         console.log(
-          `Converted ${result.titleName} (Title ${result.titleNumber}): ${result.sectionsWritten} sections in ${elapsed}s`,
+          `Converted ${result.titleName} (Title ${result.titleNumber}): ` +
+            `${result.sectionsWritten} sections, ${result.chapterCount} chapters in ${elapsed}s`,
         );
 
-        if (options.verbose && result.files.length > 0) {
-          console.log(`\nFiles written:`);
-          for (const file of result.files) {
-            console.log(`  ${file}`);
+        if (options.verbose) {
+          console.log(`  Estimated tokens: ${result.totalTokenEstimate.toLocaleString()}`);
+          console.log(`  Peak memory:      ${memMB} MB`);
+          if (result.files.length > 0) {
+            console.log(`\nFiles written:`);
+            for (const file of result.files) {
+              console.log(`  ${file}`);
+            }
           }
         }
       }

@@ -69,6 +69,8 @@ export interface ConvertResult {
   chapterCount: number;
   /** Estimated total tokens */
   totalTokenEstimate: number;
+  /** Peak resident set size in bytes during conversion */
+  peakMemoryBytes: number;
 }
 
 /** Default convert options */
@@ -112,6 +114,7 @@ interface CollectedSection {
 export async function convertTitle(options: ConvertOptions): Promise<ConvertResult> {
   const opts = { ...DEFAULTS, ...options };
   const files: string[] = [];
+  let peakMemory = process.memoryUsage.rss();
 
   // Collect emitted nodes during parsing (synchronous), write after parsing completes
   const collected: CollectedSection[] = [];
@@ -134,6 +137,7 @@ export async function convertTitle(options: ConvertOptions): Promise<ConvertResu
   // Parse the XML file
   const stream = createReadStream(opts.input, "utf-8");
   await parser.parseStream(stream);
+  peakMemory = Math.max(peakMemory, process.memoryUsage.rss());
 
   const sectionMetas: SectionMeta[] = [];
   const meta = builder.getDocumentMeta();
@@ -190,6 +194,9 @@ export async function convertTitle(options: ConvertOptions): Promise<ConvertResu
     await writeMetaFiles(sectionMetas, meta, opts);
   }
 
+  // Final memory sample
+  peakMemory = Math.max(peakMemory, process.memoryUsage.rss());
+
   // Compute stats
   const chapterIds = new Set(sectionMetas.map((s) => s.chapterIdentifier));
   const totalTokens = sectionMetas.reduce((sum, s) => sum + Math.ceil(s.contentLength / 4), 0);
@@ -202,6 +209,7 @@ export async function convertTitle(options: ConvertOptions): Promise<ConvertResu
     dryRun: opts.dryRun,
     chapterCount: chapterIds.size,
     totalTokenEstimate: totalTokens,
+    peakMemoryBytes: peakMemory,
   };
 }
 

@@ -112,7 +112,7 @@ law2md convert ./xml/usc42.xml -o ./output --dry-run
 
 ### CLI Reference
 
-```
+```bash
 law2md convert <input> [options]
 
 Arguments:
@@ -150,7 +150,7 @@ When multiple `--include-*-notes` flags are specified, they combine additively.
 
 ### Directory Structure
 
-```
+```text
 output/
   usc/
     title-01/
@@ -251,7 +251,7 @@ For the complete output format specification, see [docs/output-format.md](docs/o
 
 ## Project Structure
 
-```
+```text
 law2md/
   packages/
     core/          @law2md/core -- XML parsing, AST, Markdown rendering

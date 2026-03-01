@@ -17,6 +17,7 @@ const DEFAULTS: Omit<ConvertOptions, "input" | "output"> = {
   includeEditorialNotes: false,
   includeStatutoryNotes: false,
   includeAmendments: false,
+  dryRun: false,
 };
 
 describe("convertTitle", () => {
@@ -212,5 +213,25 @@ describe("convertTitle", () => {
     const content = await readFile(filePath, "utf-8");
     expect(content).toContain("# Chapter 1");
     expect(content).toContain("## § 2.");
+  });
+
+  it("reports structure without writing files in dry-run mode", async () => {
+    const result = await convertTitle({
+      ...DEFAULTS,
+      input: resolve(FIXTURES_DIR, "simple-section.xml"),
+      output: outputDir,
+      dryRun: true,
+    });
+
+    expect(result.dryRun).toBe(true);
+    expect(result.sectionsWritten).toBe(1);
+    expect(result.chapterCount).toBe(1);
+    expect(result.totalTokenEstimate).toBeGreaterThan(0);
+    // No files should be written
+    expect(result.files).toHaveLength(0);
+
+    // Verify output directory is empty
+    const { readdir } = await import("node:fs/promises");
+    await expect(readdir(join(outputDir, "usc"))).rejects.toThrow();
   });
 });

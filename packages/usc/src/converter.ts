@@ -49,18 +49,26 @@ export interface ConvertOptions {
   includeStatutoryNotes: boolean;
   /** Include amendment history notes only (when includeNotes is false) */
   includeAmendments: boolean;
+  /** Dry-run mode: parse and report structure without writing files */
+  dryRun: boolean;
 }
 
 /** Result of a conversion */
 export interface ConvertResult {
-  /** Number of sections written */
+  /** Number of sections written (or that would be written in dry-run) */
   sectionsWritten: number;
-  /** Output paths of all written files */
+  /** Output paths of all written files (empty in dry-run) */
   files: string[];
   /** Title number extracted from metadata */
   titleNumber: string;
   /** Title name extracted from metadata */
   titleName: string;
+  /** Whether this was a dry run */
+  dryRun: boolean;
+  /** Chapter count */
+  chapterCount: number;
+  /** Estimated total tokens */
+  totalTokenEstimate: number;
 }
 
 /** Default convert options */
@@ -72,6 +80,7 @@ const DEFAULTS: Omit<ConvertOptions, "input" | "output"> = {
   includeEditorialNotes: false,
   includeStatutoryNotes: false,
   includeAmendments: false,
+  dryRun: false,
 };
 
 /** Metadata collected for a written section (used to build _meta.json) */
@@ -127,22 +136,37 @@ export async function convertTitle(options: ConvertOptions): Promise<ConvertResu
   await parser.parseStream(stream);
 
   const sectionMetas: SectionMeta[] = [];
+  const meta = builder.getDocumentMeta();
 
-  if (opts.granularity === "chapter") {
+  if (opts.dryRun) {
+    // Dry-run: collect metadata without writing files
+    for (const { node, context } of collected) {
+      if (opts.granularity === "chapter") {
+        // Extract section metadata from chapter children
+        for (const child of node.children) {
+          if (child.type === "level" && child.levelType === "section") {
+            sectionMetas.push(buildSectionMetaDryRun(child, node, context));
+          }
+        }
+      } else {
+        if (node.numValue) {
+          sectionMetas.push(buildSectionMetaDryRun(node, null, context));
+        }
+      }
+    }
+  } else if (opts.granularity === "chapter") {
     // Chapter-level: each emitted node is a chapter containing sections
     for (const { node, context } of collected) {
       const result = await writeChapter(node, context, opts);
       if (result) {
         files.push(result.filePath);
-        // Collect section-level metadata from chapter children
-        for (const meta of result.sectionMetas) {
-          sectionMetas.push(meta);
+        for (const m of result.sectionMetas) {
+          sectionMetas.push(m);
         }
       }
     }
   } else {
     // Section-level: each emitted node is a single section
-    // Create link resolver and pre-register all section paths
     const linkResolver = createLinkResolver();
     for (const { node, context } of collected) {
       const sectionNum = node.numValue;
@@ -152,7 +176,6 @@ export async function convertTitle(options: ConvertOptions): Promise<ConvertResu
       }
     }
 
-    // Write all collected sections to disk and collect metadata
     for (const { node, context } of collected) {
       const result = await writeSection(node, context, opts, linkResolver);
       if (result) {
@@ -162,16 +185,23 @@ export async function convertTitle(options: ConvertOptions): Promise<ConvertResu
     }
   }
 
-  const meta = builder.getDocumentMeta();
+  // Generate _meta.json files (skip in dry-run)
+  if (!opts.dryRun) {
+    await writeMetaFiles(sectionMetas, meta, opts);
+  }
 
-  // Generate _meta.json files
-  await writeMetaFiles(sectionMetas, meta, opts);
+  // Compute stats
+  const chapterIds = new Set(sectionMetas.map((s) => s.chapterIdentifier));
+  const totalTokens = sectionMetas.reduce((sum, s) => sum + Math.ceil(s.contentLength / 4), 0);
 
   return {
-    sectionsWritten: files.length,
+    sectionsWritten: opts.dryRun ? sectionMetas.length : files.length,
     files,
     titleNumber: meta.docNumber ?? "unknown",
     titleName: meta.dcTitle ?? "Unknown Title",
+    dryRun: opts.dryRun,
+    chapterCount: chapterIds.size,
+    totalTokenEstimate: totalTokens,
   };
 }
 
@@ -565,6 +595,52 @@ function buildFrontmatter(node: LevelNode, context: EmitContext): FrontmatterDat
  * Build a NotesFilter from convert options.
  * Returns undefined if all notes should be included (default).
  */
+/**
+ * Build SectionMeta from AST node without rendering (for dry-run mode).
+ */
+function buildSectionMetaDryRun(
+  sectionNode: LevelNode,
+  chapterNode: LevelNode | null,
+  context: EmitContext,
+): SectionMeta {
+  const titleNum = findAncestor(context.ancestors, "title")?.numValue ?? "0";
+  const chapterAncestor = chapterNode
+    ? { numValue: chapterNode.numValue, heading: chapterNode.heading, identifier: chapterNode.identifier }
+    : findAncestor(context.ancestors, "chapter");
+  const sectionNum = sectionNode.numValue ?? "0";
+  const chapterNum = chapterAncestor?.numValue ?? "0";
+  const chapterDir = chapterNum !== "0" ? `chapter-${padTwo(chapterNum)}` : "";
+
+  const hasNotes = sectionNode.children.some(
+    (c) => c.type === "notesContainer" || c.type === "note",
+  );
+
+  // Rough content length estimate from AST text nodes
+  let contentLength = 0;
+  const walk = (node: { children?: readonly { text?: string | undefined; children?: readonly unknown[] }[] | undefined; text?: string | undefined }): void => {
+    if (node.text) contentLength += node.text.length;
+    if (node.children) {
+      for (const child of node.children) {
+        walk(child as typeof node);
+      }
+    }
+  };
+  walk(sectionNode as unknown as Parameters<typeof walk>[0]);
+
+  return {
+    identifier: sectionNode.identifier ?? `/us/usc/t${titleNum}/s${sectionNum}`,
+    number: sectionNum,
+    name: sectionNode.heading?.trim() ?? "",
+    relativeFile: chapterDir ? `${chapterDir}/section-${sectionNum}.md` : `section-${sectionNum}.md`,
+    contentLength,
+    hasNotes,
+    status: sectionNode.status ?? "current",
+    chapterIdentifier: chapterAncestor?.identifier ?? "",
+    chapterNumber: chapterNum,
+    chapterName: chapterAncestor?.heading?.trim() ?? "",
+  };
+}
+
 function buildNotesFilter(options: ConvertOptions): NotesFilter | undefined {
   // Default: include all notes
   if (options.includeNotes) return undefined;

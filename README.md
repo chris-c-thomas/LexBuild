@@ -181,7 +181,7 @@ positive_law: true
 currency: "119-73"
 last_updated: "2025-12-03"
 format_version: "1.0.0"
-generator: "law2md@0.3.0"
+generator: "law2md@0.4.0"
 source_credit: "(Added Pub. L. 104-199, § 3(a), Sept. 21, 1996, ...)"
 ---
 ```

@@ -1,5 +1,11 @@
 # @law2md/core
 
+## 0.4.0
+
+### Minor Changes
+
+- Phase 4: Polish and Publish — snapshot tests, title-level README generation, CI/CD, documentation polish
+
 ## 0.3.0
 
 ### Minor Changes

@@ -1,5 +1,17 @@
 # law2md
 
+## 0.4.0
+
+### Minor Changes
+
+- Phase 4: Polish and Publish — snapshot tests, title-level README generation, CI/CD, documentation polish
+
+### Patch Changes
+
+- Updated dependencies
+  - @law2md/core@0.4.0
+  - @law2md/usc@0.4.0
+
 ## 0.3.0
 
 ### Minor Changes

@@ -58,13 +58,13 @@ pnpm turbo build
 
 ```bash
 # Download Title 1 (smallest title, good for testing)
-law2md download --title 1 -o ./xml
+law2md download --title 1
 
 # Convert to Markdown
-law2md convert ./xml/usc01.xml -o ./output
+law2md convert ./downloads/usc/xml/usc01.xml -o ./output
 
 # Or do both in one shot
-law2md download --title 1 -o ./xml && law2md convert ./xml/usc01.xml -o ./output
+law2md download --title 1 && law2md convert ./downloads/usc/xml/usc01.xml -o ./output
 ```
 
 ---
@@ -77,13 +77,13 @@ Fetch U.S. Code XML files directly from the Office of the Law Revision Counsel:
 
 ```bash
 # Download a single title
-law2md download --title 1 -o ./xml
+law2md download --title 1
 
 # Download all 54 titles
-law2md download --all -o ./xml
+law2md download --all
 
 # Use a specific release point
-law2md download --title 26 -o ./xml --release-point 119-73not60
+law2md download --title 26 --release-point 119-73not60
 ```
 
 Or download manually from the [OLRC download page](https://uscode.house.gov/download/download.shtml).
@@ -92,22 +92,22 @@ Or download manually from the [OLRC download page](https://uscode.house.gov/down
 
 ```bash
 # Section-level output (default)
-law2md convert ./xml/usc01.xml -o ./output
+law2md convert ./downloads/usc/xml/usc01.xml -o ./output
 
 # Chapter-level output
-law2md convert ./xml/usc01.xml -o ./output -g chapter
+law2md convert ./downloads/usc/xml/usc01.xml -o ./output -g chapter
 
 # Cross-reference links resolved to OLRC URLs
-law2md convert ./xml/usc05.xml -o ./output --link-style canonical
+law2md convert ./downloads/usc/xml/usc05.xml -o ./output --link-style canonical
 
 # Include only amendment notes
-law2md convert ./xml/usc01.xml -o ./output --include-amendments
+law2md convert ./downloads/usc/xml/usc01.xml -o ./output --include-amendments
 
 # Exclude all notes
-law2md convert ./xml/usc01.xml -o ./output --no-include-notes
+law2md convert ./downloads/usc/xml/usc01.xml -o ./output --no-include-notes
 
 # Dry-run: preview stats without writing files
-law2md convert ./xml/usc42.xml -o ./output --dry-run
+law2md convert ./downloads/usc/xml/usc42.xml -o ./output --dry-run
 ```
 
 ### CLI Reference
@@ -139,7 +139,7 @@ law2md download [options]
 Options:
   --title <number>               Download a single title (1-54)
   --all                          Download all 54 titles
-  -o, --output <dir>             Output directory (default: "./xml")
+  -o, --output <dir>             Output directory (default: "./downloads/usc/xml")
   --release-point <point>        OLRC release point (default: current)
   -h, --help                     Display help
 ```

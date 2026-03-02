@@ -16,7 +16,7 @@ interface DownloadCommandOptions {
 
 export const downloadCommand = new Command("download")
   .description("Download U.S. Code XML from OLRC")
-  .option("-o, --output <dir>", "Download directory", "./xml")
+  .option("-o, --output <dir>", "Download directory", "./downloads/usc/xml")
   .option("--title <n>", "Download a single title (1-54)")
   .option("--all", "Download all 54 titles", false)
   .option(

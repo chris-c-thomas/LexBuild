@@ -137,11 +137,11 @@ tags
 # law2md operational outputs
 # -----------------------------------------------------------------------------
 
-# Downloaded USC XML files (large, regenerable from OLRC)
-xml/
-
-# Legacy location for downloaded XML (kept for backwards compatibility)
+# Downloaded source files (large, regenerable — e.g. downloads/usc/xml/)
 downloads/
+
+# Legacy locations for downloaded XML (kept for backwards compatibility)
+xml/
 fixtures/xml/
 
 # Converted Markdown output (regenerable from source XML)

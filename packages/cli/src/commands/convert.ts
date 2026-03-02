@@ -4,7 +4,7 @@
 
 import { Command } from "commander";
 import { existsSync } from "node:fs";
-import { join, relative, resolve } from "node:path";
+import { basename, dirname, join, relative, resolve } from "node:path";
 import { convertTitle } from "@law2md/usc";
 import {
   createSpinner,
@@ -57,6 +57,23 @@ function buildConvertOptions(inputPath: string, outputPath: string, options: Con
 function titleXmlPath(inputDir: string, titleNum: number): string {
   const padded = String(titleNum).padStart(2, "0");
   return join(inputDir, `usc${padded}.xml`);
+}
+
+/** Try to resolve a USC XML path, falling back to zero-padded filename. */
+export function resolveUscXmlPath(inputPath: string): string | undefined {
+  if (existsSync(inputPath)) return inputPath;
+
+  // Check if filename matches usc{N}.xml pattern and try zero-padded
+  const dir = dirname(inputPath);
+  const base = basename(inputPath);
+  const match = /^usc(\d+)\.xml$/.exec(base);
+  if (match) {
+    const padded = match[1].padStart(2, "0");
+    const paddedPath = join(dir, `usc${padded}.xml`);
+    if (existsSync(paddedPath)) return paddedPath;
+  }
+
+  return undefined;
 }
 
 /** Convert a single XML file and print its summary. */
@@ -168,9 +185,10 @@ export const convertCommand = new Command("convert")
 
     // Single-file mode
     if (input) {
-      const inputPath = resolve(input);
-      if (!existsSync(inputPath)) {
-        console.error(error(`Input file not found: ${inputPath}`));
+      const rawPath = resolve(input);
+      const inputPath = resolveUscXmlPath(rawPath);
+      if (!inputPath) {
+        console.error(error(`Input file not found: ${rawPath}`));
         process.exit(1);
       }
       await convertSingleFile(inputPath, outputPath, options, `Converting${dryRunLabel}...`);

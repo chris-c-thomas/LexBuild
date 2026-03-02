@@ -30,6 +30,8 @@ describe("law2md CLI", () => {
     });
     expect(output).toContain("Convert USC XML");
     expect(output).toContain("--output");
+    expect(output).toContain("--titles");
+    expect(output).toContain("--input-dir");
     expect(output).toContain("--link-style");
   });
 
@@ -38,7 +40,7 @@ describe("law2md CLI", () => {
       encoding: "utf-8",
     });
     expect(output).toContain("Download U.S. Code XML");
-    expect(output).toContain("--title");
+    expect(output).toContain("--titles");
     expect(output).toContain("--all");
     expect(output).toContain("--release-point");
   });

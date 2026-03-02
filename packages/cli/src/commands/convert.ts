@@ -4,12 +4,24 @@
 
 import { Command } from "commander";
 import { existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { join, relative, resolve } from "node:path";
 import { convertTitle } from "@law2md/usc";
+import {
+  createSpinner,
+  summaryBlock,
+  formatDuration,
+  formatBytes,
+  formatNumber,
+  success,
+  error,
+} from "../ui.js";
+import { parseTitles } from "../parse-titles.js";
 
 /** Parsed options from the convert command */
 interface ConvertCommandOptions {
   output: string;
+  titles?: string | undefined;
+  inputDir: string;
   granularity: "section" | "chapter";
   linkStyle: "relative" | "canonical" | "plaintext";
   includeSourceCredits: boolean;
@@ -21,10 +33,103 @@ interface ConvertCommandOptions {
   verbose: boolean;
 }
 
+/** Build the shared convert options from CLI flags. */
+function buildConvertOptions(inputPath: string, outputPath: string, options: ConvertCommandOptions) {
+  const hasSelectiveFlags =
+    options.includeEditorialNotes || options.includeStatutoryNotes || options.includeAmendments;
+  const includeNotes = hasSelectiveFlags ? false : options.includeNotes;
+
+  return {
+    input: inputPath,
+    output: outputPath,
+    granularity: options.granularity,
+    linkStyle: options.linkStyle,
+    includeSourceCredits: options.includeSourceCredits,
+    includeNotes,
+    includeEditorialNotes: options.includeEditorialNotes,
+    includeStatutoryNotes: options.includeStatutoryNotes,
+    includeAmendments: options.includeAmendments,
+    dryRun: options.dryRun,
+  };
+}
+
+/** Resolve the XML file path for a given title number. */
+function titleXmlPath(inputDir: string, titleNum: number): string {
+  const padded = String(titleNum).padStart(2, "0");
+  return join(inputDir, `usc${padded}.xml`);
+}
+
+/** Convert a single XML file and print its summary. */
+async function convertSingleFile(
+  inputPath: string,
+  outputPath: string,
+  options: ConvertCommandOptions,
+  spinnerLabel: string,
+) {
+  const spinner = createSpinner(spinnerLabel);
+  spinner.start();
+
+  const startTime = performance.now();
+
+  try {
+    const result = await convertTitle(buildConvertOptions(inputPath, outputPath, options));
+    const elapsed = performance.now() - startTime;
+
+    spinner.stop();
+
+    const rows: Array<[string, string]> = [
+      ["Sections", formatNumber(result.sectionsWritten)],
+      ["Chapters", formatNumber(result.chapterCount)],
+      ["Est. Tokens", formatNumber(result.totalTokenEstimate)],
+    ];
+
+    if (!result.dryRun) {
+      rows.push(["Files Written", formatNumber(result.files.length)]);
+    }
+
+    rows.push(
+      ["Peak Memory", formatBytes(result.peakMemoryBytes)],
+      ["Duration", formatDuration(elapsed)],
+    );
+
+    const titleLabel = result.dryRun
+      ? `law2md — Title ${result.titleNumber}: ${result.titleName} [dry-run]`
+      : `law2md — Title ${result.titleNumber}: ${result.titleName}`;
+
+    const outputRelative = relative(process.cwd(), outputPath) || outputPath;
+
+    const output = summaryBlock({
+      title: titleLabel,
+      rows: [...rows, ["Output", outputRelative]],
+      footer: result.dryRun ? success("Dry run complete") : success("Conversion complete"),
+    });
+    process.stdout.write(output);
+
+    if (options.verbose && !result.dryRun && result.files.length > 0) {
+      console.log("  Files written:");
+      for (const file of result.files) {
+        console.log(`    ${relative(process.cwd(), file) || file}`);
+      }
+      console.log("");
+    }
+
+    return result;
+  } catch (err) {
+    spinner.fail(err instanceof Error ? err.message : String(err));
+    process.exit(1);
+  }
+}
+
 export const convertCommand = new Command("convert")
   .description("Convert USC XML file(s) to Markdown")
-  .argument("<input>", "Path to a USC XML file")
+  .argument("[input]", "Path to a USC XML file")
   .option("-o, --output <dir>", "Output directory", "./output")
+  .option("--titles <spec>", "Title(s) to convert (e.g. 1, 1-5, 1,3,8, 1-5,8,11)")
+  .option(
+    "-i, --input-dir <dir>",
+    "Directory containing USC XML files",
+    "./downloads/usc/xml",
+  )
   .option(
     "-g, --granularity <level>",
     'Output granularity: "section" (one file per section) or "chapter" (sections inline)',
@@ -44,85 +149,70 @@ export const convertCommand = new Command("convert")
   .option("--include-amendments", "Include amendment history notes only", false)
   .option("--dry-run", "Parse and report structure without writing files", false)
   .option("-v, --verbose", "Enable verbose logging", false)
-  .action(async (input: string, options: ConvertCommandOptions) => {
-    const inputPath = resolve(input);
+  .action(async (input: string | undefined, options: ConvertCommandOptions) => {
+    // Validate: must specify <input> or --titles
+    if (!input && !options.titles) {
+      console.error(
+        error("Specify an input file or --titles <spec> (e.g. --titles 1-5,8,11)"),
+      );
+      process.exit(1);
+    }
 
-    if (!existsSync(inputPath)) {
-      console.error(`Error: Input file not found: ${inputPath}`);
+    if (input && options.titles) {
+      console.error(error("Cannot specify both <input> file and --titles"));
       process.exit(1);
     }
 
     const outputPath = resolve(options.output);
+    const dryRunLabel = options.dryRun ? " [dry-run]" : "";
 
-    // If any specific include flag is set, disable includeNotes (switch to selective)
-    const hasSelectiveFlags =
-      options.includeEditorialNotes || options.includeStatutoryNotes || options.includeAmendments;
-    const includeNotes = hasSelectiveFlags ? false : options.includeNotes;
-
-    if (options.verbose) {
-      console.log(`Input:  ${inputPath}`);
-      console.log(`Output: ${outputPath}`);
-      console.log(`Link style: ${options.linkStyle}`);
-      console.log(`Source credits: ${options.includeSourceCredits}`);
-      if (!includeNotes && !hasSelectiveFlags) {
-        console.log(`Notes: excluded`);
-      } else if (hasSelectiveFlags) {
-        const flags: string[] = [];
-        if (options.includeEditorialNotes) flags.push("editorial");
-        if (options.includeStatutoryNotes) flags.push("statutory");
-        if (options.includeAmendments) flags.push("amendments");
-        console.log(`Notes: ${flags.join(", ")}`);
-      } else {
-        console.log(`Notes: all`);
+    // Single-file mode
+    if (input) {
+      const inputPath = resolve(input);
+      if (!existsSync(inputPath)) {
+        console.error(error(`Input file not found: ${inputPath}`));
+        process.exit(1);
       }
-      console.log("");
+      await convertSingleFile(inputPath, outputPath, options, `Converting${dryRunLabel}...`);
+      return;
     }
 
-    const startTime = performance.now();
-
+    // Multi-title mode — options.titles is guaranteed non-undefined by the check above
+    const titlesSpec = options.titles as string;
+    let titles: number[];
     try {
-      const result = await convertTitle({
-        input: inputPath,
-        output: outputPath,
-        granularity: options.granularity,
-        linkStyle: options.linkStyle,
-        includeSourceCredits: options.includeSourceCredits,
-        includeNotes,
-        includeEditorialNotes: options.includeEditorialNotes,
-        includeStatutoryNotes: options.includeStatutoryNotes,
-        includeAmendments: options.includeAmendments,
-        dryRun: options.dryRun,
-      });
-
-      const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
-      const memMB = (result.peakMemoryBytes / 1024 / 1024).toFixed(1);
-
-      if (result.dryRun) {
-        console.log(`[dry-run] ${result.titleName} (Title ${result.titleNumber})`);
-        console.log(`  Chapters:         ${result.chapterCount}`);
-        console.log(`  Sections:         ${result.sectionsWritten}`);
-        console.log(`  Estimated tokens: ${result.totalTokenEstimate.toLocaleString()}`);
-        console.log(`  Parse time:       ${elapsed}s`);
-        console.log(`  Peak memory:      ${memMB} MB`);
-      } else {
-        console.log(
-          `Converted ${result.titleName} (Title ${result.titleNumber}): ` +
-            `${result.sectionsWritten} sections, ${result.chapterCount} chapters in ${elapsed}s`,
-        );
-
-        if (options.verbose) {
-          console.log(`  Estimated tokens: ${result.totalTokenEstimate.toLocaleString()}`);
-          console.log(`  Peak memory:      ${memMB} MB`);
-          if (result.files.length > 0) {
-            console.log(`\nFiles written:`);
-            for (const file of result.files) {
-              console.log(`  ${file}`);
-            }
-          }
-        }
-      }
+      titles = parseTitles(titlesSpec);
     } catch (err) {
-      console.error(`Error converting ${inputPath}:`, err instanceof Error ? err.message : err);
+      console.error(error(err instanceof Error ? err.message : String(err)));
       process.exit(1);
     }
+
+    const inputDir = resolve(options.inputDir);
+    const totalTitles = titles.length;
+    const overallStart = performance.now();
+    let totalSections = 0;
+
+    for (const [i, titleNum] of titles.entries()) {
+      const xmlPath = titleXmlPath(inputDir, titleNum);
+
+      if (!existsSync(xmlPath)) {
+        console.error(error(`XML file not found: ${xmlPath}`));
+        process.exit(1);
+      }
+
+      const label = `Converting Title ${titleNum}${dryRunLabel} (${i + 1}/${totalTitles})...`;
+      const result = await convertSingleFile(xmlPath, outputPath, options, label);
+      if (result) {
+        totalSections += result.sectionsWritten;
+      }
+    }
+
+    // Aggregate footer
+    const overallElapsed = performance.now() - overallStart;
+    const titleWord = totalTitles === 1 ? "title" : "titles";
+    const sectionWord = totalSections === 1 ? "section" : "sections";
+    console.log(
+      `  ${success(`Converted ${totalTitles} ${titleWord} (${formatNumber(totalSections)} ${sectionWord}) in ${formatDuration(overallElapsed)}`)}`,
+    );
+    console.log("");
   });

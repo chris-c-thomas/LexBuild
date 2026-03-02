@@ -1,5 +1,26 @@
 # law2md
 
+## 0.5.0
+
+### Minor Changes
+
+- 3a29a8e: Add `--titles` multi-select option to download and convert commands. Supports ranges (`1-5`), comma-separated lists
+
+### Patch Changes
+
+- Updated dependencies [3a29a8e]
+  - @law2md/core@0.5.0
+  - @law2md/usc@0.5.0
+
+## 0.4.1
+
+### Patch Changes
+
+- Add chalk, ora, and cli-table3 for polished terminal output with spinners and formatted
+- Updated dependencies
+  - @law2md/core@0.4.1
+  - @law2md/usc@0.4.1
+
 ## 0.4.0
 
 ### Minor Changes

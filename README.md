@@ -58,13 +58,13 @@ pnpm turbo build
 
 ```bash
 # Download Title 1 (smallest title, good for testing)
-law2md download --title 1
+law2md download --titles 1
 
 # Convert to Markdown
 law2md convert ./downloads/usc/xml/usc01.xml -o ./output
 
-# Or do both in one shot
-law2md download --title 1 && law2md convert ./downloads/usc/xml/usc01.xml -o ./output
+# Download and convert multiple titles at once
+law2md download --titles 1-5 && law2md convert --titles 1-5
 ```
 
 ---
@@ -77,13 +77,19 @@ Fetch U.S. Code XML files directly from the Office of the Law Revision Counsel:
 
 ```bash
 # Download a single title
-law2md download --title 1
+law2md download --titles 1
+
+# Download multiple titles (range)
+law2md download --titles 1-5
+
+# Download specific titles (mixed)
+law2md download --titles 1-5,8,11
 
 # Download all 54 titles
 law2md download --all
 
 # Use a specific release point
-law2md download --title 26 --release-point 119-73not60
+law2md download --titles 26 --release-point 119-73not60
 ```
 
 Or download manually from the [OLRC download page](https://uscode.house.gov/download/download.shtml).
@@ -91,8 +97,17 @@ Or download manually from the [OLRC download page](https://uscode.house.gov/down
 ### Convert
 
 ```bash
-# Section-level output (default)
+# Convert a single XML file
 law2md convert ./downloads/usc/xml/usc01.xml -o ./output
+
+# Convert by title number (uses default input directory)
+law2md convert --titles 1
+
+# Convert multiple titles
+law2md convert --titles 1-5,8,11
+
+# Convert with a custom input directory
+law2md convert --titles 1-5 -i ./my-xml-files
 
 # Chapter-level output
 law2md convert ./downloads/usc/xml/usc01.xml -o ./output -g chapter
@@ -113,14 +128,18 @@ law2md convert ./downloads/usc/xml/usc42.xml -o ./output --dry-run
 ### CLI Reference
 
 ```bash
-law2md convert <input> [options]
+law2md convert [input] [options]
 ```
 
 ```text
 Arguments:
-  input                          Path to a USC XML file
+  input                          Path to a USC XML file (optional if --titles is used)
 
 Options:
+  --titles <spec>                Title(s) to convert: single (1), range (1-5),
+                                 or mixed (1-5,8,11)
+  -i, --input-dir <dir>         Input directory for XML files
+                                 (default: "./downloads/usc/xml")
   -o, --output <dir>             Output directory (default: "./output")
   -g, --granularity <level>      "section" or "chapter" (default: "section")
   --link-style <style>           "plaintext", "canonical", or "relative"
@@ -137,7 +156,8 @@ Options:
 law2md download [options]
 
 Options:
-  --title <number>               Download a single title (1-54)
+  --titles <spec>                Title(s) to download: single (1), range (1-5),
+                                 or mixed (1-5,8,11)
   --all                          Download all 54 titles
   -o, --output <dir>             Output directory (default: "./downloads/usc/xml")
   --release-point <point>        OLRC release point (default: current)
@@ -189,7 +209,7 @@ positive_law: true
 currency: "119-73"
 last_updated: "2025-12-03"
 format_version: "1.0.0"
-generator: "law2md@0.4.0"
+generator: "law2md@0.5.0"
 source_credit: "(Added Pub. L. 104-199, § 3(a), Sept. 21, 1996, ...)"
 ---
 ```

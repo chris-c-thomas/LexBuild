@@ -7,6 +7,22 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## [0.6.0]
+
+### Changed
+
+#### Compact Multi-Title Convert Output
+
+- **Compact summary table for `convert --titles`**: multi-title conversions now display a single data table (one row per title) with columns for Title, Name, Sections, Chapters, Tokens, and Duration — plus a bold totals row — instead of printing a full summary block per title. Matches the download command's compact table pattern. Single-file mode (`convert <input>`) retains the detailed per-title summary block. ([`cf19a5e`](../../commit/cf19a5e))
+- **Title names in output**: `ConvertResult.titleName` now uses the XML `<heading>` element (e.g., "GENERAL PROVISIONS", "LABOR") instead of `dc:title` (which only contains "Title N"). Affects both the convert summary table and single-file summary block. ([`cf19a5e`](../../commit/cf19a5e))
+
+### Fixed
+
+- **Table horizontal rules too narrow**: `cli-table3` border characters `top-mid`, `bottom-mid`, and `mid-mid` were `""` (0 chars) while the column separator `middle` was `"  "` (2 chars), causing horizontal rules to be `2*(N-1)` characters narrower than content rows. Fixed by setting mid-intersection chars to `"──"`. Affects both `summaryBlock()` and `dataTable()` in download and convert output. ([`cf19a5e`](../../commit/cf19a5e))
+- **Filename zero-padding resolution**: `resolveUscXmlPath()` now correctly handles `noUncheckedIndexedAccess` for the regex match group ([`5a45455`](../../commit/5a45455))
+
+---
+
 ## [0.5.0]
 
 ### Added

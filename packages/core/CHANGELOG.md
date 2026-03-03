@@ -1,5 +1,11 @@
 # @law2md/core
 
+## 0.6.0
+
+### Minor Changes
+
+- 529f4bf: CLI TUI formatting fixes
+
 ## 0.5.0
 
 ### Minor Changes

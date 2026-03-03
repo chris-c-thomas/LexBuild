@@ -7,19 +7,12 @@
 # -----------------------------------------------------------------------------
 node_modules/
 
-# npm
-package-lock.json is committed (not ignored), but lock debugging artifacts are not
-*.npm-debug.log
-npm-debug.log*
-
 # -----------------------------------------------------------------------------
 # Build outputs
 # -----------------------------------------------------------------------------
 dist/
 *.tsbuildinfo
 *.tsbuildinfo.*
-
-# tsup / esbuild
 *.metafile.json
 
 # -----------------------------------------------------------------------------
@@ -44,17 +37,21 @@ coverage/
 *.lcov
 
 # -----------------------------------------------------------------------------
+# Environment & secrets
+# -----------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+
+# -----------------------------------------------------------------------------
 # AI coding agents
 # -----------------------------------------------------------------------------
 
-# Transcripts of interactions with AI agents (potentially sensitive, large, and not useful to keep in repo)
-docs/transcripts/
-
-# USLM reference materials (PDF, XSD, CSS — large binaries, available from OLRC)
-docs/reference/
-
 # Claude Code runtime state (personal MCP config, settings, local overrides)
 /.claude/
+
+# Shared MCP config (.mcp.json) is intentionally NOT ignored — it contains
+# no secrets and is committed so all contributors get shared MCP servers.
 
 # Cursor
 .cursorignore
@@ -65,16 +62,6 @@ docs/reference/
 
 # Codex / OpenAI
 .codex/
-
-# Shared MCP config (.mcp.json) is intentionally NOT ignored — it contains
-# no secrets and is committed so all contributors get shared MCP servers.
-
-# -----------------------------------------------------------------------------
-# Environment & secrets
-# -----------------------------------------------------------------------------
-.env
-.env.*
-!.env.example
 
 # -----------------------------------------------------------------------------
 # OS metadata
@@ -98,12 +85,23 @@ $RECYCLE.BIN/
 *.lnk
 
 # Linux
-*~
 .directory
 
 # -----------------------------------------------------------------------------
 # IDEs & editors
 # -----------------------------------------------------------------------------
+
+# Backup/swap files (Vim, Emacs, etc.)
+*~
+*.swp
+*.swo
+*.swn
+\#*\#
+.\#*
+*.elc
+Session.vim
+.netrwhist
+tags
 
 # VS Code — workspace settings are personal; extensions.json can be committed
 # separately if the team agrees on shared recommendations.
@@ -113,21 +111,6 @@ $RECYCLE.BIN/
 # JetBrains (WebStorm, IntelliJ)
 .idea/
 *.iml
-
-# Vim / Neovim
-*.swp
-*.swo
-*.swn
-*~
-Session.vim
-.netrwhist
-tags
-
-# Emacs
-\#*\#
-.\#*
-*~
-*.elc
 
 # Sublime Text
 *.sublime-project
@@ -140,12 +123,18 @@ tags
 # law2md operational outputs
 # -----------------------------------------------------------------------------
 
-# Downloaded source files (large, regenerable — e.g. downloads/usc/xml/)
+# Downloaded source files (large, regenerable)
 downloads/
 
-# Legacy locations for downloaded XML (kept for backwards compatibility)
+# Legacy locations for downloaded XML
 xml/
 fixtures/xml/
+
+# USLM reference materials (PDF, XSD, CSS — available from OLRC)
+docs/reference/
+
+# AI agent transcripts
+docs/transcripts/
 
 # Converted Markdown output (regenerable from source XML)
 output/
@@ -158,10 +147,9 @@ test-output/
 # -----------------------------------------------------------------------------
 *.log
 logs/
-pino-*.log
 
 # -----------------------------------------------------------------------------
-# Archives & binaries (shouldn't be in repo, but just in case)
+# Archives & binaries
 # -----------------------------------------------------------------------------
 *.zip
 *.tar.gz
@@ -169,34 +157,18 @@ pino-*.log
 *.rar
 *.7z
 
-# Exception: .changeset files are not archives despite being in a dot-directory
-!.changeset/
-
 # -----------------------------------------------------------------------------
-# npm publish artifacts
+# Other package managers (not used — this project uses pnpm)
 # -----------------------------------------------------------------------------
-*.tgz
-
-# Verdaccio local registry (if used for testing publishes locally)
-.verdaccio/
-storage/
-
-# -----------------------------------------------------------------------------
-# Miscellaneous
-# -----------------------------------------------------------------------------
-
-# Yarn (not used)
+package-lock.json
 .yarn/
 .yarnrc.yml
 yarn.lock
 .pnp.*
-
-# npm (not used — this project uses pnpm)
-package-lock.json
-
-# pnpm
-.pnpm-store/
-
-# Bun (not used)
 bun.lockb
 bun.lock
+.pnpm-store/
+
+# Verdaccio local registry (if used for testing publishes locally)
+.verdaccio/
+storage/

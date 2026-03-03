@@ -1,5 +1,11 @@
 # @law2md/core
 
+## 0.6.1
+
+### Patch Changes
+
+- Enhance downloader for when all titles are downloaded
+
 ## 0.6.0
 
 ### Minor Changes

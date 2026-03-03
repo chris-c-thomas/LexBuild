@@ -50,6 +50,9 @@ coverage/
 # Transcripts of interactions with AI agents (potentially sensitive, large, and not useful to keep in repo)
 docs/transcripts/
 
+# USLM reference materials (PDF, XSD, CSS — large binaries, available from OLRC)
+docs/reference/
+
 # Claude Code runtime state (personal MCP config, settings, local overrides)
 /.claude/
 

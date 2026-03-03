@@ -36,8 +36,5 @@
     "onlyBuiltDependencies": [
       "esbuild"
     ]
-  },
-  "dependencies": {
-    "law2md-monorepo": "link:"
   }
 }

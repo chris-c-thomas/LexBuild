@@ -110,14 +110,10 @@ node packages/cli/dist/index.js download --titles 1
 
 ## Reference Materials
 
-Official USLM reference documents are in `docs/reference/uslm/`:
+Official USLM reference documents from OLRC (not committed — download locally if needed):
 
-- `uslm-user-guide.pdf` — OLRC user guide (v0.1.4, Oct 2013). Covers abstract/concrete model, identification, referencing, metadata, versioning, and presentation models.
-- `uslm-schema-and-css/USLM-1.0.xsd` — Original schema (July 2013)
-- `uslm-schema-and-css/USLM-1.0.15.xsd` — Patched schema (Sept 2013, adds remote namespace resolution for DC and XHTML)
-- `uslm-schema-and-css/usctitle.css` — Browser rendering stylesheet
-- `uslm-schema-and-css/dc.xsd`, `dcterms.xsd`, `dcmitype.xsd` — Dublin Core metadata schemas
-- `uslm-schema-and-css/xhtml-1.0.xsd`, `xml.xsd` — Supporting schemas
+- [USLM User Guide (PDF)](https://uscode.house.gov/download/resources/USLM-User-Guide.pdf) — v0.1.4, Oct 2013. Covers abstract/concrete model, identification, referencing, metadata, versioning, and presentation models.
+- [USLM Schema & CSS](https://uscode.house.gov/download/resources/schemaandcss.zip) — USLM-1.0.xsd, USLM-1.0.15.xsd, usctitle.css, Dublin Core schemas, XHTML schema
 
 ## USLM XML Schema — Key Facts
 

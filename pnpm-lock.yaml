@@ -7,10 +7,6 @@ settings:
 importers:
 
   .:
-    dependencies:
-      law2md-monorepo:
-        specifier: 'link:'
-        version: 'link:'
     devDependencies:
       '@changesets/changelog-github':
         specifier: ^0.5.2

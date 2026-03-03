@@ -1,5 +1,11 @@
 # @law2md/core
 
+## 0.6.2
+
+### Patch Changes
+
+- Cleanup files in project
+
 ## 0.6.1
 
 ### Patch Changes

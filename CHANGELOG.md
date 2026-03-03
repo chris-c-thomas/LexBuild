@@ -7,6 +7,18 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## [0.6.2]
+
+### Fixed
+
+- **Spurious root dependency**: removed accidental `"dependencies": { "law2md-monorepo": "link:" }` from root `package.json`
+
+### Changed
+
+- **CLAUDE.md reference materials**: replaced local file paths (`docs/reference/uslm/`) with public OLRC URLs for the user guide PDF and schema zip
+- **`.gitignore`**: added `docs/reference/` to prevent accidental re-commit of binary reference materials
+- **Removed `.gitkeep` files**: `fixtures/expected/.gitkeep` and `fixtures/fragments/.gitkeep` no longer needed
+
 ## [0.6.1]
 
 ### Changed

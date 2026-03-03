@@ -1,6 +1,6 @@
 {
   "name": "law2md",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Convert U.S. legislative XML (USLM) to structured Markdown for AI/RAG ingestion",
   "type": "module",
   "main": "./dist/index.js",

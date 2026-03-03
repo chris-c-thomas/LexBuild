@@ -7,7 +7,12 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
-## [0.6.2]
+## [0.7.0]
+
+### Added
+
+- **`convert --all` flag**: converts all downloaded titles found in `--input-dir` instead of requiring an explicit `--titles` spec. Scans the input directory for `usc{NN}.xml` files and converts whatever is present — works with partial downloads (e.g., only titles 1, 3, 9, 10).
+- **Bulk download for `download --all`**: when downloading all 54 titles, the downloader now fetches a single `xml_uscAll@{releasePoint}.zip` instead of making 54 individual HTTP requests. Falls back to per-title downloads if the bulk zip is unavailable. No CLI changes — same `--all` flag, same output.
 
 ### Fixed
 
@@ -15,15 +20,9 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ### Changed
 
+- **`.gitignore` cleanup**: removed duplicate patterns, consolidated editor/OS/package-manager sections, fixed a bare comment parsed as a pattern
 - **CLAUDE.md reference materials**: replaced local file paths (`docs/reference/uslm/`) with public OLRC URLs for the user guide PDF and schema zip
-- **`.gitignore`**: added `docs/reference/` to prevent accidental re-commit of binary reference materials
 - **Removed `.gitkeep` files**: `fixtures/expected/.gitkeep` and `fixtures/fragments/.gitkeep` no longer needed
-
-## [0.6.1]
-
-### Changed
-
-- **Bulk download for `download --all`**: when downloading all 54 titles, the downloader now fetches a single `xml_uscAll@{releasePoint}.zip` instead of making 54 individual HTTP requests. Falls back to per-title downloads if the bulk zip is unavailable. No CLI changes — same `--all` flag, same output.
 
 ## [0.6.0]
 

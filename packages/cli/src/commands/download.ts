@@ -87,7 +87,7 @@ export const downloadCommand = new Command("download")
         title: "law2md — Download Summary",
         rows: [
           ["Release Point", options.releasePoint],
-          ["Output", relative(process.cwd(), outputDir) || outputDir],
+          ["Directory", relative(process.cwd(), outputDir) || outputDir],
         ],
       });
       process.stdout.write(output);

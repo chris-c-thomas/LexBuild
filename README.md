@@ -60,13 +60,13 @@ pnpm turbo build
 ## Quick Start
 
 ```bash
-# Download Title 1 (smallest title, good for testing)
-law2md download --titles 1
+# Download and convert all 54 titles
+law2md download --all && law2md convert --all
 
-# Convert to Markdown
-law2md convert ./downloads/usc/xml/usc01.xml -o ./output
+# Or start small — download and convert Title 1
+law2md download --titles 1 && law2md convert --titles 1
 
-# Download and convert multiple titles at once
+# Download and convert a range
 law2md download --titles 1-5 && law2md convert --titles 1-5
 ```
 
@@ -100,6 +100,9 @@ Or download manually from the [OLRC download page](https://uscode.house.gov/down
 ### Convert
 
 ```bash
+# Convert all downloaded titles
+law2md convert --all
+
 # Convert a single XML file
 law2md convert ./downloads/usc/xml/usc01.xml -o ./output
 
@@ -136,11 +139,14 @@ law2md convert [input] [options]
 
 ```text
 Arguments:
-  input                          Path to a USC XML file (optional if --titles is used)
+  input                          Path to a USC XML file (optional if --titles
+                                 or --all is used)
 
 Options:
   --titles <spec>                Title(s) to convert: single (1), range (1-5),
                                  or mixed (1-5,8,11)
+  --all                          Convert all downloaded titles found in
+                                 --input-dir
   -i, --input-dir <dir>         Input directory for XML files
                                  (default: "./downloads/usc/xml")
   -o, --output <dir>             Output directory (default: "./output")

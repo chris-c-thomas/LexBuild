@@ -68,9 +68,11 @@ pnpm turbo lint
 pnpm turbo dev
 
 # Run the CLI locally during development
-node packages/cli/dist/index.js convert ./downloads/usc/xml/usc01.xml -o ./test-output
-node packages/cli/dist/index.js convert --titles 1-5 -o ./test-output
+node packages/cli/dist/index.js download --all
 node packages/cli/dist/index.js download --titles 1
+node packages/cli/dist/index.js convert --all
+node packages/cli/dist/index.js convert --titles 1-5 -o ./test-output
+node packages/cli/dist/index.js convert ./downloads/usc/xml/usc01.xml -o ./test-output
 ```
 
 ## Code Conventions

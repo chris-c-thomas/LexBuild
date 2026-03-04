@@ -49,9 +49,7 @@ coverage/
 
 # Claude Code runtime state (personal MCP config, settings, local overrides)
 /.claude/
-
-# Shared MCP config (.mcp.json) is intentionally NOT ignored — it contains
-# no secrets and is committed so all contributors get shared MCP servers.
+.mcp.json
 
 # Cursor
 .cursorignore

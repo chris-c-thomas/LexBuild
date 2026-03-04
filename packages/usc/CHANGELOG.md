@@ -1,5 +1,16 @@
 # @law2md/usc
 
+## 0.8.0
+
+### Minor Changes
+
+- Cleanup repo
+
+### Patch Changes
+
+- Updated dependencies
+  - @law2md/core@0.8.0
+
 ## 0.7.0
 
 ### Minor Changes

@@ -1,6 +1,6 @@
 # Contributing to law2md
 
-Thanks for your interest in contributing to law2md! This guide covers the basics for getting set up and submitting changes.
+Thanks for your interest in contributing! This guide covers everything you need to get set up and submit changes.
 
 ## Prerequisites
 
@@ -14,6 +14,12 @@ git clone https://github.com/chris-c-thomas/law2md.git
 cd law2md
 pnpm install
 pnpm turbo build
+```
+
+Verify everything is working:
+
+```bash
+pnpm turbo test && pnpm turbo lint && pnpm turbo typecheck
 ```
 
 ## Development Workflow
@@ -31,17 +37,19 @@ pnpm turbo dev          # Watch mode (rebuild on change)
 To scope commands to a single package:
 
 ```bash
-pnpm turbo test --filter=@law2md/core
+pnpm turbo build --filter=@law2md/core
 pnpm turbo test --filter=@law2md/usc
 pnpm turbo test --filter=law2md
 ```
 
 ### Running the CLI Locally
 
+After building, run the CLI directly from the dist output:
+
 ```bash
-node packages/cli/dist/index.js convert path/to/usc01.xml -o ./output
-node packages/cli/dist/index.js download --titles 1       # saves to ./downloads/usc/xml/
-node packages/cli/dist/index.js convert --titles 1-5      # convert multiple titles
+node packages/cli/dist/index.js download --titles 1
+node packages/cli/dist/index.js convert --titles 1-5 -o ./output
+node packages/cli/dist/index.js convert ./downloads/usc/xml/usc01.xml -o ./output
 ```
 
 ### Formatting
@@ -50,6 +58,8 @@ node packages/cli/dist/index.js convert --titles 1-5      # convert multiple tit
 pnpm format             # Auto-format all files
 pnpm format:check       # Check formatting without writing
 ```
+
+Formatting is enforced by Prettier (double quotes, trailing commas, 100 char print width).
 
 ## Project Structure
 
@@ -60,21 +70,32 @@ packages/
   cli/    law2md — CLI entry point (the published npm package)
 ```
 
-The `core` package provides the general-purpose pipeline. The `usc` package adds U.S. Code-specific handling. The `cli` package wires everything together as a command-line tool.
+The `core` package provides the general-purpose XML-to-Markdown pipeline. The `usc` package adds U.S. Code-specific handling. The `cli` package wires everything together as a command-line tool. Internal packages use `workspace:*` protocol for dependencies.
 
 ## Code Conventions
 
-- **TypeScript strict mode** — `strict: true`, `noUncheckedIndexedAccess: true`
+### TypeScript
+
+- **Strict mode** — `strict: true`, `noUncheckedIndexedAccess: true`, `exactOptionalPropertyTypes: true`
 - **ESM only** — all packages use `"type": "module"`
 - **`import type`** for type-only imports
 - **`interface`** over `type` for object shapes
 - **`unknown`** over `any` — if `any` is truly needed, add an eslint-disable comment with justification
-- **Files**: `kebab-case.ts`
-- **Types/Interfaces**: `PascalCase`
-- **Functions**: `camelCase`
-- **Constants**: `UPPER_SNAKE_CASE`
 
-See [CLAUDE.md](CLAUDE.md) for the full conventions reference, USLM schema details, and design decisions.
+### Naming
+
+| Category | Convention | Example |
+|----------|-----------|---------|
+| Files | `kebab-case.ts` | `ast-builder.ts` |
+| Types / Interfaces | `PascalCase` | `SectionNode`, `ConvertOptions` |
+| Functions | `camelCase` | `parseIdentifier`, `renderSection` |
+| Constants | `UPPER_SNAKE_CASE` | `USLM_NAMESPACE` |
+
+### Error Handling
+
+- XML parsing errors: warn and continue (don't crash on anomalous structures)
+- File I/O errors: throw with context (file path, operation attempted)
+- Never swallow errors silently — at minimum, log at `warn` level
 
 ## Testing
 
@@ -83,6 +104,12 @@ Tests are co-located with source files (`parser.ts` → `parser.test.ts`).
 ```bash
 pnpm turbo test                          # Run all tests
 pnpm turbo test --filter=@law2md/usc     # Run one package
+```
+
+Name test cases descriptively:
+
+```ts
+it("converts <subsection> with chapeau to indented bold-lettered paragraph")
 ```
 
 ### Snapshot Tests
@@ -107,7 +134,10 @@ Review the diff in `fixtures/expected/` to confirm only intended changes, then c
 
 1. Fork the repository and create a feature branch from `main`
 2. Make your changes
-3. Ensure all checks pass: `pnpm turbo build && pnpm turbo test && pnpm turbo lint && pnpm turbo typecheck`
+3. Ensure all checks pass:
+   ```bash
+   pnpm turbo build && pnpm turbo test && pnpm turbo lint && pnpm turbo typecheck
+   ```
 4. Write descriptive commit messages using [conventional commits](https://www.conventionalcommits.org/) (e.g., `feat(core):`, `fix(usc):`, `docs:`)
 5. Open a pull request against `main`
 

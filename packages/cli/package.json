@@ -1,7 +1,37 @@
 {
-  "name": "lexbuild",
+  "name": "@lexbuild/cli",
   "version": "0.8.0",
-  "description": "Convert U.S. legislative XML (USLM) to structured Markdown for AI/RAG ingestion",
+  "description": "Compiler for legal and civic texts. Converts disparate statutory data into structured formats optimized for AI, RAG, and semantic search.",
+  "author": "Chris Thomas",
+  "license": "MIT",
+  "homepage": "https://github.com/chris-c-thomas/lexbuild#readme",
+  "bugs": {
+    "url": "https://github.com/chris-c-thomas/lexbuild/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chris-c-thomas/lexbuild.git",
+    "directory": "packages/cli"
+  },
+  "keywords": [
+    "lexbuild",
+    "legal-tech",
+    "civic-tech",
+    "law",
+    "cli",
+    "rag",
+    "llm",
+    "xml",
+    "compiler",
+    "uscode",
+    "uslm",
+    "federal-law",
+    "olrc",
+    "structured-data",
+    "semantic-search",
+    "markdown",
+    "typescript"
+  ],
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -44,5 +74,8 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

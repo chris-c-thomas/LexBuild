@@ -39,7 +39,7 @@ To scope commands to a single package:
 ```bash
 pnpm turbo build --filter=@lexbuild/core
 pnpm turbo test --filter=@lexbuild/usc
-pnpm turbo test --filter=lexbuild
+pnpm turbo test --filter=@lexbuild/cli
 ```
 
 ### Running the CLI Locally
@@ -67,7 +67,7 @@ Formatting is enforced by Prettier (double quotes, trailing commas, 100 char pri
 packages/
   core/    @lexbuild/core — XML parsing, AST, Markdown rendering, shared utilities
   usc/    @lexbuild/usc — U.S. Code conversion logic and OLRC downloader
-  cli/    lexbuild — CLI entry point (the published npm package)
+  cli/    @lexbuild/cli — CLI entry point (the published npm package)
 ```
 
 The `core` package provides the general-purpose XML-to-Markdown pipeline. The `usc` package adds U.S. Code-specific handling. The `cli` package wires everything together as a command-line tool. Internal packages use `workspace:*` protocol for dependencies.

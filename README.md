@@ -1,9 +1,9 @@
 # lexbuild
 
-[![npm](https://img.shields.io/npm/v/lexbuild?style=flat-square)](https://www.npmjs.com/package/lexbuild)
+[![npm](https://img.shields.io/npm/v/%40lexbuild%2Fcli?style=flat-square)](https://www.npmjs.com/package/@lexbuild/cli)
 [![CI](https://img.shields.io/github/actions/workflow/status/chris-c-thomas/lexbuild/ci.yml?style=flat-square&label=CI)](https://github.com/chris-c-thomas/lexbuild/actions/workflows/ci.yml)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue?style=flat-square)](https://www.typescriptlang.org/)
-[![Node](https://img.shields.io/node/v/lexbuild?style=flat-square)](https://nodejs.org/)
+[![Node](https://img.shields.io/node/v/%40lexbuild%2Fcli?style=flat-square)](https://nodejs.org/)
 [![license](https://img.shields.io/github/license/chris-c-thomas/lexbuild?style=flat-square)](LICENSE)
 
 CLI tool to download and convert the entire [United States Code](https://uscode.house.gov/) from official XML (USLM Schema) into structured Markdown that's optimized for AI ingestion, RAG pipelines, and semantic search.
@@ -55,14 +55,14 @@ The U.S. Code comprises 54 titles of federal statutory law. The [Office of the L
 ### npm
 
 ```bash
-npm install -g lexbuild
+npm install -g @lexbuild/cli
 ```
 
 ### npx
 
 ```bash
-npx lexbuild download --all
-npx lexbuild convert --all
+npx @lexbuild/cli download --all
+npx @lexbuild/cli convert --all
 ```
 
 ### Source
@@ -323,7 +323,7 @@ lexbuild/
   packages/
     core/          @lexbuild/core — XML parsing, AST, Markdown rendering
     usc/           @lexbuild/usc — U.S. Code downloader and conversion logic
-    cli/           lexbuild — CLI entry point
+    cli/           @lexbuild/cli — CLI entry point
   fixtures/
     fragments/     XML snippets for unit tests
     expected/      Expected output snapshots

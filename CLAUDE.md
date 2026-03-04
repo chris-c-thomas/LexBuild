@@ -11,7 +11,7 @@ lexbuild/
 ├── packages/
 │   ├── core/        # @lexbuild/core — XML parsing, AST, Markdown rendering, shared utilities
 │   ├── usc/         # @lexbuild/usc — U.S. Code-specific element handlers and downloader
-│   └── cli/         # lexbuild — CLI binary (the published npm package users install)
+│   └── cli/         # @lexbuild/cli — CLI binary (the published npm package users install)
 ├── downloads/
 │   └── usc/
 │       └── xml/     # Full USC XML files (usc01.xml ... usc54.xml) — gitignored

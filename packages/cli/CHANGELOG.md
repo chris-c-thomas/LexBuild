@@ -1,4 +1,4 @@
-# lexbuild
+# @lexbuild/cli
 
 ## 0.8.0
 

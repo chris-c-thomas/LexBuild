@@ -1,7 +1,41 @@
 {
-  "name": "lexbuild-monorepo",
+  "name": "lexbuild",
   "version": "0.0.0",
   "private": true,
+  "author": "Chris Thomas",
+  "license": "MIT",
+  "homepage": "https://github.com/chris-c-thomas/lexbuild#readme",
+  "bugs": {
+    "url": "https://github.com/chris-c-thomas/lexbuild/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chris-c-thomas/lexbuild.git"
+  },
+  "keywords": [
+    "lexbuild",
+    "legal-tech",
+    "civic-tech",
+    "law",
+    "cli",
+    "rag",
+    "llm",
+    "ast",
+    "xml",
+    "compiler",
+    "parser",
+    "schema",
+    "uscode",
+    "uslm",
+    "statutes",
+    "federal-law",
+    "olrc",
+    "structured-data",
+    "semantic-search",
+    "markdown",
+    "typescript",
+    "monorepo"
+  ],
   "type": "module",
   "packageManager": "pnpm@10.30.3",
   "engines": {

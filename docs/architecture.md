@@ -33,7 +33,7 @@
 ## Package Dependency Graph
 
 ```
-lexbuild (CLI)
+@lexbuild/cli
   ├── @lexbuild/usc
   │     └── @lexbuild/core
   └── @lexbuild/core (direct dep for shared types)

@@ -25,7 +25,7 @@ Package-scoped pattern:
 ```bash
 pnpm turbo <task> --filter=@lexbuild/core
 pnpm turbo <task> --filter=@lexbuild/usc
-pnpm turbo <task> --filter=lexbuild
+pnpm turbo <task> --filter=@lexbuild/cli
 ```
 
 Run the CLI locally during development:
@@ -42,7 +42,7 @@ This is a Turborepo + pnpm monorepo with three packages:
 
 - `packages/core` (`@lexbuild/core`): namespace-aware XML parsing (SAX via `saxes`), AST building, Markdown rendering, frontmatter generation, shared utilities.
 - `packages/usc` (`@lexbuild/usc`): USC-specific conversion pipeline and OLRC downloader. Contains `convertTitle()` which orchestrates ReadStream → SAX → AST → Markdown → file writer.
-- `packages/cli` (`lexbuild`): CLI commands (`convert`, `download`), terminal UI (`chalk`, `ora`, `cli-table3`), and user-facing command surface.
+- `packages/cli` (`@lexbuild/cli`): CLI commands (`convert`, `download`), terminal UI (`chalk`, `ora`, `cli-table3`), and user-facing command surface.
 
 Respect boundaries: keep generic parsing/rendering logic in `core`, USC-specific behavior in `usc`, and CLI orchestration in `cli`. Internal packages use `workspace:*` protocol for dependencies.
 

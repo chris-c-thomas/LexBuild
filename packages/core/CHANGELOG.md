@@ -1,5 +1,11 @@
 # @lexbuild/core
 
+## 1.0.3
+
+### Patch Changes
+
+- baaeba1: Update READMEs and package.json files
+
 ## 1.0.2
 
 ### Patch Changes

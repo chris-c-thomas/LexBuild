@@ -1,5 +1,14 @@
 # @lexbuild/cli
 
+## 1.0.3
+
+### Patch Changes
+
+- baaeba1: Update READMEs and package.json files
+- Updated dependencies [baaeba1]
+  - @lexbuild/core@1.0.3
+  - @lexbuild/usc@1.0.3
+
 ## 1.0.2
 
 ### Patch Changes

@@ -338,8 +338,8 @@ function extractAllXmlFromZip(
       zipFile.on("entry", (entry: Entry) => {
         const match = USC_XML_RE.exec(entry.fileName);
         if (match) {
-          const titleNum = parseInt(match[1]!, 10);
-          const outPath = join(outputDir, `usc${match[1]!}.xml`);
+          const titleNum = parseInt(match[1] ?? "0", 10);
+          const outPath = join(outputDir, `usc${match[1] ?? "00"}.xml`);
           pending++;
 
           extractEntry(zipFile, entry, outPath)

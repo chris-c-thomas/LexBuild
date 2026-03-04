@@ -95,7 +95,7 @@ export function discoverTitles(inputDir: string): number[] {
   return readdirSync(inputDir)
     .map((name) => USC_XML_RE.exec(name))
     .filter((m): m is RegExpExecArray => m !== null)
-    .map((m) => parseInt(m[1]!, 10))
+    .map((m) => parseInt(m[1] ?? "0", 10))
     .sort((a, b) => a - b);
 }
 

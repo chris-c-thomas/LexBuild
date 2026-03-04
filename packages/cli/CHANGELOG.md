@@ -1,5 +1,14 @@
 # @lexbuild/cli
 
+## 1.0.2
+
+### Patch Changes
+
+- 54219a7: Fix links that display on the npm registry
+- Updated dependencies [54219a7]
+  - @lexbuild/core@1.0.2
+  - @lexbuild/usc@1.0.2
+
 ## 1.0.1
 
 ### Patch Changes

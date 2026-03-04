@@ -1,5 +1,14 @@
 # @lexbuild/cli
 
+## 1.0.5
+
+### Patch Changes
+
+- f86d74e: Quick fix
+- Updated dependencies [f86d74e]
+  - @lexbuild/usc@1.0.5
+  - @lexbuild/core@1.0.5
+
 ## 1.0.4
 
 ### Patch Changes

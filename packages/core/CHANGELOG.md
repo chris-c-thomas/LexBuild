@@ -1,5 +1,11 @@
 # @lexbuild/core
 
+## 1.0.5
+
+### Patch Changes
+
+- f86d74e: Quick fix
+
 ## 1.0.4
 
 ### Patch Changes

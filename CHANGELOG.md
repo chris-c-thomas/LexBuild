@@ -7,6 +7,13 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## [0.7.1]
+
+### Changed
+
+- **Organization**: General repository maintenance and cleanup.
+
+
 ## [0.7.0]
 
 ### Added

@@ -1,5 +1,11 @@
 # @lexbuild/core
 
+## 1.0.4
+
+### Patch Changes
+
+- 2598707: Fix README.md badge
+
 ## 1.0.3
 
 ### Patch Changes

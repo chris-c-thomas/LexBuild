@@ -1,5 +1,14 @@
 # @lexbuild/cli
 
+## 1.0.4
+
+### Patch Changes
+
+- 2598707: Fix README.md badge
+- Updated dependencies [2598707]
+  - @lexbuild/core@1.0.4
+  - @lexbuild/usc@1.0.4
+
 ## 1.0.3
 
 ### Patch Changes

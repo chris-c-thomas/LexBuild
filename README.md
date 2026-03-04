@@ -3,8 +3,8 @@
 [![npm](https://img.shields.io/npm/v/%40lexbuild%2Fcli?style=flat-square)](https://www.npmjs.com/package/@lexbuild/cli)
 [![CI](https://img.shields.io/github/actions/workflow/status/chris-c-thomas/lexbuild/ci.yml?style=flat-square&label=CI)](https://github.com/chris-c-thomas/lexbuild/actions/workflows/ci.yml)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue?style=flat-square)](https://www.typescriptlang.org/)
-[![Node](https://img.shields.io/node/v/%40lexbuild%2Fcli?style=flat-square)](https://nodejs.org/)
-[![license](https://img.shields.io/github/license/chris-c-thomas/lexbuild?style=flat-square)](LICENSE)
+[![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen?style=flat-square)](https://nodejs.org/)
+[![license](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 
 CLI tool to download and convert the entire [United States Code](https://uscode.house.gov/) from official XML (USLM Schema) into structured Markdown that's optimized for AI ingestion, RAG pipelines, and semantic search.
 

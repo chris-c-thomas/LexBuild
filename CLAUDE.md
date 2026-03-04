@@ -27,18 +27,18 @@ law2md/
 
 - **Runtime**: Node.js >= 20 LTS (ESM)
 - **Language**: TypeScript 5.x, strict mode, no `any` unless explicitly justified
-- **XML Parsing**: `saxes` (SAX streaming) + `@xmldom/xmldom` (DOM for fragments)
+- **XML Parsing**: `saxes` (SAX streaming)
 - **CLI**: `commander`
-- **Validation**: `zod`
+- **CLI Output**: `chalk`, `ora`, `cli-table3`
 - **YAML**: `yaml` package
 - **Zip**: `yauzl`
 - **Token Counting**: character/4 heuristic
-- **Logging**: `pino`
 - **Testing**: `vitest`
 - **Build**: `tsup`
 - **Linting**: ESLint + `@typescript-eslint`
-- **Formatting**: Prettier
+- **Formatting**: Prettier (double quotes, trailing commas, 100 char print width)
 - **Monorepo**: Turborepo + pnpm workspaces
+- **Versioning**: `@changesets/cli` with lockstep versioning across all packages
 
 ## Build & Dev Commands
 
@@ -253,7 +253,7 @@ https://uscode.house.gov/download/releasepoints/us/pl/{congress}/{law}/xml_uscAl
 
 Where `{NN}` is zero-padded title number (01-54), `{congress}` is Congress number, `{law}` is public law number.
 
-Example (current as of early 2026): `xml_usc01@119-73not60.zip`
+Example: `xml_usc01@119-73not60.zip`
 
 Note: Release points can include exclusion suffixes (e.g., `119-73not60` means "through PL 119-73, excluding PL 119-60"). The current release point is hardcoded in `packages/usc/src/downloader.ts` as `CURRENT_RELEASE_POINT`.
 
@@ -269,10 +269,12 @@ output/usc/title-{NN}/chapter-{NN}/section-{N}.md
 - Chapter dirs: `chapter-01`, `chapter-02`, etc. (zero-padded to 2 digits)
 - Section files: `section-{N}.md` where N is the section number (NOT zero-padded, since section numbers can be alphanumeric like `section-7801`)
 - Subchapter dirs nest inside chapter dirs when present
+- Appendix titles: separate directories (e.g., `title-05-appendix/`) for titles 5, 11, 18, 28
+- Duplicate sections: disambiguated with `-2`, `-3` suffix (e.g., `section-3598.md`, `section-3598-2.md`)
 
 ## Key Design Decisions
 
-1. **SAX over DOM**: Large titles (26, 42) can exceed 100MB XML. SAX streaming keeps memory bounded. DOM is used only for small fragment inspection.
+1. **SAX over DOM**: Large titles (26, 42) can exceed 100MB XML. SAX streaming keeps memory bounded. DOM is not used.
 
 2. **Section as the atomic unit**: A section is the smallest citable legal unit in the U.S. Code. Subsections, paragraphs, etc. are rendered within the section file, not as separate files.
 
@@ -286,11 +288,11 @@ output/usc/title-{NN}/chapter-{NN}/section-{N}.md
 
 7. **Footnotes**: Rendered as Markdown footnotes (`[^N]` at reference site, `[^N]: text` at bottom of section file).
 
-8. **Appendix titles**: Separate output directories (e.g., `title-05-appendix/`) for titles with appendices (5, 11, 18, 28).
+8. **Token estimation**: Uses character/4 heuristic for token counts in `_meta.json`. Precise `tiktoken`-based counting is a planned enhancement.
 
-9. **Token estimation**: Uses character/4 heuristic for token counts in `_meta.json`.
+9. **Table of Disposition**: Excluded from section-level output. Included in title-level README.md.
 
-10. **Table of Disposition**: Excluded from section-level output. Included in title-level README.md.
+10. **Collect-then-write pattern**: Sections are collected during SAX streaming and written after the stream completes, avoiding async issues during SAX event processing.
 
 ## Common Pitfalls
 
@@ -303,6 +305,8 @@ output/usc/title-{NN}/chapter-{NN}/section-{N}.md
 - **Permissive content model**: `<content>` uses `processContents="lax"` with `namespace="##any"` — it can contain elements from any namespace, including embedded XHTML. The SAX parser must handle unexpected elements gracefully.
 - **`<continuation>` is interstitial**: Not just "after sub-levels" but also between elements of the same level. Handle as a text block in whatever position it appears.
 - **Element versioning**: Elements can have `@startPeriod`/`@endPeriod`/`@status` for point-in-time variants. Multiple versions of the same element may coexist in the document.
+- **Quoted content sections**: `<section>` elements inside `<quotedContent>` (quoted bills in statutory notes) must not be emitted as standalone files. Track `quotedContentDepth` to suppress emission.
+- **Duplicate section numbers**: Some titles have multiple sections with the same number within a chapter (e.g., Title 5). Output files are disambiguated with `-2` suffixes.
 
 ## When Adding New Source Types (CFR, State Statutes)
 

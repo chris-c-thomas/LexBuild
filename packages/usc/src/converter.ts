@@ -696,8 +696,8 @@ async function writeWholeTitle(
 
   const markdown = parts.join("\n") + "\n";
 
-  // Output path: output/usc/title-NN.md (flat, no subdirectory)
-  const titleFile = `title-${padTwo(titleNum)}.md`;
+  // Output path: output/usc/title-NN.md (or title-NN-appendix.md for appendix titles)
+  const titleFile = `${buildTitleDirFromDocNumber(docNum)}.md`;
   const filePath = join(options.output, "usc", titleFile);
 
   await mkdir(dirname(filePath), { recursive: true });

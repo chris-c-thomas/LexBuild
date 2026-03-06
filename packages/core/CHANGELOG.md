@@ -1,5 +1,11 @@
 # @lexbuild/core
 
+## 1.0.6
+
+### Patch Changes
+
+- [#12](https://github.com/chris-c-thomas/lexbuild/pull/12) [`0e49c15`](https://github.com/chris-c-thomas/lexbuild/commit/0e49c159725435057237c00ac77d1c0de24e090a) Thanks [@chris-c-thomas](https://github.com/chris-c-thomas)! - Update files to reference lexbuild as LexBuild as the project name
+
 ## 1.0.5
 
 ### Patch Changes

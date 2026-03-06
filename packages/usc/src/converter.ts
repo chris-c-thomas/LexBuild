@@ -728,7 +728,7 @@ function renderTitleChildren(
       // renderSection adds 1 to headingOffset, so subtract 1 to land at headingLevel
       const sectionOpts: RenderOptions = {
         ...renderOpts,
-        headingOffset: Math.min(headingLevel, 5) - 1,
+        headingOffset: Math.min(headingLevel - 1, 5),
       };
       const sectionNode = options.includeSourceCredits ? child : stripSourceCredits(child);
       const sectionMd = renderSection(sectionNode, sectionOpts);

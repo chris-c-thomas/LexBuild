@@ -145,7 +145,7 @@ Tests run after builds; type-checking runs after upstream packages build; lintin
 
 As new source packages are added, new commands will be registered here (e.g., `lexbuild download-cfr`, `lexbuild convert-cfr`).
 
-**Dependencies**: `@lexbuild/core`, `@lexbuild/usc`, `commander`, `chalk`, `ora`, `cli-table3`, `pino`
+**Dependencies**: `@lexbuild/core`, `@lexbuild/usc`, `commander`, `chalk`, `ora`, `cli-table3`, `pino`, `pino-pretty`
 
 ### Adding a New Source Package
 

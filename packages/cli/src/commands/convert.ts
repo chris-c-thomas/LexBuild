@@ -179,19 +179,15 @@ export const convertCommand = new Command("convert")
   .description("Convert USC XML file(s) to Markdown")
   .argument("[input]", "Path to a USC XML file")
   .option("-o, --output <dir>", "Output directory", "./output")
-  .option("--titles <spec>", "Title(s) to convert (e.g. 1, 1-5, 1,3,8, 1-5,8,11)")
+  .option("--titles <spec>", "Title(s) to convert: 1, 1-5, or 1-5,8,11")
   .option("--all", "Convert all downloaded titles found in --input-dir", false)
   .option("-i, --input-dir <dir>", "Directory containing USC XML files", "./downloads/usc/xml")
   .option(
     "-g, --granularity <level>",
-    'Output granularity: "section" (one file per section), "chapter" (one file per chapter), or "title" (one file per title)',
+    "Output granularity: section, chapter, or title",
     "section",
   )
-  .option(
-    "--link-style <style>",
-    'Cross-reference link style: "relative", "canonical", or "plaintext"',
-    "plaintext",
-  )
+  .option("--link-style <style>", "Link style: relative, canonical, or plaintext", "plaintext")
   .option("--include-source-credits", "Include source credit annotations", true)
   .option("--no-include-source-credits", "Exclude source credit annotations")
   .option("--include-notes", "Include all notes (default)", true)
@@ -201,6 +197,27 @@ export const convertCommand = new Command("convert")
   .option("--include-amendments", "Include amendment history notes only", false)
   .option("--dry-run", "Parse and report structure without writing files", false)
   .option("-v, --verbose", "Enable verbose logging", false)
+  .addHelpText(
+    "after",
+    `
+Input modes (use exactly one):
+  <input>       Convert a single XML file
+  --titles      Convert specific titles by number
+  --all         Convert all titles in --input-dir
+
+Granularity:
+  section       One .md file per section (default)
+  chapter       One .md file per chapter, sections inlined
+  title         One .md file per title, entire hierarchy inlined
+
+Examples:
+  $ lexbuild convert --titles 1                   Convert Title 1
+  $ lexbuild convert --titles 1-5,8,11            Convert a mix of titles
+  $ lexbuild convert --all -g chapter             All titles, chapter-level
+  $ lexbuild convert --titles 26 -g title         Title 26 as a single file
+  $ lexbuild convert --all --dry-run              Preview stats only
+  $ lexbuild convert ./downloads/usc/xml/usc01.xml -o ./out`,
+  )
   .action(async (input: string | undefined, options: ConvertCommandOptions) => {
     // Validate: must specify exactly one of <input>, --titles, or --all
     const modeCount = [input, options.titles, options.all].filter(Boolean).length;

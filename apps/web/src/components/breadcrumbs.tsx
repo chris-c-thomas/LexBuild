@@ -10,7 +10,10 @@ export function Breadcrumbs() {
   const pathname = usePathname();
   const { titleDir, chapterDir, sectionSlug } = parseUscPath(pathname);
 
-  const crumbs: { label: string; href: string }[] = [{ label: "U.S. Code", href: "/usc/" }];
+  const crumbs: { label: string; href: string }[] = [
+    { label: "LexBuild", href: "/" },
+    { label: "U.S. Code", href: "/usc/" },
+  ];
 
   if (titleDir) {
     crumbs.push({ label: formatTitle(titleDir), href: `/usc/${titleDir}/` });

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { usePathname } from "next/navigation";
-import { Menu, X, Scale } from "lucide-react";
+import { Menu, X, Scale, ChevronDown } from "lucide-react";
 import { fetchTitles } from "@/lib/nav";
 import type { TitleSummary } from "@/lib/types";
 import { TitleList } from "./title-list";
@@ -18,9 +18,23 @@ export function Sidebar() {
   const [titles, setTitles] = useState<TitleSummary[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [corpusOpen, setCorpusOpen] = useState(false);
   const [prevPathname, setPrevPathname] = useState<string | null>(null);
+  const corpusRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const { titleDir } = parseUscPath(pathname);
+
+  // Close corpus dropdown on outside click
+  useEffect(() => {
+    if (!corpusOpen) return;
+    function onClickOutside(e: MouseEvent) {
+      if (corpusRef.current && !corpusRef.current.contains(e.target as Node)) {
+        setCorpusOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, [corpusOpen]);
 
   useEffect(() => {
     fetchTitles()
@@ -70,10 +84,37 @@ export function Sidebar() {
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
-          <Link href="/usc/" className="flex items-center gap-2 font-semibold text-foreground">
-            <Scale className="h-5 w-5" />
-            U.S. Code
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-1.5 font-semibold text-foreground">
+              <Scale className="h-5 w-5 shrink-0" />
+              LexBuild
+            </Link>
+            <span className="text-muted-foreground/40">/</span>
+            <div ref={corpusRef} className="relative">
+              <button
+                onClick={() => setCorpusOpen((prev) => !prev)}
+                className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+              >
+                U.S. Code
+                <ChevronDown className={cn("h-3 w-3 transition-transform", corpusOpen && "rotate-180")} />
+              </button>
+              {corpusOpen && (
+                <div className="absolute left-0 top-full z-50 mt-1 w-48 rounded-lg border border-border bg-background p-1 shadow-lg">
+                  <Link
+                    href="/usc/"
+                    onClick={() => setCorpusOpen(false)}
+                    className="flex w-full items-center rounded-md px-2 py-1.5 text-sm font-medium text-foreground bg-accent"
+                  >
+                    U.S. Code
+                  </Link>
+                  <div className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-sm text-muted-foreground/50 cursor-not-allowed">
+                    CFR
+                    <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium">Soon</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
           <div className="flex items-center gap-1">
             <SearchTrigger />
             <ThemeToggle />

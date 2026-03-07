@@ -252,7 +252,7 @@ export async function convertTitle(options: ConvertOptions): Promise<ConvertResu
   peakMemory = Math.max(peakMemory, process.memoryUsage.rss());
 
   // Compute stats
-  const chapterIds = new Set(sectionMetas.map((s) => s.chapterIdentifier));
+  const chapterIds = new Set(sectionMetas.map((s) => s.chapterIdentifier).filter(Boolean));
   const totalTokens = sectionMetas.reduce((sum, s) => sum + Math.ceil(s.contentLength / 4), 0);
 
   return {

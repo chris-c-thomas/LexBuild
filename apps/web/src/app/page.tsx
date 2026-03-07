@@ -24,13 +24,20 @@ export default async function HomePage() {
             The complete U.S. Code as structured Markdown — built for AI and RAG ingestion. Browse
             every title, chapter, and section with syntax-highlighted source and rendered HTML.
           </p>
-          <Link
-            href="/usc/"
-            className="inline-flex w-fit items-center gap-2 rounded-lg bg-slate-blue-700 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-blue-800"
-          >
-            <Scale className="h-4 w-4" />
-            Browse U.S. Code
-          </Link>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href="/usc/"
+              className="inline-flex items-center gap-2 rounded-lg bg-slate-blue-700 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-blue-800"
+            >
+              <Scale className="h-4 w-4" />
+              Browse U.S. Code
+            </Link>
+            <span className="inline-flex cursor-not-allowed items-center gap-2 rounded-lg border border-border px-6 py-2.5 text-sm font-medium text-muted-foreground/50">
+              <BookOpen className="h-4 w-4" />
+              Browse CFR
+              <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium">Soon</span>
+            </span>
+          </div>
         </div>
 
         {/* Stats */}
@@ -55,7 +62,7 @@ export default async function HomePage() {
 
         {/* Title grid */}
         <div>
-          <h2 className="mb-4 text-xl font-semibold">All Titles</h2>
+          <h2 className="mb-4 text-xl font-semibold">U.S. Code Titles</h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {titles.map((t) => (
               <Link

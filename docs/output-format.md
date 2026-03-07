@@ -52,6 +52,8 @@ This specification is versioned independently of the CLI. The current version is
 
 No `_meta.json` or `README.md` sidecar files are produced in title-level mode. All metadata is embedded in enriched YAML frontmatter (see [Title-Level Frontmatter](#title-level-frontmatter) below). This makes each file fully self-contained — suitable for feeding a whole title to an LLM context window.
 
+> **Note:** Title-level mode holds the entire title AST and rendered Markdown in memory before writing. Large titles (e.g., Title 26 or Title 42) may require significantly more memory than section or chapter mode.
+
 ### Naming Conventions
 
 | Component | Pattern | Examples |

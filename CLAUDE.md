@@ -287,7 +287,7 @@ The zip contains a single XML file named like `usc01.xml`.
 
 5. **Notes are opt-in**: By default, only the core statutory text and source credits are included. Notes (editorial, statutory, amendments) require explicit CLI flags. This keeps default output lean for RAG.
 
-6. **Streaming output**: Sections are written to disk as they are parsed. The converter never holds an entire title's worth of AST in memory simultaneously.
+6. **Streaming output**: For section and chapter granularity, the converter writes output as sections/chapters are collected, avoiding holding the full title AST in memory. **Title granularity is the exception** — it holds the entire title AST and rendered Markdown in memory. Large titles (26, 42) may require 500MB+ RSS in title mode.
 
 7. **Footnotes**: Rendered as Markdown footnotes (`[^N]` at reference site, `[^N]: text` at bottom of section file).
 

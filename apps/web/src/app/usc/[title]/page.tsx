@@ -70,7 +70,9 @@ function ReservedTitle({ slug, name }: { slug: string; name: string }) {
   const num = slug.replace("title-", "").replace(/^0+/, "");
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-bold text-foreground">Title {num} — {name}</h1>
+      <h1 className="text-2xl font-bold text-foreground">
+        Title {num} — {name}
+      </h1>
       <div className="rounded-lg border border-border bg-muted/50 p-6">
         <p className="text-muted-foreground">
           Title {num} of the United States Code is reserved. No statutory text has been enacted

@@ -77,7 +77,10 @@ ${urls.join("\n")}
 }
 
 function url(path: string): string {
-  const escaped = `${BASE_URL}${path}`.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const escaped = `${BASE_URL}${path}`
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
   return `  <url><loc>${escaped}</loc></url>`;
 }
 

@@ -22,9 +22,11 @@ export function Sidebar() {
   const { titleDir } = parseUscPath(pathname);
 
   useEffect(() => {
-    fetchTitles().then(setTitles).catch(() => {
-      // Nav JSON may not be generated yet in dev — sidebar stays empty
-    });
+    fetchTitles()
+      .then(setTitles)
+      .catch(() => {
+        // Nav JSON may not be generated yet in dev — sidebar stays empty
+      });
   }, []);
 
   // Close mobile sidebar on navigation (React-approved state-from-props pattern)

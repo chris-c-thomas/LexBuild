@@ -38,12 +38,12 @@ export function ChapterList({
 
   return (
     <ul className="space-y-0.5">
-      {chapters.map((ch) => {
+      {chapters.map((ch, idx) => {
         const isExpanded = expandedChapter === ch.directory;
         const isActive = activeChapterDir === ch.directory;
 
         return (
-          <li key={ch.directory}>
+          <li key={`${ch.directory}-${idx}`}>
             <div className="flex items-center">
               <button
                 onClick={() => toggleChapter(ch.directory)}

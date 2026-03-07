@@ -78,14 +78,14 @@ export function Sidebar() {
       {/* Sidebar panel */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-80 flex-col border-r border-border bg-background transition-transform duration-200 lg:static lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 flex w-[22rem] flex-col border-r border-border bg-background transition-transform duration-200 lg:static lg:w-80 lg:translate-x-0",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-border px-4 py-3">
-          <div className="flex items-center gap-2">
-            <Link href="/" className="flex items-center gap-1.5 font-semibold text-foreground">
+        <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <Link href="/" className="flex shrink-0 items-center gap-1.5 font-semibold text-foreground">
               <Scale className="h-5 w-5 shrink-0" />
               LexBuild
             </Link>

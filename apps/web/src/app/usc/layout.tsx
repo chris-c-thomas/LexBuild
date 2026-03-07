@@ -7,7 +7,7 @@ export default function UscLayout({ children }: { children: React.ReactNode }) {
     <div className="flex h-dvh overflow-hidden">
       <Sidebar />
       <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">{children}</div>
+        <div className="mx-auto max-w-5xl px-4 pt-16 pb-8 sm:px-6 lg:px-8 lg:pt-8">{children}</div>
       </main>
       <SearchDialog />
     </div>

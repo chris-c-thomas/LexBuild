@@ -73,6 +73,21 @@ export class FsNavProvider implements NavProvider {
         // Skip titles with missing or malformed _meta.json
       }
     }
+
+    // Inject Title 53 (Reserved) if not present — part of the USC structure but has no content
+    if (!titles.some((t) => t.number === 53)) {
+      titles.push({
+        number: 53,
+        name: "RESERVED",
+        directory: "title-53",
+        positiveLaw: false,
+        chapterCount: 0,
+        sectionCount: 0,
+        tokenEstimate: 0,
+      });
+      titles.sort((a, b) => a.number - b.number);
+    }
+
     return titles;
   }
 

@@ -1,10 +1,10 @@
-import type { HighlighterGeneric } from "shiki";
+import type { BundledLanguage, BundledTheme, HighlighterGeneric } from "shiki";
 import { createHighlighter } from "shiki";
 
 // Module-level singleton — persists across requests within a serverless function instance
-let highlighter: HighlighterGeneric<string, string> | null = null;
+let highlighter: HighlighterGeneric<BundledLanguage, BundledTheme> | null = null;
 
-async function getHighlighter(): Promise<HighlighterGeneric<string, string>> {
+async function getHighlighter(): Promise<HighlighterGeneric<BundledLanguage, BundledTheme>> {
   if (!highlighter) {
     highlighter = await createHighlighter({
       themes: ["github-light", "github-dark"],

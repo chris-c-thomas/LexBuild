@@ -78,7 +78,8 @@ function VirtualizedSectionList({
     <div ref={parentRef} className="max-h-64 overflow-y-auto">
       <div style={{ height: `${virtualizer.getTotalSize()}px`, position: "relative" }}>
         {virtualizer.getVirtualItems().map((virtualRow) => {
-          const s = sections[virtualRow.index]!;
+          const s = sections[virtualRow.index];
+          if (!s) return null;
           return (
             <div
               key={s.file}

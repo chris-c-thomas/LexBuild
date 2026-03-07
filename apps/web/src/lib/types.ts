@@ -1,5 +1,3 @@
-export type Granularity = "section" | "chapter" | "title";
-
 /**
  * Flexible frontmatter across all three granularities.
  * Section-level has section_number/section_name.
@@ -75,6 +73,5 @@ export interface ContentViewerProps {
   highlightedSource: string;
   renderedHtml: string;
   frontmatter: ContentFrontmatter;
-  granularity: Granularity;
   downloadFilename: string;
 }

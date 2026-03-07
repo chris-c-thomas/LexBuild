@@ -12,7 +12,7 @@ const CONTENT_ROOT = resolve(process.env.CONTENT_DIR ?? "./content");
 function safePath(subpath: string): string {
   const resolved = resolve(CONTENT_ROOT, subpath);
   const rel = relative(CONTENT_ROOT, resolved);
-  if (rel.startsWith("..") || resolve(resolved) !== resolved) {
+  if (rel.startsWith("..")) {
     throw new Error(`Path traversal blocked: ${subpath}`);
   }
   return resolved;

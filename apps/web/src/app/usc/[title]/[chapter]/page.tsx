@@ -32,7 +32,6 @@ export default async function ChapterPage({ params }: Props) {
       highlightedSource={highlightedSource}
       renderedHtml={renderedHtml}
       frontmatter={frontmatter}
-      granularity="chapter"
       downloadFilename={`${chapter}.md`}
     />
   );

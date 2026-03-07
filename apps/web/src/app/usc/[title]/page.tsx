@@ -32,7 +32,6 @@ export default async function TitlePage({ params }: Props) {
       highlightedSource={highlightedSource}
       renderedHtml={renderedHtml}
       frontmatter={frontmatter}
-      granularity="title"
       downloadFilename={`${title}.md`}
     />
   );

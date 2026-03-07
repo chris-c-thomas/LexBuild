@@ -32,7 +32,6 @@ export default async function SectionPage({ params }: Props) {
       highlightedSource={highlightedSource}
       renderedHtml={renderedHtml}
       frontmatter={frontmatter}
-      granularity="section"
       downloadFilename={`${section}.md`}
     />
   );

@@ -147,20 +147,22 @@ Title-level frontmatter omits `section_number` and `section_name` (those are sec
 Title-level output renders each big level as a Markdown heading, with sections one level below their containing big level:
 
 ```markdown
-# Title 1 — GENERAL PROVISIONS
-## Chapter 1 — RULES OF CONSTRUCTION
+# Title 1— GENERAL PROVISIONS
+## CHAPTER 1— RULES OF CONSTRUCTION
 ### § 1. Words denoting number, gender, and so forth
 **(a)** In determining the meaning...
 ```
 
+Big-level headings reproduce the `<num>` and `<heading>` text from the source XML verbatim (e.g., `CHAPTER 1—`).
+
 For deeply nested titles, headings are capped at H6. Sections always render one heading level below their containing big level:
 
 ```markdown
-# Title 26 — INTERNAL REVENUE CODE
-## Subtitle A — Income Taxes
-### Chapter 1 — NORMAL TAXES AND SURTAXES
-#### Subchapter A — Determination of Tax Liability
-##### Part I — Tax on Individuals
+# Title 26— INTERNAL REVENUE CODE
+## Subtitle A— Income Taxes
+### CHAPTER 1— NORMAL TAXES AND SURTAXES
+#### Subchapter A— Determination of Tax Liability
+##### PART I— TAX ON INDIVIDUALS
 ###### § 1. Tax imposed
 **(a)** Married individuals filing joint returns...
 ```

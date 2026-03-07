@@ -252,7 +252,7 @@ export async function convertTitle(options: ConvertOptions): Promise<ConvertResu
   peakMemory = Math.max(peakMemory, process.memoryUsage.rss());
 
   // Compute stats
-  const chapterIds = new Set(sectionMetas.map((s) => s.chapterIdentifier));
+  const chapterIds = new Set(sectionMetas.map((s) => s.chapterIdentifier).filter(Boolean));
   const totalTokens = sectionMetas.reduce((sum, s) => sum + Math.ceil(s.contentLength / 4), 0);
 
   return {
@@ -677,12 +677,10 @@ async function writeWholeTitle(
     title: `Title ${titleNum} — ${titleName}`,
     title_number: parseIntSafe(titleNum),
     title_name: titleName,
-    section_number: titleNum,
-    section_name: titleName,
     positive_law: meta.positivelaw ?? false,
     currency,
     last_updated: lastUpdated,
-    chapter_count: new Set(sectionMetas.map((s) => s.chapterIdentifier)).size,
+    chapter_count: new Set(sectionMetas.map((s) => s.chapterIdentifier).filter(Boolean)).size,
     section_count: sectionMetas.length,
     total_token_estimate: Math.ceil(totalContentLength / 4),
   };
@@ -698,8 +696,8 @@ async function writeWholeTitle(
 
   const markdown = parts.join("\n") + "\n";
 
-  // Output path: output/usc/title-NN.md (flat, no subdirectory)
-  const titleFile = `title-${padTwo(titleNum)}.md`;
+  // Output path: output/usc/title-NN.md (or title-NN-appendix.md for appendix titles)
+  const titleFile = `${buildTitleDirFromDocNumber(docNum)}.md`;
   const filePath = join(options.output, "usc", titleFile);
 
   await mkdir(dirname(filePath), { recursive: true });
@@ -720,15 +718,17 @@ function renderTitleChildren(
   renderOpts: RenderOptions,
   sectionMetas: SectionMeta[],
   titleNum: string,
+  currentChapter?: LevelNode | undefined,
 ): string[] {
   const parts: string[] = [];
 
   for (const child of node.children) {
     if (child.type === "level" && child.levelType === "section") {
       // Render section at current heading level
+      // renderSection adds 1 to headingOffset, so subtract 1 to land at headingLevel
       const sectionOpts: RenderOptions = {
         ...renderOpts,
-        headingOffset: Math.min(headingLevel, 5),
+        headingOffset: Math.min(headingLevel - 1, 5),
       };
       const sectionNode = options.includeSourceCredits ? child : stripSourceCredits(child);
       const sectionMd = renderSection(sectionNode, sectionOpts);
@@ -738,8 +738,6 @@ function renderTitleChildren(
       // Collect section metadata
       const sectionNum = child.numValue ?? "0";
       const hasNotes = child.children.some((c) => c.type === "notesContainer" || c.type === "note");
-      // Find chapter ancestor from the node's parent chain
-      const chapterInfo = findChapterInParent(node);
       sectionMetas.push({
         identifier: child.identifier ?? `/us/usc/t${titleNum}/s${sectionNum}`,
         number: sectionNum,
@@ -749,9 +747,9 @@ function renderTitleChildren(
         contentLength: sectionMd.length,
         hasNotes,
         status: child.status ?? "current",
-        chapterIdentifier: chapterInfo?.identifier ?? "",
-        chapterNumber: chapterInfo?.numValue ?? "0",
-        chapterName: chapterInfo?.heading?.trim() ?? "",
+        chapterIdentifier: currentChapter?.identifier ?? "",
+        chapterNumber: currentChapter?.numValue ?? "0",
+        chapterName: currentChapter?.heading?.trim() ?? "",
       });
     } else if (child.type === "level" && BIG_LEVELS.has(child.levelType)) {
       // Big-level child: emit heading, then recurse
@@ -762,6 +760,9 @@ function renderTitleChildren(
       parts.push("");
       parts.push(`${prefix} ${numDisplay}${heading}`);
 
+      // Track the chapter ancestor for section metadata
+      const nextChapter = child.levelType === "chapter" ? child : currentChapter;
+
       const childParts = renderTitleChildren(
         child,
         headingLevel + 1,
@@ -769,6 +770,7 @@ function renderTitleChildren(
         renderOpts,
         sectionMetas,
         titleNum,
+        nextChapter,
       );
       parts.push(...childParts);
     } else {
@@ -785,35 +787,20 @@ function renderTitleChildren(
 }
 
 /**
- * Find chapter info from a node (if it is a chapter) or return undefined.
- * Used when building SectionMeta during title-level rendering.
- */
-function findChapterInParent(node: LevelNode):
-  | {
-      identifier?: string | undefined;
-      numValue?: string | undefined;
-      heading?: string | undefined;
-    }
-  | undefined {
-  if (node.levelType === "chapter") return node;
-  return undefined;
-}
-
-/**
  * Recursively walk a title-level AST tree and collect SectionMeta for dry-run.
  */
 function collectSectionMetasFromTree(
   node: LevelNode,
   context: EmitContext,
   sectionMetas: SectionMeta[],
+  currentChapter?: LevelNode | undefined,
 ): void {
   for (const child of node.children) {
     if (child.type === "level" && child.levelType === "section") {
-      // Find the chapter parent — use the node itself if it's a chapter
-      const chapterNode = node.levelType === "chapter" ? node : null;
-      sectionMetas.push(buildSectionMetaDryRun(child, chapterNode, context));
+      sectionMetas.push(buildSectionMetaDryRun(child, currentChapter ?? null, context));
     } else if (child.type === "level" && BIG_LEVELS.has(child.levelType)) {
-      collectSectionMetasFromTree(child, context, sectionMetas);
+      const nextChapter = child.levelType === "chapter" ? child : currentChapter;
+      collectSectionMetasFromTree(child, context, sectionMetas, nextChapter);
     }
   }
 }

@@ -21,9 +21,8 @@ export default async function HomePage() {
             <ThemeToggle />
           </div>
           <p className="max-w-2xl text-lg text-muted-foreground">
-            The complete U.S. Code as structured Markdown — built for AI and RAG ingestion.
-            Browse every title, chapter, and section with syntax-highlighted source and rendered
-            HTML.
+            The complete U.S. Code as structured Markdown — built for AI and RAG ingestion. Browse
+            every title, chapter, and section with syntax-highlighted source and rendered HTML.
           </p>
           <Link
             href="/usc/"
@@ -37,9 +36,21 @@ export default async function HomePage() {
         {/* Stats */}
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <StatCard label="Titles" value={titles.length} icon={<BookOpen className="h-5 w-5" />} />
-          <StatCard label="Chapters" value={totalChapters} icon={<FileText className="h-5 w-5" />} />
-          <StatCard label="Sections" value={totalSections} icon={<FileText className="h-5 w-5" />} />
-          <StatCard label="Est. Tokens" value={totalTokens} icon={<FileText className="h-5 w-5" />} />
+          <StatCard
+            label="Chapters"
+            value={totalChapters}
+            icon={<FileText className="h-5 w-5" />}
+          />
+          <StatCard
+            label="Sections"
+            value={totalSections}
+            icon={<FileText className="h-5 w-5" />}
+          />
+          <StatCard
+            label="Est. Tokens"
+            value={totalTokens}
+            icon={<FileText className="h-5 w-5" />}
+          />
         </div>
 
         {/* Title grid */}
@@ -52,9 +63,7 @@ export default async function HomePage() {
                 href={`/usc/${t.directory}/`}
                 className="rounded-lg border border-border p-4 transition-colors hover:border-ring hover:bg-accent"
               >
-                <div className="text-sm font-medium text-muted-foreground">
-                  Title {t.number}
-                </div>
+                <div className="text-sm font-medium text-muted-foreground">Title {t.number}</div>
                 <div className="mt-1 font-semibold text-foreground">{t.name}</div>
                 <div className="mt-2 text-xs text-muted-foreground">
                   {t.chapterCount} chapters · {t.sectionCount} sections
@@ -68,15 +77,7 @@ export default async function HomePage() {
   );
 }
 
-function StatCard({
-  label,
-  value,
-  icon,
-}: {
-  label: string;
-  value: number;
-  icon: React.ReactNode;
-}) {
+function StatCard({ label, value, icon }: { label: string; value: number; icon: React.ReactNode }) {
   return (
     <div className="flex items-center gap-3 rounded-lg border border-border px-4 py-3">
       <div className="text-muted-foreground">{icon}</div>

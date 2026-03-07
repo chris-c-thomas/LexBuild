@@ -26,17 +26,13 @@ export default async function UscIndexPage() {
             className="rounded-lg border border-border p-4 transition-colors hover:border-ring hover:bg-accent"
           >
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-muted-foreground">
-                Title {t.number}
-              </span>
+              <span className="text-sm font-medium text-muted-foreground">Title {t.number}</span>
             </div>
             <div className="mt-1 font-semibold text-foreground">{t.name}</div>
             <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
               <span>{t.chapterCount} chapters</span>
               <span>{t.sectionCount} sections</span>
-              {t.tokenEstimate > 0 && (
-                <span>~{Math.round(t.tokenEstimate / 1000)}k tokens</span>
-              )}
+              {t.tokenEstimate > 0 && <span>~{Math.round(t.tokenEstimate / 1000)}k tokens</span>}
             </div>
           </Link>
         ))}

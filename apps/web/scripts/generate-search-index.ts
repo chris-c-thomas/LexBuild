@@ -36,9 +36,7 @@ async function main() {
     for (const chapterEntry of chapterDirs) {
       const chapterDir = chapterEntry.name;
       const chapterPath = join(titlePath, chapterDir);
-      const files = (await readdir(chapterPath))
-        .filter((f) => f.endsWith(".md"))
-        .sort();
+      const files = (await readdir(chapterPath)).filter((f) => f.endsWith(".md")).sort();
 
       for (const file of files) {
         const raw = await readFile(join(chapterPath, file), "utf-8");

@@ -17,6 +17,7 @@ import Link from "next/link";
 export function Sidebar() {
   const [titles, setTitles] = useState<TitleSummary[]>([]);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [prevPathname, setPrevPathname] = useState<string | null>(null);
   const pathname = usePathname();
   const { titleDir } = parseUscPath(pathname);
 
@@ -24,10 +25,13 @@ export function Sidebar() {
     fetchTitles().then(setTitles);
   }, []);
 
-  // Close mobile sidebar on navigation
-  useEffect(() => {
+  // Close mobile sidebar on navigation (React-approved state-from-props pattern)
+  if (prevPathname !== null && prevPathname !== pathname && mobileOpen) {
     setMobileOpen(false);
-  }, [pathname]);
+  }
+  if (prevPathname !== pathname) {
+    setPrevPathname(pathname);
+  }
 
   const closeMobile = useCallback(() => setMobileOpen(false), []);
 
@@ -46,10 +50,7 @@ export function Sidebar() {
 
       {/* Mobile overlay */}
       {mobileOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
-          onClick={closeMobile}
-        />
+        <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={closeMobile} />
       )}
 
       {/* Sidebar panel */}
@@ -61,10 +62,7 @@ export function Sidebar() {
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
-          <Link
-            href="/usc/"
-            className="flex items-center gap-2 font-semibold text-foreground"
-          >
+          <Link href="/usc/" className="flex items-center gap-2 font-semibold text-foreground">
             <Scale className="h-5 w-5" />
             U.S. Code
           </Link>

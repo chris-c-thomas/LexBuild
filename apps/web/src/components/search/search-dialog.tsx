@@ -90,9 +90,7 @@ export function SearchDialog() {
       const response = await pf.search(query);
       if (controller.signal.aborted) return;
 
-      const items = await Promise.all(
-        response.results.slice(0, 10).map((r) => r.data()),
-      );
+      const items = await Promise.all(response.results.slice(0, 10).map((r) => r.data()));
       if (!controller.signal.aborted) {
         setResults(items);
         setLoading(false);
@@ -106,9 +104,7 @@ export function SearchDialog() {
     setOpen(false);
     // Pagefind URLs are relative to the source dir — convert to site routes
     // e.g. "title-01/chapter-01/section-1.md" → "/usc/title-01/chapter-01/section-1/"
-    const path = result.url
-      .replace(/^\//, "")
-      .replace(/\.md$/, "/");
+    const path = result.url.replace(/^\//, "").replace(/\.md$/, "/");
     router.push(`/usc/${path}`);
   }
 
@@ -140,9 +136,7 @@ export function SearchDialog() {
         {/* Results */}
         <div className="max-h-80 overflow-y-auto p-2">
           {loading && query.trim() && (
-            <div className="px-3 py-4 text-center text-sm text-muted-foreground">
-              Searching...
-            </div>
+            <div className="px-3 py-4 text-center text-sm text-muted-foreground">Searching...</div>
           )}
           {!loading && query.trim() && results.length === 0 && (
             <div className="px-3 py-4 text-center text-sm text-muted-foreground">
@@ -162,9 +156,7 @@ export function SearchDialog() {
                 "w-full rounded-lg px-3 py-2 text-left transition-colors hover:bg-accent",
               )}
             >
-              <div className="text-sm font-medium text-foreground">
-                {r.meta?.title ?? r.url}
-              </div>
+              <div className="text-sm font-medium text-foreground">{r.meta?.title ?? r.url}</div>
               {r.excerpt && (
                 <div
                   className="mt-0.5 line-clamp-2 text-xs text-muted-foreground"
@@ -191,7 +183,9 @@ export function SearchDialog() {
 export function SearchTrigger() {
   return (
     <button
-      onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
+      onClick={() =>
+        window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))
+      }
       className="rounded p-1 text-muted-foreground hover:text-foreground"
       aria-label="Search"
     >

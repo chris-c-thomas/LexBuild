@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -21,14 +21,16 @@ export function ChapterList({
   activeChapterDir,
   activeSectionSlug,
 }: ChapterListProps) {
-  const [expandedChapter, setExpandedChapter] = useState<string | null>(null);
+  const [expandedChapter, setExpandedChapter] = useState<string | null>(activeChapterDir ?? null);
+  const [prevActiveChapterDir, setPrevActiveChapterDir] = useState(activeChapterDir);
 
-  // Auto-expand the active chapter
-  useEffect(() => {
-    if (activeChapterDir && activeChapterDir !== expandedChapter) {
+  // Auto-expand when the active chapter changes (React-approved state-from-props pattern)
+  if (prevActiveChapterDir !== activeChapterDir) {
+    setPrevActiveChapterDir(activeChapterDir);
+    if (activeChapterDir) {
       setExpandedChapter(activeChapterDir);
     }
-  }, [activeChapterDir]);
+  }
 
   const toggleChapter = useCallback((dir: string) => {
     setExpandedChapter((prev) => (prev === dir ? null : dir));
@@ -49,10 +51,7 @@ export function ChapterList({
                 aria-label={isExpanded ? "Collapse" : "Expand"}
               >
                 <ChevronRight
-                  className={cn(
-                    "h-3.5 w-3.5 transition-transform",
-                    isExpanded && "rotate-90",
-                  )}
+                  className={cn("h-3.5 w-3.5 transition-transform", isExpanded && "rotate-90")}
                 />
               </button>
               <Link

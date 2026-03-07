@@ -15,10 +15,7 @@ export function FrontmatterPanel({ frontmatter }: FrontmatterPanelProps) {
       <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-3 lg:grid-cols-4">
         <MetaItem label="Identifier" value={frontmatter.identifier} />
         <MetaItem label="Currency" value={frontmatter.currency} />
-        <MetaItem
-          label="Positive Law"
-          value={frontmatter.positive_law ? "Yes" : "No"}
-        />
+        <MetaItem label="Positive Law" value={frontmatter.positive_law ? "Yes" : "No"} />
         <MetaItem label="Last Updated" value={frontmatter.last_updated} />
 
         {isTitle && (

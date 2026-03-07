@@ -16,17 +16,19 @@ interface TitleListProps {
 
 /** Accordion list of titles. Lazy-loads chapter/section data on expand. */
 export function TitleList({ titles, activeTitleDir }: TitleListProps) {
-  const [expandedTitle, setExpandedTitle] = useState<string | null>(null);
+  const [expandedTitle, setExpandedTitle] = useState<string | null>(activeTitleDir ?? null);
+  const [prevActiveTitleDir, setPrevActiveTitleDir] = useState(activeTitleDir);
   const [navCache, setNavCache] = useState<Record<string, TitleNav>>({});
   const pathname = usePathname();
   const { chapterDir, sectionSlug } = parseUscPath(pathname);
 
-  // Auto-expand the active title on mount or navigation
-  useEffect(() => {
-    if (activeTitleDir && activeTitleDir !== expandedTitle) {
+  // Auto-expand when the active title changes (React-approved state-from-props pattern)
+  if (prevActiveTitleDir !== activeTitleDir) {
+    setPrevActiveTitleDir(activeTitleDir);
+    if (activeTitleDir) {
       setExpandedTitle(activeTitleDir);
     }
-  }, [activeTitleDir]);
+  }
 
   const toggleTitle = useCallback((dir: string) => {
     setExpandedTitle((prev) => (prev === dir ? null : dir));
@@ -59,10 +61,7 @@ export function TitleList({ titles, activeTitleDir }: TitleListProps) {
                 aria-label={isExpanded ? "Collapse" : "Expand"}
               >
                 <ChevronRight
-                  className={cn(
-                    "h-4 w-4 transition-transform",
-                    isExpanded && "rotate-90",
-                  )}
+                  className={cn("h-4 w-4 transition-transform", isExpanded && "rotate-90")}
                 />
               </button>
               <Link
@@ -75,8 +74,7 @@ export function TitleList({ titles, activeTitleDir }: TitleListProps) {
                 )}
                 title={`Title ${t.number} — ${t.name}`}
               >
-                <span className="font-medium text-muted-foreground">{t.number}.</span>{" "}
-                {t.name}
+                <span className="font-medium text-muted-foreground">{t.number}.</span> {t.name}
               </Link>
             </div>
 

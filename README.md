@@ -315,7 +315,7 @@ lexbuild convert --titles 42 --dry-run
 | `--titles <spec>` | — | Title(s) to download: `1`, `1-5`, or `1-5,8,11` |
 | `--all` | — | Download all 54 titles (single bulk zip) |
 | `-o, --output <dir>` | `./downloads/usc/xml` | Download directory |
-| `--release-point <id>` | current | OLRC release point identifier |
+| `--release-point <id>` | latest bundled (e.g. `119-73not60`) | OLRC release point identifier |
 
 #### `lexbuild convert [options] [input]`
 

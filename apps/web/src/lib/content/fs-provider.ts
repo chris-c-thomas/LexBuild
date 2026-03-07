@@ -56,38 +56,46 @@ export class FsNavProvider implements NavProvider {
 
     const titles: TitleSummary[] = [];
     for (const dir of titleDirs) {
-      const raw = await readFile(join(uscDir, dir.name, "_meta.json"), "utf-8");
-      const meta = JSON.parse(raw) as Record<string, unknown>;
-      const stats = meta.stats as Record<string, unknown> | undefined;
-      titles.push({
-        number: meta.title_number as number,
-        name: meta.title_name as string,
-        directory: dir.name,
-        chapterCount: (stats?.chapter_count as number) ?? 0,
-        sectionCount: (stats?.section_count as number) ?? 0,
-        tokenEstimate: (stats?.total_tokens_estimate as number) ?? 0,
-      });
+      try {
+        const raw = await readFile(join(uscDir, dir.name, "_meta.json"), "utf-8");
+        const meta = JSON.parse(raw) as Record<string, unknown>;
+        const stats = meta.stats as Record<string, unknown> | undefined;
+        titles.push({
+          number: meta.title_number as number,
+          name: meta.title_name as string,
+          directory: dir.name,
+          chapterCount: (stats?.chapter_count as number) ?? 0,
+          sectionCount: (stats?.section_count as number) ?? 0,
+          tokenEstimate: (stats?.total_tokens_estimate as number) ?? 0,
+        });
+      } catch {
+        // Skip titles with missing or malformed _meta.json
+      }
     }
     return titles;
   }
 
   async getChapters(titleDir: string): Promise<ChapterNav[]> {
-    const metaPath = join(CONTENT_ROOT, "section", "usc", titleDir, "_meta.json");
-    const raw = await readFile(metaPath, "utf-8");
-    const meta = JSON.parse(raw) as Record<string, unknown>;
-    const chapters = meta.chapters as Record<string, unknown>[] | undefined;
-    return (chapters ?? []).map((ch) => ({
-      number: ch.number as number,
-      name: ch.name as string,
-      directory: ch.directory as string,
-      sections: ((ch.sections as Record<string, unknown>[] | undefined) ?? []).map((s) => ({
-        number: s.number as string,
-        name: s.name as string,
-        file: (s.file as string).replace(/\.md$/, ""),
-        status: (s.status as string) ?? "current",
-        hasNotes: (s.has_notes as boolean) ?? false,
-      })),
-    }));
+    try {
+      const metaPath = safePath(join("section", "usc", titleDir, "_meta.json"));
+      const raw = await readFile(metaPath, "utf-8");
+      const meta = JSON.parse(raw) as Record<string, unknown>;
+      const chapters = meta.chapters as Record<string, unknown>[] | undefined;
+      return (chapters ?? []).map((ch) => ({
+        number: ch.number as number,
+        name: ch.name as string,
+        directory: ch.directory as string,
+        sections: ((ch.sections as Record<string, unknown>[] | undefined) ?? []).map((s) => ({
+          number: s.number as string,
+          name: s.name as string,
+          file: (s.file as string).replace(/\.md$/, ""),
+          status: (s.status as string) ?? "current",
+          hasNotes: (s.has_notes as boolean) ?? false,
+        })),
+      }));
+    } catch {
+      return [];
+    }
   }
 
   async getSections(titleDir: string, chapterDir: string): Promise<SectionNavEntry[]> {

@@ -118,10 +118,8 @@ export function SearchDialog() {
 
   function navigate(result: PagefindResult) {
     setOpen(false);
-    // Pagefind URLs are relative to the source dir — convert to site routes
-    // e.g. "title-01/chapter-01/section-1.md" → "/usc/title-01/chapter-01/section-1/"
-    const path = result.url.replace(/^\//, "").replace(/\.md$/, "/");
-    router.push(`/usc/${path}`);
+    // Pagefind URLs are already absolute paths (e.g. "/usc/title-01/chapter-01/section-1/")
+    router.push(result.url);
   }
 
   if (!open) return null;

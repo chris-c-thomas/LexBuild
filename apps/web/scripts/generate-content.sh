@@ -20,13 +20,13 @@ if [ -z "$TITLES" ]; then
 fi
 
 echo "=== Generating section-level content ==="
-node "$CLI" convert "$TITLES" -g section -o "$WEB_DIR/content/section" --link-style canonical
+node "$CLI" convert $TITLES -g section -o "$WEB_DIR/content/section" --link-style canonical
 
 echo "=== Generating chapter-level content ==="
-node "$CLI" convert "$TITLES" -g chapter -o "$WEB_DIR/content/chapter" --link-style canonical
+node "$CLI" convert $TITLES -g chapter -o "$WEB_DIR/content/chapter" --link-style canonical
 
 echo "=== Generating title-level content ==="
-node "$CLI" convert "$TITLES" -g title -o "$WEB_DIR/content/title" --link-style canonical
+node "$CLI" convert $TITLES -g title -o "$WEB_DIR/content/title" --link-style canonical
 
 echo "=== Generating navigation JSON ==="
 cd "$WEB_DIR" && npx tsx scripts/generate-nav.ts

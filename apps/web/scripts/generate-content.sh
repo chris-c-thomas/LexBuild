@@ -25,12 +25,12 @@ echo "=== Generating title-level content ==="
 node "$CLI" convert $TITLES -g title -o "$WEB_DIR/content/title" --link-style canonical
 
 echo "=== Generating navigation JSON ==="
-cd "$WEB_DIR" && npx tsx scripts/generate-nav.ts
+cd "$WEB_DIR" && pnpm exec tsx scripts/generate-nav.ts
 
 echo "=== Generating search index ==="
-cd "$WEB_DIR" && npx tsx scripts/generate-search-index.ts
+cd "$WEB_DIR" && pnpm exec tsx scripts/generate-search-index.ts
 
 echo "=== Generating sitemap ==="
-cd "$WEB_DIR" && npx tsx scripts/generate-sitemap.ts
+cd "$WEB_DIR" && pnpm exec tsx scripts/generate-sitemap.ts
 
 echo "=== Done ==="

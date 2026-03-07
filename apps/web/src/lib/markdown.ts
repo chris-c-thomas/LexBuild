@@ -26,12 +26,18 @@ export function parseFrontmatter(raw: string): ParsedContent {
   };
 }
 
-// Extend default sanitize schema to allow id attributes (for rehype-slug anchors)
+// Allow id on headings only — rehype-slug adds ids post-sanitize so those are
+// unaffected; this preserves any explicit heading anchors from source HTML.
 const sanitizeSchema = {
   ...defaultSchema,
   attributes: {
     ...defaultSchema.attributes,
-    "*": [...(defaultSchema.attributes?.["*"] ?? []), "id"],
+    h1: [...(defaultSchema.attributes?.["h1"] ?? []), "id"],
+    h2: [...(defaultSchema.attributes?.["h2"] ?? []), "id"],
+    h3: [...(defaultSchema.attributes?.["h3"] ?? []), "id"],
+    h4: [...(defaultSchema.attributes?.["h4"] ?? []), "id"],
+    h5: [...(defaultSchema.attributes?.["h5"] ?? []), "id"],
+    h6: [...(defaultSchema.attributes?.["h6"] ?? []), "id"],
   },
 };
 

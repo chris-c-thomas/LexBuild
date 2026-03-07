@@ -98,9 +98,7 @@ export function TitleList({ titles, activeTitleDir }: TitleListProps) {
                     activeSectionSlug={isActive ? sectionSlug : undefined}
                   />
                 ) : navEntry === null ? (
-                  <div className="px-2 py-2 text-xs text-muted-foreground">
-                    Failed to load.
-                  </div>
+                  <div className="px-2 py-2 text-xs text-muted-foreground">Failed to load.</div>
                 ) : (
                   <div className="px-2 py-2 text-xs text-muted-foreground">Loading...</div>
                 )}

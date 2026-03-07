@@ -175,11 +175,9 @@ export async function convertTitle(options: ConvertOptions): Promise<ConvertResu
     // Title-level: each emitted node is an entire title
     for (const { node, context } of collected) {
       const result = await writeWholeTitle(node, context, opts);
-      if (result) {
-        files.push(result.filePath);
-        for (const m of result.sectionMetas) {
-          sectionMetas.push(m);
-        }
+      files.push(result.filePath);
+      for (const m of result.sectionMetas) {
+        sectionMetas.push(m);
       }
     }
   } else if (opts.granularity === "chapter") {
@@ -646,7 +644,7 @@ async function writeWholeTitle(
   titleNode: LevelNode,
   context: EmitContext,
   options: ConvertOptions,
-): Promise<WriteTitleResult | null> {
+): Promise<WriteTitleResult> {
   const meta = context.documentMeta;
   const docNum = meta.docNumber ?? titleNode.numValue ?? "0";
   const titleNum = docNum.replace(/a$/i, "");

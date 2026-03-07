@@ -757,6 +757,9 @@ Adapts based on field presence (not a `granularity` prop):
 - **Shiki singleton persists across requests** within a serverless function instance. Do NOT reinitialize per request.
 - **`process.env.CONTENT_DIR` defaults to `./content`.** Override via `.env.local` for custom paths.
 - **`process.env.CONTENT_STORAGE` defaults to `fs`.** Future values: `s3`, `r2`, `blob`.
+- **Tailwind CSS v4 requires `@tailwindcss/postcss` and a `postcss.config.mjs`.** Without these, no utility classes or `@theme inline` mappings are generated. Next.js does NOT auto-detect Tailwind v4 — you must configure PostCSS explicitly.
+- **Clear `.next/` cache after CSS config changes.** Stale cache can mask PostCSS fixes. Run `rm -rf .next` and restart dev server.
+- **shadcn/ui `buttonVariants` is `"use client"`.** Cannot call it in Server Components. Use inline Tailwind classes or a client wrapper for styled links in server pages.
 
 ---
 
@@ -789,7 +792,8 @@ node packages/cli/dist/index.js convert --titles 1 -g title   -o ./apps/web/cont
    - Configure `trailingSlash: true`, `images: { unoptimized: true }`
    - Configure cache headers in `next.config.ts` `headers()` for `/usc/:path*`
    - Install dependencies: `shiki`, `gray-matter`, `unified`, `remark-parse`, `remark-gfm`, `remark-rehype`, `rehype-stringify`, `rehype-slug`, `lucide-react`, `@tanstack/react-virtual`, `fast-glob`
-   - Set up Tailwind CSS 4 with `@tailwindcss/typography`
+   - Set up Tailwind CSS 4 with `@tailwindcss/typography` and `@tailwindcss/postcss`
+   - Create `postcss.config.mjs` with `@tailwindcss/postcss` plugin
    - Initialize shadcn/ui (zinc theme, CSS variables)
    - Add git-ignores: `apps/web/content/`, `apps/web/public/nav/`, `apps/web/public/_pagefind/`, `apps/web/.next/`
    - Add `build:web` and `dev:web` tasks to `turbo.json`

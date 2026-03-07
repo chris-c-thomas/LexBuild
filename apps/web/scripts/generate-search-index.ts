@@ -67,8 +67,11 @@ function parseFrontmatter(raw: string): { title: string; body: string } {
   const fm = raw.slice(3, end);
   const body = raw.slice(end + 4).trim();
 
-  const titleMatch = fm.match(/^title:\s*"?(.+?)"?\s*$/m);
-  return { title: titleMatch?.[1] ?? "", body };
+  // Match title: "quoted value" or title: unquoted value
+  const quotedMatch = fm.match(/^title:\s*"(.*)"\s*$/m);
+  if (quotedMatch) return { title: quotedMatch[1] ?? "", body };
+  const unquotedMatch = fm.match(/^title:\s*(.+?)\s*$/m);
+  return { title: unquotedMatch?.[1] ?? "", body };
 }
 
 main().catch((err) => {

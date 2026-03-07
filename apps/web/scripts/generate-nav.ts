@@ -60,8 +60,20 @@ async function main() {
 
   for (const dir of titleDirs) {
     const metaPath = join(uscDir, dir.name, "_meta.json");
-    const raw = await readFile(metaPath, "utf-8");
-    const meta = JSON.parse(raw) as Record<string, unknown>;
+    let raw: string;
+    try {
+      raw = await readFile(metaPath, "utf-8");
+    } catch {
+      console.warn(`  skipping ${dir.name}: missing _meta.json`);
+      continue;
+    }
+    let meta: Record<string, unknown>;
+    try {
+      meta = JSON.parse(raw) as Record<string, unknown>;
+    } catch {
+      console.warn(`  skipping ${dir.name}: malformed _meta.json`);
+      continue;
+    }
     const stats = meta.stats as Record<string, number> | undefined;
     const chapters = meta.chapters as Record<string, unknown>[] | undefined;
 

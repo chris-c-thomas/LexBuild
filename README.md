@@ -12,7 +12,7 @@ A compiler for legal and civic texts. Converts disparate statutory data — star
 
 - [Overview](#overview)
 - [Features](#features)
-- [Monorepo Architecture](#monorepo-architecture)
+- [Monorepo](#monorepo)
 - [Packages](#packages)
 - [Apps](#apps)
 - [Install](#install)
@@ -56,7 +56,7 @@ The project is designed as an extensible platform. The U.S. Code is the first su
 
 ---
 
-## Monorepo Architecture
+## Monorepo
 
 LexBuild is a monorepo managed with [pnpm](https://pnpm.io/) workspaces and [Turborepo](https://turbo.build/). This structure cleanly separates concerns — shared parsing infrastructure, source-specific logic, CLI tooling, and downstream applications — while keeping everything in a single repository with unified versioning.
 
@@ -308,49 +308,43 @@ lexbuild convert --titles 42 --dry-run
 
 ### CLI Reference
 
-```
-lexbuild convert [input] [options]
+#### `lexbuild download [options]`
 
-Arguments:
-  input                          Path to a USC XML file (optional if --titles
-                                 or --all is used)
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--titles <spec>` | — | Title(s) to download: `1`, `1-5`, or `1-5,8,11` |
+| `--all` | — | Download all 54 titles (single bulk zip) |
+| `-o, --output <dir>` | `./downloads/usc/xml` | Download directory |
+| `--release-point <id>` | latest bundled (e.g. `119-73not60`) | OLRC release point identifier |
 
-Options:
-  --titles <spec>                Title(s) to convert: single (1), range (1-5),
-                                 or mixed (1-5,8,11)
-  --all                          Convert all downloaded titles found in
-                                 --input-dir
-  -i, --input-dir <dir>          Input directory for XML files
-                                 (default: "./downloads/usc/xml")
-  -o, --output <dir>             Output directory (default: "./output")
-  -g, --granularity <level>      "section", "chapter", or "title"
-                                 (default: "section")
-  --link-style <style>           "plaintext", "canonical", or "relative"
-                                 (default: "plaintext")
-  --no-include-source-credits    Exclude source credit annotations
-  --no-include-notes             Exclude all notes
-  --include-editorial-notes      Include editorial notes only
-  --include-statutory-notes      Include statutory notes only
-  --include-amendments           Include amendment history notes only
-  --dry-run                      Parse and report without writing files
-  -v, --verbose                  Enable verbose logging
-  -h, --help                     Display help
-```
+#### `lexbuild convert [options] [input]`
 
-```
-lexbuild download [options]
+Specify input as a file path, `--titles`, or `--all` (exactly one). When multiple `--include-*-notes` flags are used, they combine additively.
 
-Options:
-  --titles <spec>                Title(s) to download: single (1), range (1-5),
-                                 or mixed (1-5,8,11)
-  --all                          Download all 54 titles
-  -o, --output <dir>             Output directory
-                                 (default: "./downloads/usc/xml")
-  --release-point <point>        OLRC release point (default: current)
-  -h, --help                     Display help
-```
+| Option | Default | Description |
+|--------|---------|-------------|
+| `[input]` | — | Path to a USC XML file |
+| `--titles <spec>` | — | Title(s) to convert: `1`, `1-5`, or `1-5,8,11` |
+| `--all` | — | Convert all downloaded titles in `--input-dir` |
+| `-o, --output <dir>` | `./output` | Output directory |
+| `-i, --input-dir <dir>` | `./downloads/usc/xml` | Input directory for XML files |
+| `-g, --granularity <level>` | `section` | `section`, `chapter`, or `title` (see below) |
+| `--link-style <style>` | `plaintext` | `plaintext`, `canonical`, or `relative` |
+| `--no-include-source-credits` | — | Exclude source credit annotations |
+| `--no-include-notes` | — | Exclude all notes |
+| `--include-editorial-notes` | — | Include editorial notes only |
+| `--include-statutory-notes` | — | Include statutory notes only |
+| `--include-amendments` | — | Include amendment history notes only |
+| `--dry-run` | — | Parse and report without writing files |
+| `-v, --verbose` | — | Enable verbose logging |
 
-When multiple `--include-*-notes` flags are specified, they combine additively.
+**Granularity modes:**
+
+| Mode | Output | Description |
+|--------|---------|-------------|
+| `section` | `title-NN/chapter-NN/section-N.md` | One file per section (default) |
+| `chapter` | `title-NN/chapter-NN.md` | One file per chapter, sections inlined |
+| `title` | `title-NN.md` | One file per title, entire hierarchy inlined |
 
 ---
 

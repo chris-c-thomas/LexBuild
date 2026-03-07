@@ -14,7 +14,7 @@ export default async function UscIndexPage() {
     <div className="flex flex-col gap-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">U.S. Code</h1>
-        <p className="mt-2 text-zinc-600 dark:text-zinc-400">
+        <p className="mt-2 text-muted-foreground">
           {titles.length} titles available — select a title to browse.
         </p>
       </div>
@@ -23,14 +23,20 @@ export default async function UscIndexPage() {
           <Link
             key={t.directory}
             href={`/usc/${t.directory}/`}
-            className="rounded-lg border border-zinc-200 p-4 transition-colors hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:border-zinc-600 dark:hover:bg-zinc-900"
+            className="rounded-lg border border-border p-4 transition-colors hover:border-ring hover:bg-accent"
           >
-            <div className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-              Title {t.number}
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-muted-foreground">
+                Title {t.number}
+              </span>
             </div>
-            <div className="mt-1 font-semibold text-zinc-900 dark:text-zinc-100">{t.name}</div>
-            <div className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
-              {t.chapterCount} chapters · {t.sectionCount} sections
+            <div className="mt-1 font-semibold text-foreground">{t.name}</div>
+            <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+              <span>{t.chapterCount} chapters</span>
+              <span>{t.sectionCount} sections</span>
+              {t.tokenEstimate > 0 && (
+                <span>~{Math.round(t.tokenEstimate / 1000)}k tokens</span>
+              )}
             </div>
           </Link>
         ))}

@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
 
+## [1.1.1]
+
+### Fixed
+
+- **Incomplete table cell escaping**: `renderTable` in `@lexbuild/core` only escaped pipe characters (`|`) in Markdown table cells but not backslashes, which could produce malformed tables when cell content contained backslashes. Added `escapeTableCell()` helper that escapes backslashes first, then pipes, ensuring correct Markdown output.
+
+---
+
 ## [1.1.0]
 
 ### Added

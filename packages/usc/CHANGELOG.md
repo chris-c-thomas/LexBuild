@@ -1,5 +1,36 @@
 # @lexbuild/usc
 
+## 1.1.0
+
+### Minor Changes
+
+- [#15](https://github.com/chris-c-thomas/lexbuild/pull/15) [`b60c8a5`](https://github.com/chris-c-thomas/lexbuild/commit/b60c8a561e7d9d88fd50eec79b214a1d35b6e49a) Thanks [@chris-c-thomas](https://github.com/chris-c-thomas)! - Improve CLI help output with usage examples, granularity descriptions, and documentation links
+
+- [#14](https://github.com/chris-c-thomas/lexbuild/pull/14) [`0968b27`](https://github.com/chris-c-thomas/lexbuild/commit/0968b2763db5b9683c98f4c64c7c6304502b0838) Thanks [@chris-c-thomas](https://github.com/chris-c-thomas)! - Add "title" output granularity (`-g title`) that produces a single Markdown file per title with recursive heading
+
+### Patch Changes
+
+- [#16](https://github.com/chris-c-thomas/lexbuild/pull/16) [`0672a8b`](https://github.com/chris-c-thomas/lexbuild/commit/0672a8b4205ed3dc50f26f24acb0a49775916b87) Thanks [@chris-c-thomas](https://github.com/chris-c-thomas)! - Remove null return type from writeWholeTitle
+
+- [#16](https://github.com/chris-c-thomas/lexbuild/pull/16) [`18578e8`](https://github.com/chris-c-thomas/lexbuild/commit/18578e8f170eef43978db8494eaf6b1e5db252de) Thanks [@chris-c-thomas](https://github.com/chris-c-thomas)! - Fix additional heading collisions, token estimation inconsistencies, and validate granularity commands to prevent invalid options
+
+- [#14](https://github.com/chris-c-thomas/lexbuild/pull/14) [`bd0ac38`](https://github.com/chris-c-thomas/lexbuild/commit/bd0ac38857b8a305e87db75ae4c955b504809ac3) Thanks [@chris-c-thomas](https://github.com/chris-c-thomas)! - Fix heading level issues
+
+- [#16](https://github.com/chris-c-thomas/lexbuild/pull/16) [`1faf32a`](https://github.com/chris-c-thomas/lexbuild/commit/1faf32afc4f267135032b605dd3e72feaf2664c4) Thanks [@chris-c-thomas](https://github.com/chris-c-thomas)! - Additional clceanup
+
+- [#14](https://github.com/chris-c-thomas/lexbuild/pull/14) [`6e50a6f`](https://github.com/chris-c-thomas/lexbuild/commit/6e50a6f859a1c877cab731fbe18df888efb1ecbc) Thanks [@chris-c-thomas](https://github.com/chris-c-thomas)! - Fix doc heading format and chapter count inconsistency
+
+- [#14](https://github.com/chris-c-thomas/lexbuild/pull/14) [`45007c1`](https://github.com/chris-c-thomas/lexbuild/commit/45007c1c28499539d16e008984827e6776b9089b) Thanks [@chris-c-thomas](https://github.com/chris-c-thomas)! - Fixed chapter related output with regard to headings and metadata
+
+- [#14](https://github.com/chris-c-thomas/lexbuild/pull/14) [`e88a24e`](https://github.com/chris-c-thomas/lexbuild/commit/e88a24e8ec60e1f89aebcef45803af0b268e9d5a) Thanks [@chris-c-thomas](https://github.com/chris-c-thomas)! - Fix section heading collision at depth 5
+
+- [#16](https://github.com/chris-c-thomas/lexbuild/pull/16) [`f33a033`](https://github.com/chris-c-thomas/lexbuild/commit/f33a033022d25c2007f884eaeb2faae4bb5153df) Thanks [@chris-c-thomas](https://github.com/chris-c-thomas)! - Fix token estimation for title-level conversions
+
+- [#14](https://github.com/chris-c-thomas/lexbuild/pull/14) [`db9bf75`](https://github.com/chris-c-thomas/lexbuild/commit/db9bf75f36e372dcd30630ca1da898442ab0313a) Thanks [@chris-c-thomas](https://github.com/chris-c-thomas)! - Fix appendix naming conflicts
+
+- Updated dependencies [[`0672a8b`](https://github.com/chris-c-thomas/lexbuild/commit/0672a8b4205ed3dc50f26f24acb0a49775916b87), [`18578e8`](https://github.com/chris-c-thomas/lexbuild/commit/18578e8f170eef43978db8494eaf6b1e5db252de), [`bd0ac38`](https://github.com/chris-c-thomas/lexbuild/commit/bd0ac38857b8a305e87db75ae4c955b504809ac3), [`b60c8a5`](https://github.com/chris-c-thomas/lexbuild/commit/b60c8a561e7d9d88fd50eec79b214a1d35b6e49a), [`1faf32a`](https://github.com/chris-c-thomas/lexbuild/commit/1faf32afc4f267135032b605dd3e72feaf2664c4), [`6e50a6f`](https://github.com/chris-c-thomas/lexbuild/commit/6e50a6f859a1c877cab731fbe18df888efb1ecbc), [`0968b27`](https://github.com/chris-c-thomas/lexbuild/commit/0968b2763db5b9683c98f4c64c7c6304502b0838), [`45007c1`](https://github.com/chris-c-thomas/lexbuild/commit/45007c1c28499539d16e008984827e6776b9089b), [`e88a24e`](https://github.com/chris-c-thomas/lexbuild/commit/e88a24e8ec60e1f89aebcef45803af0b268e9d5a), [`f33a033`](https://github.com/chris-c-thomas/lexbuild/commit/f33a033022d25c2007f884eaeb2faae4bb5153df), [`db9bf75`](https://github.com/chris-c-thomas/lexbuild/commit/db9bf75f36e372dcd30630ca1da898442ab0313a)]:
+  - @lexbuild/core@1.1.0
+
 ## 1.0.6
 
 ### Patch Changes

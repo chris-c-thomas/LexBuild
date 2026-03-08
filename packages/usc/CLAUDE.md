@@ -13,7 +13,7 @@ src/
 ├── converter.test.ts     # 15+ test cases
 ├── snapshot.test.ts      # Output stability snapshots
 ├── downloader.ts         # OLRC XML download + bulk zip handling (418 lines)
-└── downloader.test.ts    # 14 test cases
+└── downloader.test.ts    # 15+ test cases
 ```
 
 ## Public API

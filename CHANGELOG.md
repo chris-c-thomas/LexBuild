@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
 
+## [1.3.0]
+
+### Fixed
+
+#### Chapter Granularity Output
+
+- **Chapter files placed outside chapter directories**: `writeChapter()` wrote chapter `.md` files as siblings of the chapter directories (e.g., `title-01/chapter-01.md`) instead of inside them (`title-01/chapter-01/chapter-01.md`). The `_meta.json` files were already correctly placed inside the chapter directories, creating an inconsistency. Fixed the output path in `writeChapter()` to place files inside their chapter directory.
+- **Empty chapter files for chapters with intermediate levels**: `writeChapter()` only iterated direct children of the chapter node looking for sections, missing all sections nested inside intermediate big levels (subchapter, part, article, etc.). This caused 521 out of 2,668 chapter files (~20%) to contain only frontmatter and a heading with no content. Added `renderChapterChildren()` helper that recursively traverses intermediate big levels, emitting structural headings and rendering all nested sections.
+- **Dry-run chapter granularity misses nested sections**: the dry-run path for `granularity === "chapter"` had the same flat-iteration bug — it only checked direct children of the chapter node for sections, producing `sectionsWritten: 0` for any chapter with subchapters/parts. Added `collectChapterSectionsDryRun()` helper mirroring the recursive traversal in `renderChapterChildren()`.
+- **`relativeFile` stale after path change**: `SectionMeta.relativeFile` for chapter-granularity sections was set to the bare filename (`chapter-01.md`) instead of the path relative to the title directory (`chapter-01/chapter-01.md`). Updated to include the chapter directory prefix.
+
+### Changed
+
+#### CLI Output
+
+- **Granularity-aware summary table and footer**: the `convert` command's summary table columns and footer message now adapt to the chosen granularity. Section mode shows Chapters + Sections columns, chapter mode shows Chapters only, and title mode shows just Tokens + Duration. The footer reports the primary unit for the granularity (e.g., "Converted 53 titles (2,880 chapters)" for chapter mode instead of always showing section counts).
+- **Single-file summary adapts to granularity**: the detailed summary block for single-file conversions now shows only relevant stats — section mode shows Sections + Chapters, chapter mode shows Chapters only, title mode shows neither.
+
+#### Documentation
+
+- **`CLAUDE.md`**: updated chapter granularity output path from `title-{NN}/chapter-{NN}.md` to `title-{NN}/chapter-{NN}/chapter-{NN}.md`.
+- **`apps/web/CLAUDE.md`**: updated chapter content file path references in architecture summary and route documentation.
+
+#### Web App
+
+- **Chapter route content path**: updated `apps/web/src/app/usc/[title]/[chapter]/page.tsx` to read chapter files from the new path inside the chapter directory (`chapter/usc/{title}/{chapter}/{chapter}.md`).
+
+---
+
 ## [1.2.0]
 
 ### Added

@@ -109,17 +109,17 @@
   --color-foreground: var(--foreground);
   --color-background: var(--background);
   /* Muted blue palette */
-  --color-slate-blue-50: #F5F9FA;
-  --color-slate-blue-100: #E7F0F3;
-  --color-slate-blue-200: #D3E3E9;
-  --color-slate-blue-300: #B4CFDA;
-  --color-slate-blue-400: #94B7C7;
-  --color-slate-blue-500: #6C9FB7;
-  --color-slate-blue-600: #5285A3;
-  --color-slate-blue-700: #476C85;
-  --color-slate-blue-800: #3F5869;
+  --color-slate-blue-50: #f5f9fa;
+  --color-slate-blue-100: #e7f0f3;
+  --color-slate-blue-200: #d3e3e9;
+  --color-slate-blue-300: #b4cfda;
+  --color-slate-blue-400: #94b7c7;
+  --color-slate-blue-500: #6c9fb7;
+  --color-slate-blue-600: #5285a3;
+  --color-slate-blue-700: #476c85;
+  --color-slate-blue-800: #3f5869;
   --color-slate-blue-900: #354754;
-  --color-slate-blue-950: #1F2C38;
+  --color-slate-blue-950: #1f2c38;
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);

@@ -85,7 +85,10 @@ export function Sidebar() {
         {/* Header */}
         <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
           <div className="flex min-w-0 items-center gap-2">
-            <Link href="/" className="flex shrink-0 items-center gap-1.5 font-semibold text-foreground">
+            <Link
+              href="/"
+              className="flex shrink-0 items-center gap-1.5 font-semibold text-foreground"
+            >
               <Scale className="h-5 w-5 shrink-0" />
               LexBuild
             </Link>
@@ -96,7 +99,9 @@ export function Sidebar() {
                 className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
               >
                 U.S. Code
-                <ChevronDown className={cn("h-3 w-3 transition-transform", corpusOpen && "rotate-180")} />
+                <ChevronDown
+                  className={cn("h-3 w-3 transition-transform", corpusOpen && "rotate-180")}
+                />
               </button>
               {corpusOpen && (
                 <div className="absolute left-0 top-full z-50 mt-1 w-48 rounded-lg border border-border bg-background p-1 shadow-lg">
@@ -109,7 +114,9 @@ export function Sidebar() {
                   </Link>
                   <div className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-sm text-muted-foreground/50 cursor-not-allowed">
                     CFR
-                    <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium">Soon</span>
+                    <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium">
+                      Soon
+                    </span>
                   </div>
                 </div>
               )}

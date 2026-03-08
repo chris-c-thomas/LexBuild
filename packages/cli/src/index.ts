@@ -23,7 +23,7 @@ Quick start:
   $ lexbuild convert --titles 1         Convert Title 1 only
   $ lexbuild convert --titles 1 -g title   Whole title as a single file
 
-Documentation: https://github.com/chris-c-thomas/lexbuild`,
+Documentation: https://github.com/chris-c-thomas/LexBuild`,
   );
 
 program.addCommand(convertCommand);

@@ -6,12 +6,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/chris-c-thomas/lexbuild.git",
+    "url": "https://github.com/chris-c-thomas/LexBuild.git",
     "directory": "packages/core"
   },
-  "homepage": "https://github.com/chris-c-thomas/lexbuild/tree/main/packages/core",
+  "homepage": "https://github.com/chris-c-thomas/LexBuild/tree/main/packages/core",
   "bugs": {
-    "url": "https://github.com/chris-c-thomas/lexbuild/issues"
+    "url": "https://github.com/chris-c-thomas/LexBuild/issues"
   },
   "keywords": [
     "lexbuild",

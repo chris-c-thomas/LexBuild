@@ -4,13 +4,13 @@
   "private": true,
   "author": "Chris Thomas",
   "license": "MIT",
-  "homepage": "https://github.com/chris-c-thomas/lexbuild#readme",
+  "homepage": "https://github.com/chris-c-thomas/LexBuild#readme",
   "bugs": {
-    "url": "https://github.com/chris-c-thomas/lexbuild/issues"
+    "url": "https://github.com/chris-c-thomas/LexBuild/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/chris-c-thomas/lexbuild.git"
+    "url": "git+https://github.com/chris-c-thomas/LexBuild.git"
   },
   "keywords": [
     "lexbuild",

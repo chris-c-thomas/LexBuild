@@ -1,7 +1,7 @@
 # LexBuild
 
 [![npm](https://img.shields.io/npm/v/%40lexbuild%2Fcli?style=for-the-badge)](https://www.npmjs.com/package/@lexbuild/cli)
-[![CI](https://img.shields.io/github/actions/workflow/status/chris-c-thomas/lexbuild/ci.yml?style=for-the-badge&label=CI)](https://github.com/chris-c-thomas/lexbuild/actions/workflows/ci.yml)
+[![CI](https://img.shields.io/github/actions/workflow/status/chris-c-thomas/LexBuild/ci.yml?style=for-the-badge&label=CI)](https://github.com/chris-c-thomas/LexBuild/actions/workflows/ci.yml)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue?style=for-the-badge)](https://www.typescriptlang.org/)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen?style=for-the-badge)](https://nodejs.org/)
 [![license](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)](LICENSE)
@@ -226,8 +226,8 @@ and [pnpm](https://pnpm.io/) >= 10.
 #### Clone Repository
 
 ```bash
-git clone https://github.com/chris-c-thomas/lexbuild.git
-cd lexbuild
+git clone https://github.com/chris-c-thomas/LexBuild.git
+cd LexBuild
 ```
 
 #### Install & Build
@@ -503,8 +503,8 @@ The full U.S. Code — all 54 titles (53 with content; Title 53 is reserved), ov
 ### Getting Started
 
 ```bash
-git clone https://github.com/chris-c-thomas/lexbuild.git
-cd lexbuild
+git clone https://github.com/chris-c-thomas/LexBuild.git
+cd LexBuild
 pnpm install
 pnpm turbo build
 ```
@@ -570,7 +570,7 @@ The U.S. Code XML is **public domain** and freely available at [uscode.house.gov
 
 Features and enhancements that are currently planned.
 
-Feel free to open an [issue](https://github.com/chris-c-thomas/lexbuild/issues) or start a [discussion](https://github.com/chris-c-thomas/lexbuild/discussions) to talk about any of these. Ideas and contributions are always welcome.
+Feel free to open an [issue](https://github.com/chris-c-thomas/LexBuild/issues) or start a [discussion](https://github.com/chris-c-thomas/LexBuild/discussions) to talk about any of these. Ideas and contributions are always welcome.
 
 **Output**
 

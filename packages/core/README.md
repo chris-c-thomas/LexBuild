@@ -1,9 +1,9 @@
 # @lexbuild/core
 
 [![npm](https://img.shields.io/npm/v/%40lexbuild%2Fcore?style=for-the-badge)](https://www.npmjs.com/package/@lexbuild/core)
-[![license](https://img.shields.io/github/license/chris-c-thomas/lexbuild?style=for-the-badge)](https://github.com/chris-c-thomas/lexbuild)
+[![license](https://img.shields.io/github/license/chris-c-thomas/LexBuild?style=for-the-badge)](https://github.com/chris-c-thomas/LexBuild)
 
-This package is part of the [LexBuild](https://github.com/chris-c-thomas/lexbuild) monorepo, a tool that converts U.S. legislative XML into structured Markdown optimized for AI, RAG pipelines, and semantic search. See the monorepo for full documentation, architecture details, and contribution guidelines.
+This package is part of the [LexBuild](https://github.com/chris-c-thomas/LexBuild) monorepo, a tool that converts U.S. legislative XML into structured Markdown optimized for AI, RAG pipelines, and semantic search. See the monorepo for full documentation, architecture details, and contribution guidelines.
 
 It provides the foundational building blocks for XML parsing infrastructure, AST definitions, and Markdown rendering for use by [`@lexbuild/usc`](https://www.npmjs.com/package/@lexbuild/usc) and [`@lexbuild/cli`](https://www.npmjs.com/package/@lexbuild/cli).
 
@@ -91,12 +91,12 @@ import { USLM_NS, XHTML_NS, LEVEL_ELEMENTS, CONTENT_ELEMENTS } from "@lexbuild/c
 
 ## Documentation
 
-- [LexBuild Monorepo](https://github.com/chris-c-thomas/lexbuild)
-- [Architecture](https://github.com/chris-c-thomas/lexbuild/blob/main/docs/architecture.md)
-- [Output Format](https://github.com/chris-c-thomas/lexbuild/blob/main/docs/output-format.md)
-- [XML Element Reference](https://github.com/chris-c-thomas/lexbuild/blob/main/docs/xml-element-reference.md)
-- [Extending](https://github.com/chris-c-thomas/lexbuild/blob/main/docs/extending.md)
+- [LexBuild Monorepo](https://github.com/chris-c-thomas/LexBuild)
+- [Architecture](https://github.com/chris-c-thomas/LexBuild/blob/main/docs/architecture.md)
+- [Output Format](https://github.com/chris-c-thomas/LexBuild/blob/main/docs/output-format.md)
+- [XML Element Reference](https://github.com/chris-c-thomas/LexBuild/blob/main/docs/xml-element-reference.md)
+- [Extending](https://github.com/chris-c-thomas/LexBuild/blob/main/docs/extending.md)
 
 ## License
 
-[MIT](https://github.com/chris-c-thomas/lexbuild/blob/main/LICENSE)
+[MIT](https://github.com/chris-c-thomas/LexBuild/blob/main/LICENSE)

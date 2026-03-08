@@ -10,8 +10,8 @@ Thanks for your interest in contributing! This guide covers everything you need 
 ## Setup
 
 ```bash
-git clone https://github.com/chris-c-thomas/lexbuild.git
-cd lexbuild
+git clone https://github.com/chris-c-thomas/LexBuild.git
+cd LexBuild
 pnpm install
 pnpm turbo build
 ```

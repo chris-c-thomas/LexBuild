@@ -14,9 +14,9 @@ src/
 │   └── parser.ts                # Streaming SAX parser wrapping saxes
 ├── ast/
 │   ├── types.ts                 # AST node type definitions (LevelNode, ContentNode, InlineNode, etc.)
-│   └── builder.ts               # XML SAX events → AST conversion (1,182 lines, core state machine)
+│   └── builder.ts               # XML SAX events → AST conversion (~1,180 lines, core state machine)
 └── markdown/
-    ├── renderer.ts              # AST → Markdown conversion (584 lines)
+    ├── renderer.ts              # AST → Markdown conversion (~585 lines)
     ├── frontmatter.ts           # YAML frontmatter generation
     └── links.ts                 # Cross-reference link resolution & OLRC fallback URLs
 ```

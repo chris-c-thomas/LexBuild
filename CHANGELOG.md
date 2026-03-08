@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
 
+## [1.4.1]
+
+### Fixed
+
+- **`@lexbuild/usc` README npm badge**: badge linked to `@lexbuild/core` instead of `@lexbuild/usc`.
+- **Chapter granularity output path**: READMEs for `@lexbuild/usc`, `@lexbuild/cli`, and the monorepo root still showed the pre-1.3.0 path (`title-NN/chapter-NN.md`) instead of the corrected `title-NN/chapter-NN/chapter-NN.md`.
+
+---
+
 ## [1.4.0]
 
 ### Changed

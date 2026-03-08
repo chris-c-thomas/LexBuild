@@ -402,8 +402,6 @@ Examples:
       const sectionWord = totalSections === 1 ? "section" : "sections";
       countLabel = `${totalTitles} ${titleWord} (${formatNumber(totalSections)} ${sectionWord})`;
     }
-    console.log(
-      `\n  ${success(`Converted ${countLabel} in ${formatDuration(totalElapsed)}`)}`,
-    );
+    console.log(`\n  ${success(`Converted ${countLabel} in ${formatDuration(totalElapsed)}`)}`);
     console.log("");
   });

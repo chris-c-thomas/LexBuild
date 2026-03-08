@@ -652,9 +652,7 @@ function renderChapterChildren(
       parts.push(sectionMd);
 
       const sectionNum = child.numValue ?? "0";
-      const hasNotes = child.children.some(
-        (c) => c.type === "notesContainer" || c.type === "note",
-      );
+      const hasNotes = child.children.some((c) => c.type === "notesContainer" || c.type === "note");
       sectionMetas.push({
         identifier: child.identifier ?? `/us/usc/t${titleNum}/s${sectionNum}`,
         number: sectionNum,

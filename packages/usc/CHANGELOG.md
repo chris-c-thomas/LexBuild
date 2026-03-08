@@ -1,5 +1,14 @@
 # @lexbuild/usc
 
+## 1.4.1
+
+### Patch Changes
+
+- [`265bc0f`](https://github.com/chris-c-thomas/lexbuild/commit/265bc0f773da61e65736749d2dd462aa767f4b25) Thanks [@chris-c-thomas](https://github.com/chris-c-thomas)! - Update README.md files
+
+- Updated dependencies [[`265bc0f`](https://github.com/chris-c-thomas/lexbuild/commit/265bc0f773da61e65736749d2dd462aa767f4b25)]:
+  - @lexbuild/core@1.4.1
+
 ## 1.4.0
 
 ### Minor Changes

@@ -351,7 +351,7 @@ Specify input as a file path, `--titles`, or `--all` (exactly one). When multipl
 | Mode | Output | Description |
 |--------|---------|-------------|
 | `section` | `title-NN/chapter-NN/section-N.md` | One file per section (default) |
-| `chapter` | `title-NN/chapter-NN.md` | One file per chapter, sections inlined |
+| `chapter` | `title-NN/chapter-NN/chapter-NN.md` | One file per chapter, sections inlined |
 | `title` | `title-NN.md` | One file per title, entire hierarchy inlined |
 
 ---
@@ -383,8 +383,10 @@ output/usc/
   title-01/
     README.md
     _meta.json
-    chapter-01.md
-    chapter-02.md
+    chapter-01/
+      chapter-01.md
+    chapter-02/
+      chapter-02.md
 ```
 
 **Title granularity** (`-g title`):

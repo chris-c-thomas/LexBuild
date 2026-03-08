@@ -96,7 +96,7 @@ output/usc/title-01/chapter-01/section-1.md
 **Chapter granularity** (`-g chapter`):
 
 ```
-output/usc/title-01/chapter-01.md
+output/usc/title-01/chapter-01/chapter-01.md
 ```
 
 **Title granularity** (`-g title`):

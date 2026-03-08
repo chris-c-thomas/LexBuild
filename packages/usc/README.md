@@ -1,6 +1,6 @@
 # @lexbuild/usc
 
-[![npm](https://img.shields.io/npm/v/%40lexbuild%2Fcore?style=for-the-badge)](https://www.npmjs.com/package/@lexbuild/core)
+[![npm](https://img.shields.io/npm/v/%40lexbuild%2Fusc?style=for-the-badge)](https://www.npmjs.com/package/@lexbuild/usc)
 [![license](https://img.shields.io/github/license/chris-c-thomas/lexbuild?style=for-the-badge)](https://github.com/chris-c-thomas/lexbuild)
 
 This package is part of the [LexBuild](https://github.com/chris-c-thomas/lexbuild) monorepo, a tool that converts U.S. legislative XML into structured Markdown optimized for AI, RAG pipelines, and semantic search. See the monorepo for full documentation, architecture details, and contribution guidelines.
@@ -96,7 +96,7 @@ Each title produces Markdown files with YAML frontmatter. The output structure d
 | Granularity | Output | Metadata |
 |---|---|---|
 | `section` (default) | `title-NN/chapter-NN/section-N.md` | `_meta.json` per chapter + title, `README.md` per title |
-| `chapter` | `title-NN/chapter-NN.md` | `_meta.json` per title, `README.md` per title |
+| `chapter` | `title-NN/chapter-NN/chapter-NN.md` | `_meta.json` per title, `README.md` per title |
 | `title` | `title-NN.md` | Enriched frontmatter only (no sidecar files) |
 
 See the [output format specification](https://github.com/chris-c-thomas/lexbuild/blob/main/docs/output-format.md) for details.

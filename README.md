@@ -549,12 +549,17 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full contributor guide.
 
 ## Documentation
 
-| Document | Description |
-|----------|-------------|
-| [Output Format](docs/output-format.md) | Directory layout, frontmatter schema, metadata indexes, RAG guidance |
-| [Architecture](docs/architecture.md) | System overview, package design, data flow, memory profile |
-| [XML Element Reference](docs/xml-element-reference.md) | USLM element mapping and Markdown output |
-| [Extending](docs/extending.md) | Guide for adding new legal source types |
+Full documentation lives in [`docs/`](docs/README.md), organized into five sections:
+
+| Section | Description |
+|---------|-------------|
+| [Architecture](docs/architecture/) | System overview, conversion pipeline, AST model, monorepo, CI/CD, performance |
+| [Development](docs/development/) | Getting started, testing, release process, extending, coding standards |
+| [Packages](docs/packages/) | Deep-dive docs for core, usc, and cli |
+| [Reference](docs/reference/) | Output format spec, XML element reference, CLI reference, glossary |
+| [ADRs](docs/adr/) | Architecture decision records |
+
+See also: [ARCHITECTURE.md](ARCHITECTURE.md) for a high-level overview, [CONTRIBUTING.md](CONTRIBUTING.md) for contributor setup.
 
 ---
 

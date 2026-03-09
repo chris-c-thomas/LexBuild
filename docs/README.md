@@ -30,12 +30,17 @@ Getting started as a contributor.
 
 ## Packages
 
-Deep-dive documentation for each package and app.
+Deep-dive documentation for each published package.
 
 - [@lexbuild/core](packages/core.md) — Format-agnostic XML parsing, AST, and rendering infrastructure
 - [@lexbuild/usc](packages/usc.md) — U.S. Code conversion and OLRC downloader
 - [@lexbuild/cli](packages/cli.md) — CLI binary and command registration
-- [Web App](packages/web.md) — Next.js documentation site for browsing converted output
+
+## Apps
+
+Applications that consume LexBuild output.
+
+- [Web App](apps/web.md) — Next.js documentation site for browsing converted output
 
 ## Reference
 

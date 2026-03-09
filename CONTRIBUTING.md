@@ -160,6 +160,14 @@ pnpm changeset
 
 Follow the prompts to describe your change and select the appropriate version bump (patch, minor, major). The changeset file will be committed with your PR and consumed during the next release.
 
+## Further Reading
+
+- [Getting Started](docs/development/getting-started.md) — Detailed setup and orientation
+- [Coding Standards](docs/development/coding-standards.md) — Full TypeScript conventions and naming rules
+- [Testing](docs/development/testing.md) — Test framework, fixtures, and snapshot workflow
+- [Release Process](docs/development/release-process.md) — Changesets, versioning, and publishing pipeline
+- [Architecture Overview](docs/architecture/overview.md) — System design and package layers
+
 ## License
 
 By contributing, you agree that your contributions will be licensed under the [MIT License](LICENSE).

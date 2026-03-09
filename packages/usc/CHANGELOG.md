@@ -1,5 +1,14 @@
 # @lexbuild/usc
 
+## 1.5.1
+
+### Patch Changes
+
+- [`874a2de`](https://github.com/chris-c-thomas/LexBuild/commit/874a2de4cec9e9593fbec742f5ee033fc2cf9878) Thanks [@chris-c-thomas](https://github.com/chris-c-thomas)! - fix: resolve workspace:\* dependencies to actual versions in published packages
+
+- Updated dependencies [[`874a2de`](https://github.com/chris-c-thomas/LexBuild/commit/874a2de4cec9e9593fbec742f5ee033fc2cf9878)]:
+  - @lexbuild/core@1.5.1
+
 ## 1.5.0
 
 ### Minor Changes

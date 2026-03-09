@@ -14,15 +14,16 @@ if [ ! -f "$CLI" ]; then
 fi
 
 TITLES="${1:---all}"
+INPUT_DIR="$MONO_ROOT/downloads/usc/xml"
 
 echo "=== Generating section-level content ==="
-node "$CLI" convert $TITLES -g section -o "$WEB_DIR/content/section" --link-style canonical
+node "$CLI" convert $TITLES -g section -o "$WEB_DIR/content/section" --input-dir "$INPUT_DIR" --link-style canonical
 
 echo "=== Generating chapter-level content ==="
-node "$CLI" convert $TITLES -g chapter -o "$WEB_DIR/content/chapter" --link-style canonical
+node "$CLI" convert $TITLES -g chapter -o "$WEB_DIR/content/chapter" --input-dir "$INPUT_DIR" --link-style canonical
 
 echo "=== Generating title-level content ==="
-node "$CLI" convert $TITLES -g title -o "$WEB_DIR/content/title" --link-style canonical
+node "$CLI" convert $TITLES -g title -o "$WEB_DIR/content/title" --input-dir "$INPUT_DIR" --link-style canonical
 
 echo "=== Generating navigation JSON ==="
 cd "$WEB_DIR" && pnpm exec tsx scripts/generate-nav.ts

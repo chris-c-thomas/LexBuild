@@ -152,7 +152,7 @@ Notes have two independent classification axes from the USLM schema:
 
 The `role` field captures special roles like `"crossHeading"`, which marks notes that act as category dividers (e.g., "Editorial Notes", "Statutory Notes") within a `<notes>` container.
 
-Notes are opt-in at render time. The `NotesFilter` in `RenderOptions` controls which categories are included without modifying the AST. See [Conversion Pipeline](./conversion-pipeline.md) for how filtering integrates with the rendering stage.
+Notes are included by default and can be filtered at render time. The `NotesFilter` in `RenderOptions` controls which categories are included without modifying the AST. See [Conversion Pipeline](./conversion-pipeline.md) for how filtering integrates with the rendering stage.
 
 ### SourceCreditNode
 

@@ -158,7 +158,7 @@ The monorepo is designed to grow. Adding support for a new legal source (e.g., C
 4. Add a new CLI command in `packages/cli`
 5. Document the source's XML schema in the package README
 
-See [docs/extending.md](docs/extending.md) for the full guide.
+See [docs/development/extending.md](docs/development/extending.md) for the full guide.
 
 ---
 
@@ -474,7 +474,7 @@ Each directory includes a `_meta.json` sidecar file for programmatic access:
 }
 ```
 
-For the complete output format specification, see [docs/output-format.md](docs/output-format.md).
+For the complete output format specification, see [docs/reference/output-format.md](docs/reference/output-format.md).
 
 ---
 
@@ -548,7 +548,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full contributor guide.
 
 ## Documentation
 
-Full documentation in the `docs/` directory [here](docs/README.md)
+Full documentation in the `docs/` directory [here](docs/)
 
 ---
 

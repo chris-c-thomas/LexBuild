@@ -260,7 +260,7 @@ When a subsection has a heading, it is rendered inline in bold after the number 
 
 ## Notes Rendering
 
-Notes are opt-in. By default, only the core statutory text and source credits are included. Notes require explicit CLI flags (`--include-editorial-notes`, `--include-statutory-notes`, `--include-amendments`).
+By default, LexBuild includes the core statutory text, source credits, and notes. You can disable notes entirely with `--no-include-notes` or selectively include subsets via CLI flags (`--include-editorial-notes`, `--include-statutory-notes`, `--include-amendments`).
 
 When included, notes appear after the source credit separator, organized by category:
 

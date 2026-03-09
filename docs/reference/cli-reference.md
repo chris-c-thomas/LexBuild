@@ -105,16 +105,16 @@ See [Output Format](output-format.md) for the complete specification of each mod
 
 ## Notes Filtering
 
-By default, LexBuild includes the core statutory text and source credits but excludes notes. Notes are opt-in via CLI flags.
+By default, LexBuild includes the core statutory text, source credits, and notes. You can disable notes entirely or selectively include subsets via CLI flags.
 
 ### Default Behavior
 
 - Source credits: **included** (disable with `--no-include-source-credits`)
-- All notes: **excluded**
+- All notes: **included** (disable with `--no-include-notes`)
 
 ### Inclusion Flags
 
-The `--include-*` flags are **additive** -- when multiple flags are specified, their note sets are combined:
+The `--include-*` flags are **additive** -- when multiple flags are specified, their note sets are combined. When you disable all notes with `--no-include-notes`, these flags let you selectively re-enable specific categories:
 
 | Flag | Notes Included |
 |------|---------------|

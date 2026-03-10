@@ -149,7 +149,7 @@ export class S3NavProvider implements NavProvider {
     const titleEntries = await Promise.all(
       titleDirs.map(async (dir) => {
         try {
-          const meta = await getMeta(`section/usc/${dir}/_meta.json`);
+          const meta = await getMeta(safeKey(`section/usc/${dir}/_meta.json`));
           if (!meta) return null;
           const stats = meta.stats as Record<string, unknown> | undefined;
           return {
@@ -189,7 +189,7 @@ export class S3NavProvider implements NavProvider {
 
   async getChapters(titleDir: string): Promise<ChapterNav[]> {
     try {
-      const meta = await getMeta(`section/usc/${titleDir}/_meta.json`);
+      const meta = await getMeta(safeKey(`section/usc/${titleDir}/_meta.json`));
       if (!meta) return [];
 
       const chapters = meta.chapters as Record<string, unknown>[] | undefined;

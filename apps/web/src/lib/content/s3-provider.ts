@@ -45,9 +45,7 @@ function client(): S3Client {
  */
 async function getObject(key: string): Promise<string | null> {
   try {
-    const res = await client().send(
-      new GetObjectCommand({ Bucket: BUCKET, Key: key }),
-    );
+    const res = await client().send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));
     return (await res.Body?.transformToString("utf-8")) ?? null;
   } catch (err: unknown) {
     if (isNoSuchKey(err)) return null;
@@ -69,9 +67,7 @@ export class S3ContentProvider implements ContentProvider {
 
   async exists(path: string): Promise<boolean> {
     try {
-      await client().send(
-        new HeadObjectCommand({ Bucket: BUCKET, Key: path }),
-      );
+      await client().send(new HeadObjectCommand({ Bucket: BUCKET, Key: path }));
       return true;
     } catch (err: unknown) {
       if (isNoSuchKey(err)) return false;

@@ -5,6 +5,9 @@ import { parseFrontmatter, renderMarkdownToHtml } from "@/lib/markdown";
 import { highlightMarkdown } from "@/lib/shiki";
 import { ContentViewer } from "@/components/content/content-viewer";
 
+/** Cache indefinitely at the edge — purge manually after content updates. */
+export const revalidate = false;
+
 interface Props {
   params: Promise<{ title: string; chapter: string; section: string }>;
 }

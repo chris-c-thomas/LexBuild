@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { getNavProvider } from "@/lib/content";
 
+/** Cache indefinitely at the edge — purge manually after content updates. */
+export const revalidate = false;
+
 export const metadata = {
   title: "U.S. Code",
   description: "Browse all titles of the United States Code as structured Markdown.",

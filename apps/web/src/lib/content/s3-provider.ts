@@ -119,36 +119,46 @@ async function getMeta(key: string): Promise<Record<string, unknown> | null> {
   return parsed;
 }
 
+/** Cached title directory listing. Same lifetime as metaCache. */
+let titleDirsCache: string[] | null = null;
+
+/** List and cache title directories from S3. */
+async function listTitleDirs(): Promise<string[]> {
+  if (titleDirsCache) return titleDirsCache;
+
+  const prefix = "section/usc/";
+  const dirs: string[] = [];
+
+  let continuationToken: string | undefined;
+  do {
+    const res = await client().send(
+      new ListObjectsV2Command({
+        Bucket: bucket(),
+        Prefix: prefix,
+        Delimiter: "/",
+        ContinuationToken: continuationToken,
+      }),
+    );
+    for (const cp of res.CommonPrefixes ?? []) {
+      if (cp.Prefix) {
+        const dir = cp.Prefix.slice(prefix.length).replace(/\/$/, "");
+        if (dir.startsWith("title-")) {
+          dirs.push(dir);
+        }
+      }
+    }
+    continuationToken = res.NextContinuationToken;
+  } while (continuationToken);
+
+  dirs.sort((a, b) => a.localeCompare(b));
+  titleDirsCache = dirs;
+  return dirs;
+}
+
 /** S3/R2-backed navigation provider. Reads _meta.json sidecars from the bucket. */
 export class S3NavProvider implements NavProvider {
   async getTitles(): Promise<TitleSummary[]> {
-    // List all title directories under section/usc/
-    const prefix = "section/usc/";
-    const titleDirs: string[] = [];
-
-    let continuationToken: string | undefined;
-    do {
-      const res = await client().send(
-        new ListObjectsV2Command({
-          Bucket: bucket(),
-          Prefix: prefix,
-          Delimiter: "/",
-          ContinuationToken: continuationToken,
-        }),
-      );
-      for (const cp of res.CommonPrefixes ?? []) {
-        if (cp.Prefix) {
-          // Extract directory name from "section/usc/title-01/"
-          const dir = cp.Prefix.slice(prefix.length).replace(/\/$/, "");
-          if (dir.startsWith("title-")) {
-            titleDirs.push(dir);
-          }
-        }
-      }
-      continuationToken = res.NextContinuationToken;
-    } while (continuationToken);
-
-    titleDirs.sort((a, b) => a.localeCompare(b));
+    const titleDirs = await listTitleDirs();
 
     // Fetch all title metadata in parallel to minimize cold-start latency
     const titleEntries = await Promise.all(

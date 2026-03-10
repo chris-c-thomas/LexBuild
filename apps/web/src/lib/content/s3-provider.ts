@@ -81,16 +81,19 @@ function isNoSuchKey(err: unknown): boolean {
 /** S3/R2-backed content provider. Reads .md files from an S3-compatible bucket. */
 export class S3ContentProvider implements ContentProvider {
   async getFile(path: string): Promise<string | null> {
-    return getObject(safeKey(path));
+    try {
+      return await getObject(safeKey(path));
+    } catch {
+      return null;
+    }
   }
 
   async exists(path: string): Promise<boolean> {
     try {
       await client().send(new HeadObjectCommand({ Bucket: bucket(), Key: safeKey(path) }));
       return true;
-    } catch (err: unknown) {
-      if (isNoSuchKey(err)) return false;
-      throw err;
+    } catch {
+      return false;
     }
   }
 }
@@ -98,6 +101,8 @@ export class S3ContentProvider implements ContentProvider {
 /**
  * Module-level cache for parsed _meta.json files.
  * Persists across requests within the same serverless function instance.
+ * Content updates in R2 are NOT reflected until the function instance is recycled
+ * (i.e., on the next cold start or redeployment).
  */
 const metaCache = new Map<string, Record<string, unknown>>();
 

@@ -63,7 +63,6 @@ export function SearchDialog() {
       // Pagefind generates this file at build time; in production it may be served from R2
       const baseUrl = process.env.NEXT_PUBLIC_PAGEFIND_BASE_URL ?? "/_pagefind";
       const pf = await import(
-        // @ts-expect-error — Pagefind is a generated asset, not a typed module
         /* webpackIgnore: true */ `${baseUrl}/pagefind.js`
       );
       await pf.init();

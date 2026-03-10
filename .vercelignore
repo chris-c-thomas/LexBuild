@@ -12,7 +12,9 @@ test-output/
 # Web app generated content (served from R2, not filesystem)
 apps/web/content/
 apps/web/public/_pagefind/
-apps/web/public/nav/
+
+# Note: apps/web/public/nav/ is NOT excluded — sidebar navigation
+# JSON files are small static assets served directly by Vercel.
 
 # Package build artifacts (rebuilt during Vercel build)
 packages/*/dist/

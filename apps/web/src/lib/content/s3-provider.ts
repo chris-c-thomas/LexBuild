@@ -27,7 +27,26 @@ function getS3Client(): S3Client {
   });
 }
 
-const BUCKET = process.env.R2_BUCKET ?? "lexbuild-content";
+/** Lazily read R2_BUCKET to avoid module-load side effects. */
+function bucket(): string {
+  return process.env.R2_BUCKET ?? "lexbuild-content";
+}
+
+/**
+ * Validate that an S3 key stays within expected content prefixes.
+ * Prevents path traversal via crafted URL segments (e.g., "../secrets").
+ */
+function safeKey(key: string): string {
+  const ALLOWED_PREFIXES = ["section/", "chapter/", "title/"];
+  const normalized = key.replace(/\/+/g, "/");
+  if (
+    normalized.includes("..") ||
+    !ALLOWED_PREFIXES.some((p) => normalized.startsWith(p))
+  ) {
+    throw new Error(`Invalid content key: ${key}`);
+  }
+  return normalized;
+}
 
 let _client: S3Client | null = null;
 
@@ -45,7 +64,7 @@ function client(): S3Client {
  */
 async function getObject(key: string): Promise<string | null> {
   try {
-    const res = await client().send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));
+    const res = await client().send(new GetObjectCommand({ Bucket: bucket(), Key: key }));
     return (await res.Body?.transformToString("utf-8")) ?? null;
   } catch (err: unknown) {
     if (isNoSuchKey(err)) return null;
@@ -62,12 +81,12 @@ function isNoSuchKey(err: unknown): boolean {
 /** S3/R2-backed content provider. Reads .md files from an S3-compatible bucket. */
 export class S3ContentProvider implements ContentProvider {
   async getFile(path: string): Promise<string | null> {
-    return getObject(path);
+    return getObject(safeKey(path));
   }
 
   async exists(path: string): Promise<boolean> {
     try {
-      await client().send(new HeadObjectCommand({ Bucket: BUCKET, Key: path }));
+      await client().send(new HeadObjectCommand({ Bucket: bucket(), Key: safeKey(path) }));
       return true;
     } catch (err: unknown) {
       if (isNoSuchKey(err)) return false;
@@ -106,7 +125,7 @@ export class S3NavProvider implements NavProvider {
     do {
       const res = await client().send(
         new ListObjectsV2Command({
-          Bucket: BUCKET,
+          Bucket: bucket(),
           Prefix: prefix,
           Delimiter: "/",
           ContinuationToken: continuationToken,
@@ -126,25 +145,30 @@ export class S3NavProvider implements NavProvider {
 
     titleDirs.sort((a, b) => a.localeCompare(b));
 
-    const titles: TitleSummary[] = [];
-    for (const dir of titleDirs) {
-      try {
-        const meta = await getMeta(`section/usc/${dir}/_meta.json`);
-        if (!meta) continue;
-        const stats = meta.stats as Record<string, unknown> | undefined;
-        titles.push({
-          number: meta.title_number as number,
-          name: meta.title_name as string,
-          directory: dir,
-          positiveLaw: (meta.positive_law as boolean) ?? false,
-          chapterCount: (stats?.chapter_count as number) ?? 0,
-          sectionCount: (stats?.section_count as number) ?? 0,
-          tokenEstimate: (stats?.total_tokens_estimate as number) ?? 0,
-        });
-      } catch {
-        // Skip titles with missing or malformed _meta.json
-      }
-    }
+    // Fetch all title metadata in parallel to minimize cold-start latency
+    const titleEntries = await Promise.all(
+      titleDirs.map(async (dir) => {
+        try {
+          const meta = await getMeta(`section/usc/${dir}/_meta.json`);
+          if (!meta) return null;
+          const stats = meta.stats as Record<string, unknown> | undefined;
+          return {
+            number: meta.title_number as number,
+            name: meta.title_name as string,
+            directory: dir,
+            positiveLaw: (meta.positive_law as boolean) ?? false,
+            chapterCount: (stats?.chapter_count as number) ?? 0,
+            sectionCount: (stats?.section_count as number) ?? 0,
+            tokenEstimate: (stats?.total_tokens_estimate as number) ?? 0,
+          } satisfies TitleSummary;
+        } catch {
+          return null;
+        }
+      }),
+    );
+    const titles: TitleSummary[] = titleEntries.filter(
+      (t): t is TitleSummary => t !== null,
+    );
 
     // Inject Title 53 (Reserved) if not present
     if (!titles.some((t) => t.number === 53)) {

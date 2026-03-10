@@ -39,10 +39,7 @@ function bucket(): string {
 function safeKey(key: string): string {
   const ALLOWED_PREFIXES = ["section/", "chapter/", "title/"];
   const normalized = key.replace(/\/+/g, "/");
-  if (
-    normalized.includes("..") ||
-    !ALLOWED_PREFIXES.some((p) => normalized.startsWith(p))
-  ) {
+  if (normalized.includes("..") || !ALLOWED_PREFIXES.some((p) => normalized.startsWith(p))) {
     throw new Error(`Invalid content key: ${key}`);
   }
   return normalized;
@@ -181,9 +178,7 @@ export class S3NavProvider implements NavProvider {
         }
       }),
     );
-    const titles: TitleSummary[] = titleEntries.filter(
-      (t): t is TitleSummary => t !== null,
-    );
+    const titles: TitleSummary[] = titleEntries.filter((t): t is TitleSummary => t !== null);
 
     // Inject Title 53 (Reserved) if not present
     if (!titles.some((t) => t.number === 53)) {

@@ -62,9 +62,7 @@ export function SearchDialog() {
     try {
       // Pagefind generates this file at build time; in production it may be served from R2
       const baseUrl = process.env.NEXT_PUBLIC_PAGEFIND_BASE_URL ?? "/_pagefind";
-      const pf = await import(
-        /* webpackIgnore: true */ `${baseUrl}/pagefind.js`
-      );
+      const pf = await import(/* webpackIgnore: true */ `${baseUrl}/pagefind.js`);
       await pf.init();
       pagefindRef.current = pf as Pagefind;
       return pf as Pagefind;

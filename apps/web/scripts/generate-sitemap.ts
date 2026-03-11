@@ -1,6 +1,13 @@
 /**
- * Reads section-level _meta.json files and generates a sitemap.xml
- * with URLs for all titles, chapters, and sections.
+ * Reads section-level _meta.json files and generates a sitemap index
+ * with per-title sitemap files. The sitemap protocol limits each file
+ * to 50,000 URLs, so we split by title (each title's chapters + sections
+ * fit comfortably under that limit).
+ *
+ * Output:
+ *   public/sitemap.xml           — sitemap index
+ *   public/sitemap-pages.xml     — static pages (/, /usc/)
+ *   public/sitemap-title-NN.xml  — per-title (title + chapters + sections)
  *
  * Usage: npx tsx scripts/generate-sitemap.ts
  */
@@ -10,7 +17,7 @@ import { join } from "node:path";
 
 const CONTENT_ROOT = process.env.CONTENT_DIR ?? "./content";
 const BASE_URL = process.env.SITE_URL ?? "https://lexbuild.dev";
-const OUTPUT = "./public/sitemap.xml";
+const OUTPUT_DIR = "./public";
 
 async function main() {
   const uscDir = join(CONTENT_ROOT, "section", "usc");
@@ -25,12 +32,17 @@ async function main() {
     .filter((e) => e.isDirectory() && e.name.startsWith("title-"))
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  const urls: string[] = [];
+  const sitemapFiles: string[] = [];
+  let totalUrls = 0;
 
-  // Index pages
-  urls.push(url("/"));
-  urls.push(url("/usc/"));
+  // Static pages sitemap
+  const staticUrls = [urlEntry("/"), urlEntry("/usc/")];
+  const staticFilename = "sitemap-pages.xml";
+  await writeFile(join(OUTPUT_DIR, staticFilename), urlsetXml(staticUrls), "utf-8");
+  sitemapFiles.push(staticFilename);
+  totalUrls += staticUrls.length;
 
+  // Per-title sitemaps
   for (const dir of titleDirs) {
     const metaPath = join(uscDir, dir.name, "_meta.json");
     let raw: string;
@@ -49,45 +61,67 @@ async function main() {
     }
     const chapters = meta.chapters as Record<string, unknown>[] | undefined;
 
+    const urls: string[] = [];
+
     // Title page
-    urls.push(url(`/usc/${dir.name}/`));
+    urls.push(urlEntry(`/usc/${dir.name}/`));
 
     for (const ch of chapters ?? []) {
       const chDir = ch.directory as string;
 
       // Chapter page
-      urls.push(url(`/usc/${dir.name}/${chDir}/`));
+      urls.push(urlEntry(`/usc/${dir.name}/${chDir}/`));
 
       // Section pages
       const sections = ch.sections as Record<string, unknown>[] | undefined;
       for (const s of sections ?? []) {
         const file = (s.file as string).replace(/\.md$/, "");
-        urls.push(url(`/usc/${dir.name}/${chDir}/${file}/`));
+        urls.push(urlEntry(`/usc/${dir.name}/${chDir}/${file}/`));
       }
     }
+
+    const filename = `sitemap-${dir.name}.xml`;
+    await writeFile(join(OUTPUT_DIR, filename), urlsetXml(urls), "utf-8");
+    sitemapFiles.push(filename);
+    totalUrls += urls.length;
   }
 
-  // Include reserved titles that have no content directory
+  // Include reserved Title 53 if no content directory exists
   if (!titleDirs.some((d) => d.name === "title-53")) {
-    urls.push(url("/usc/title-53/"));
+    const urls = [urlEntry("/usc/title-53/")];
+    const filename = "sitemap-title-53.xml";
+    await writeFile(join(OUTPUT_DIR, filename), urlsetXml(urls), "utf-8");
+    sitemapFiles.push(filename);
+    totalUrls += urls.length;
   }
 
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+  // Sitemap index
+  const indexXml = `<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${sitemapFiles.map((f) => `  <sitemap><loc>${escapeXml(`${BASE_URL}/${f}`)}</loc></sitemap>`).join("\n")}
+</sitemapindex>
+`;
+  await writeFile(join(OUTPUT_DIR, "sitemap.xml"), indexXml, "utf-8");
+
+  console.log(
+    `wrote sitemap index + ${sitemapFiles.length} sitemap files (${totalUrls.toLocaleString()} URLs total)`,
+  );
+}
+
+function urlsetXml(urls: string[]): string {
+  return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls.join("\n")}
 </urlset>
 `;
-
-  await writeFile(OUTPUT, xml, "utf-8");
-  console.log(`wrote sitemap.xml (${urls.length} URLs)`);
 }
 
-function url(path: string): string {
-  const escaped = `${BASE_URL}${path}`
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-  return `  <url><loc>${escaped}</loc></url>`;
+function urlEntry(path: string): string {
+  return `  <url><loc>${escapeXml(`${BASE_URL}${path}`)}</loc></url>`;
+}
+
+function escapeXml(str: string): string {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 main().catch((err) => {

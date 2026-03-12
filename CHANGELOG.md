@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
 
+## [1.8.0]
+
+### Added
+
+#### Web App — Vercel Blob Content Provider (`apps/web/`)
+
+- **`BlobContentProvider`** (`blob-provider.ts`): production content provider backed by Vercel Blob via the `@vercel/blob` package. The store is public, so reads do not require authentication. Uses `BLOB_READ_WRITE_TOKEN` which is auto-injected by Vercel when a Blob store is connected to the project.
+- **`BlobNavProvider`** (`blob-provider.ts`): navigation provider that discovers title directories by listing blobs under the `section/usc/` prefix, then fetches and parses `_meta.json` files. Parsed metadata is cached in a module-level `Map` that persists across requests within the same serverless function instance.
+- **`upload-to-blob.ts` script**: uploads the local content directory to Vercel Blob with rate limiting to prevent `429 Too Many Requests` errors.
+- **`@vercel/blob` dependency**: added to `apps/web/package.json` for Blob store integration.
+
+### Changed
+
+- **`CONTENT_STORAGE` default for production**: switched from `s3` (Cloudflare R2) to `blob` (Vercel Blob) in `.env.production`. R2 remains available as a legacy option via `CONTENT_STORAGE=s3`.
+- **Content provider factory** (`index.ts`): added `blob` case to the provider factory, selecting `BlobContentProvider`/`BlobNavProvider` when `CONTENT_STORAGE=blob`.
+- **Documentation**: updated `CLAUDE.md`, `apps/web/CLAUDE.md` with Vercel Blob provider details, environment variables, and deployment workflow.
+
+### Fixed
+
+- **Link prefetch resource overhead** (`apps/web/`): disabled Next.js link prefetching (`prefetch={false}`) on content links to reduce unnecessary RSC prefetch requests to the content store.
+- **Blob upload rate limiting**: added throttling to the upload script to prevent Vercel Blob API rate limit errors during bulk content uploads.
+
+---
+
 ## [1.7.0]
 
 ### Added

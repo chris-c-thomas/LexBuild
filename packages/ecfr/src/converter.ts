@@ -14,19 +14,14 @@ import { join, dirname, basename, relative } from "node:path";
 import {
   XMLParser,
   renderDocument,
-  renderSection,
-  renderNode,
-  generateFrontmatter,
   createLinkResolver,
   FORMAT_VERSION,
   GENERATOR,
-  BIG_LEVELS,
 } from "@lexbuild/core";
 import type {
   LevelNode,
   LevelType,
   EmitContext,
-  FrontmatterData,
   RenderOptions,
   NotesFilter,
   ASTNode,
@@ -34,7 +29,7 @@ import type {
 } from "@lexbuild/core";
 import { EcfrASTBuilder } from "./ecfr-builder.js";
 import { buildEcfrFrontmatter } from "./ecfr-frontmatter.js";
-import { buildEcfrOutputPath, buildPartDir, buildTitleDir } from "./ecfr-path.js";
+import { buildEcfrOutputPath, buildTitleDir } from "./ecfr-path.js";
 
 /** Options for converting an eCFR XML file */
 export interface EcfrConvertOptions {
@@ -146,15 +141,16 @@ export async function convertEcfrTitle(options: EcfrConvertOptions): Promise<Ecf
   // Extract title info
   let titleNumber = "0";
   let titleName = "";
-  if (collected.length > 0) {
-    const firstCtx = collected[0]!.context;
+  const firstCollected = collected[0];
+  if (firstCollected) {
+    const firstCtx = firstCollected.context;
     const titleAncestor = firstCtx.ancestors.find((a) => a.levelType === "title");
     if (titleAncestor) {
       titleNumber = titleAncestor.numValue ?? "0";
       titleName = titleAncestor.heading ?? firstCtx.documentMeta.dcTitle ?? "";
-    } else if (collected[0]!.node.levelType === "title") {
-      titleNumber = collected[0]!.node.numValue ?? "0";
-      titleName = collected[0]!.node.heading ?? "";
+    } else if (firstCollected.node.levelType === "title") {
+      titleNumber = firstCollected.node.numValue ?? "0";
+      titleName = firstCollected.node.heading ?? "";
     }
   }
 
@@ -298,7 +294,7 @@ export async function convertEcfrTitle(options: EcfrConvertOptions): Promise<Ecf
       }
     }
 
-    for (const [chapterKey, { sections, chapterAncestor, firstContext }] of chapterMap) {
+    for (const [_chapterKey, { sections, chapterAncestor, firstContext }] of chapterMap) {
       // Build a synthetic chapter LevelNode containing all sections
       const chapterNode: LevelNode = {
         type: "level",
@@ -348,20 +344,6 @@ export async function convertEcfrTitle(options: EcfrConvertOptions): Promise<Ecf
   };
 }
 
-function flattenText(nodes: ASTNode[]): string {
-  const parts: string[] = [];
-  for (const node of nodes) {
-    if (node.type === "content" && "children" in node) {
-      for (const inline of (node as { children: ASTNode[] }).children) {
-        if (inline.type === "inline" && "text" in inline && inline.text) {
-          parts.push(inline.text as string);
-        }
-      }
-    }
-  }
-  return parts.join("").trim();
-}
-
 function buildDryRunResult(
   collected: CollectedSection[],
   granularity: string,
@@ -369,8 +351,8 @@ function buildDryRunResult(
   titleName: string,
   peakMemory: number,
 ): EcfrConvertResult {
-  let count = 0;
   let totalEstimate = 0;
+  let count: number;
 
   if (granularity === "chapter") {
     // Count unique chapter ancestors from section-level emissions
@@ -482,7 +464,8 @@ async function writeMetaFiles(
   // Build part metas
   const parts: PartMeta[] = [];
   for (const [partNum, sections] of partMap) {
-    const first = sections[0]!;
+    const first = sections[0];
+    if (!first) continue;
     parts.push({
       identifier: first.partIdentifier || `/us/cfr/t${titleNumber}/pt${partNum}`,
       number: partNum,

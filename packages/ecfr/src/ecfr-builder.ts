@@ -536,7 +536,7 @@ export class EcfrASTBuilder {
 
   private openContent(elementName: string): void {
     // Determine variant based on element type
-    let variant: "content" | "chapeau" | "continuation" | "proviso" = "content";
+    const variant: "content" | "chapeau" | "continuation" | "proviso" = "content";
 
     // HD elements become bold content to act as sub-headings
     const isSubHeading = ECFR_HEADING_ELEMENTS.has(elementName);
@@ -681,7 +681,7 @@ export class EcfrASTBuilder {
     }
   }
 
-  private openNote(elementName: string, attrs: Attributes): void {
+  private openNote(elementName: string, _attrs: Attributes): void {
     // Map element name to a noteType
     const noteTypeMap: Record<string, string> = {
       AUTH: "authority",
@@ -856,7 +856,7 @@ export class EcfrASTBuilder {
 function stripLevelPrefix(heading: string): string {
   // Match: CHAPTER I—text, PART 1—text, SUBCHAPTER A—text, SUBTITLE A—text
   const match =
-    /^(?:CHAPTER|PART|SUBCHAPTER|SUBPART|SUBTITLE|DIVISION|ARTICLE)\s+[A-Za-z0-9]+\s*[—–\-]\s*/i.exec(
+    /^(?:CHAPTER|PART|SUBCHAPTER|SUBPART|SUBTITLE|DIVISION|ARTICLE)\s+[A-Za-z0-9]+\s*[—–-]\s*/i.exec(
       heading,
     );
   if (match) {
@@ -865,7 +865,7 @@ function stripLevelPrefix(heading: string): string {
   }
 
   // Handle "Title N—text" format
-  const titleMatch = /^Title\s+\d+\s*[—–\-]\s*/i.exec(heading);
+  const titleMatch = /^Title\s+\d+\s*[—–-]\s*/i.exec(heading);
   if (titleMatch) {
     const stripped = heading.slice(titleMatch[0].length).trim();
     // Also strip volume suffix like "--Volume 1"

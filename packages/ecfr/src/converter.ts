@@ -1,0 +1,556 @@
+/**
+ * eCFR conversion orchestrator.
+ *
+ * Follows the same collect-then-write pattern as the USC converter:
+ * 1. Parse XML via SAX → feed EcfrASTBuilder
+ * 2. Collect emitted sections/parts/titles
+ * 3. Two-pass link registration (with duplicate detection)
+ * 4. Write Markdown files, _meta.json, and README.md
+ */
+
+import { createReadStream } from "node:fs";
+import { mkdir, writeFile } from "node:fs/promises";
+import { join, dirname, basename, relative } from "node:path";
+import {
+  XMLParser,
+  renderDocument,
+  renderSection,
+  renderNode,
+  generateFrontmatter,
+  createLinkResolver,
+  FORMAT_VERSION,
+  GENERATOR,
+  BIG_LEVELS,
+} from "@lexbuild/core";
+import type {
+  LevelNode,
+  LevelType,
+  EmitContext,
+  FrontmatterData,
+  RenderOptions,
+  NotesFilter,
+  ASTNode,
+} from "@lexbuild/core";
+import { EcfrASTBuilder } from "./ecfr-builder.js";
+import { buildEcfrFrontmatter } from "./ecfr-frontmatter.js";
+import { buildEcfrOutputPath, buildPartDir, buildTitleDir } from "./ecfr-path.js";
+
+/** Options for converting an eCFR XML file */
+export interface EcfrConvertOptions {
+  /** Path to input eCFR XML file */
+  input: string;
+  /** Output root directory */
+  output: string;
+  /** Output granularity: section (default), part, or title */
+  granularity: "section" | "part" | "title";
+  /** Link style for cross-references */
+  linkStyle: "relative" | "canonical" | "plaintext";
+  /** Include source credits in output */
+  includeSourceCredits: boolean;
+  /** Include all notes */
+  includeNotes: boolean;
+  /** Selectively include editorial notes */
+  includeEditorialNotes: boolean;
+  /** Selectively include statutory/regulatory notes */
+  includeStatutoryNotes: boolean;
+  /** Selectively include amendment history */
+  includeAmendments: boolean;
+  /** Parse only, don't write files */
+  dryRun: boolean;
+}
+
+/** Result of an eCFR conversion */
+export interface EcfrConvertResult {
+  /** Number of sections/parts/titles written */
+  sectionsWritten: number;
+  /** Paths of written files */
+  files: string[];
+  /** Title number from XML metadata */
+  titleNumber: string;
+  /** Title name from XML metadata */
+  titleName: string;
+  /** Whether this was a dry run */
+  dryRun: boolean;
+  /** Number of unique parts */
+  partCount: number;
+  /** Total estimated tokens */
+  totalTokenEstimate: number;
+  /** Peak RSS in bytes during conversion */
+  peakMemoryBytes: number;
+}
+
+/** Internal collected section data */
+interface CollectedSection {
+  node: LevelNode;
+  context: EmitContext;
+}
+
+/** Internal section metadata for _meta.json */
+interface SectionMeta {
+  identifier: string;
+  number: string;
+  name: string;
+  fileName: string;
+  relativeFile: string;
+  contentLength: number;
+  hasNotes: boolean;
+  status: string;
+  partIdentifier: string;
+  partNumber: string;
+  partName: string;
+}
+
+/**
+ * Convert an eCFR XML file to structured Markdown.
+ */
+export async function convertEcfrTitle(options: EcfrConvertOptions): Promise<EcfrConvertResult> {
+  const { input, output, granularity, dryRun } = options;
+  let peakMemory = process.memoryUsage().rss;
+
+  // Map granularity to emit level
+  const emitAt: LevelType =
+    granularity === "title" ? "title" : granularity === "part" ? "part" : "section";
+
+  // Collect phase
+  const collected: CollectedSection[] = [];
+  const builder = new EcfrASTBuilder({
+    emitAt,
+    onEmit: (node, context) => {
+      collected.push({ node, context });
+    },
+  });
+
+  // Parse XML — no namespace (eCFR XML has no namespace declarations)
+  const parser = new XMLParser({ defaultNamespace: "" });
+  parser.on("openElement", (name, attrs) => builder.onOpenElement(name, attrs));
+  parser.on("closeElement", (name) => builder.onCloseElement(name));
+  parser.on("text", (text) => builder.onText(text));
+
+  const stream = createReadStream(input, "utf-8");
+  await parser.parseStream(stream);
+
+  // Track peak memory
+  const rss = process.memoryUsage().rss;
+  if (rss > peakMemory) peakMemory = rss;
+
+  // Extract title info
+  let titleNumber = "0";
+  let titleName = "";
+  if (collected.length > 0) {
+    const firstCtx = collected[0]!.context;
+    const titleAncestor = firstCtx.ancestors.find((a) => a.levelType === "title");
+    if (titleAncestor) {
+      titleNumber = titleAncestor.numValue ?? "0";
+      titleName = titleAncestor.heading ?? firstCtx.documentMeta.dcTitle ?? "";
+    } else if (collected[0]!.node.levelType === "title") {
+      titleNumber = collected[0]!.node.numValue ?? "0";
+      titleName = collected[0]!.node.heading ?? "";
+    }
+  }
+
+  // Notes filter
+  const notesFilter = buildNotesFilter(options);
+  const renderOpts: RenderOptions = {
+    headingOffset: 0,
+    linkStyle: options.linkStyle,
+    notesFilter,
+  };
+
+  if (dryRun) {
+    return buildDryRunResult(collected, titleNumber, titleName, peakMemory);
+  }
+
+  // Two-pass link registration for section granularity
+  const linkResolver = createLinkResolver();
+  const sectionMetas: SectionMeta[] = [];
+
+  if (granularity === "section") {
+    // First pass: count duplicates per part/section key
+    const counts = new Map<string, number>();
+    for (const { node, context } of collected) {
+      const partNum = context.ancestors.find((a) => a.levelType === "part")?.numValue ?? "__root__";
+      const secNum = node.numValue ?? "0";
+      const key = `${partNum}/${secNum}`;
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+
+    // Build suffix tracker
+    const seen = new Map<string, number>();
+
+    for (const { node, context } of collected) {
+      const partNum = context.ancestors.find((a) => a.levelType === "part")?.numValue ?? "__root__";
+      const secNum = node.numValue ?? "0";
+      const key = `${partNum}/${secNum}`;
+      const occurrence = (seen.get(key) ?? 0) + 1;
+      seen.set(key, occurrence);
+
+      const total = counts.get(key) ?? 1;
+      const suffix = total > 1 && occurrence > 1 ? `-${occurrence}` : "";
+
+      const filePath = buildEcfrOutputPath(node, context, output);
+      const suffixedPath = suffix ? filePath.replace(/\.md$/, `${suffix}.md`) : filePath;
+
+      const frontmatter = buildEcfrFrontmatter(node, context);
+      // Enrich with part-level authority/source if available
+      enrichPartLevelNotes(frontmatter, node, context, collected);
+
+      const fromFile = suffixedPath;
+      const markdown = renderDocument(node, frontmatter, {
+        ...renderOpts,
+        resolveLink: (identifier: string) => linkResolver.resolve(identifier, fromFile),
+      });
+
+      await mkdir(dirname(suffixedPath), { recursive: true });
+      await writeFile(suffixedPath, markdown, "utf-8");
+
+      // Register for link resolution
+      if (node.identifier) {
+        linkResolver.register(node.identifier, suffixedPath);
+        if (suffix && occurrence === 1) {
+          linkResolver.register(node.identifier, suffixedPath);
+        }
+      }
+
+      const hasNotes = node.children.some((c) => c.type === "note" || c.type === "notesContainer");
+
+      sectionMetas.push({
+        identifier: node.identifier ?? `/us/cfr/t${titleNumber}/s${secNum}`,
+        number: secNum,
+        name: node.heading?.trim() ?? "",
+        fileName: basename(suffixedPath),
+        relativeFile: relative(buildTitleDir(titleNumber, output), suffixedPath),
+        contentLength: markdown.length,
+        hasNotes,
+        status: node.status ?? "current",
+        partIdentifier: context.ancestors.find((a) => a.levelType === "part")?.identifier ?? "",
+        partNumber: partNum,
+        partName: context.ancestors.find((a) => a.levelType === "part")?.heading?.trim() ?? "",
+      });
+
+      // Track peak memory
+      const currentRss = process.memoryUsage().rss;
+      if (currentRss > peakMemory) peakMemory = currentRss;
+    }
+
+    // Write _meta.json and README
+    if (!dryRun) {
+      await writeMetaFiles(sectionMetas, titleNumber, titleName, output, granularity, input);
+    }
+
+    const files = sectionMetas.map((m) => join(buildTitleDir(titleNumber, output), m.relativeFile));
+
+    return {
+      sectionsWritten: sectionMetas.length,
+      files,
+      titleNumber,
+      titleName,
+      dryRun: false,
+      partCount: new Set(sectionMetas.map((s) => s.partNumber)).size,
+      totalTokenEstimate: Math.ceil(sectionMetas.reduce((sum, m) => sum + m.contentLength, 0) / 4),
+      peakMemoryBytes: peakMemory,
+    };
+  }
+
+  // Part or title granularity — simpler write
+  const files: string[] = [];
+  let totalLength = 0;
+
+  for (const { node, context } of collected) {
+    const frontmatter = buildEcfrFrontmatter(node, context);
+    const markdown = renderDocument(node, frontmatter, renderOpts);
+
+    const filePath = buildEcfrOutputPath(node, context, output);
+    await mkdir(dirname(filePath), { recursive: true });
+    await writeFile(filePath, markdown, "utf-8");
+    files.push(filePath);
+    totalLength += markdown.length;
+  }
+
+  return {
+    sectionsWritten: collected.length,
+    files,
+    titleNumber,
+    titleName,
+    dryRun: false,
+    partCount:
+      granularity === "title" ? 0 : new Set(collected.map((c) => c.node.numValue ?? "0")).size,
+    totalTokenEstimate: Math.ceil(totalLength / 4),
+    peakMemoryBytes: peakMemory,
+  };
+}
+
+/**
+ * Enrich frontmatter with part-level authority and source notes.
+ * AUTH and SOURCE elements appear at the part level, not section level.
+ */
+function enrichPartLevelNotes(
+  fm: FrontmatterData,
+  _node: LevelNode,
+  context: EmitContext,
+  collected: CollectedSection[],
+): void {
+  if (fm.authority || fm.regulatory_source) return;
+
+  // Find the part ancestor to get its authority/source
+  const partIdentifier = context.ancestors.find((a) => a.levelType === "part")?.identifier;
+  if (!partIdentifier) return;
+
+  // Look through all collected items for the part itself
+  // (only works when part was collected in a previous section's context)
+  // For now, we search all siblings for matching part-level notes
+  for (const item of collected) {
+    if (item.node.identifier === partIdentifier) {
+      for (const child of item.node.children) {
+        if (child.type === "note") {
+          const noteNode = child as { noteType?: string; children: ASTNode[] };
+          if (noteNode.noteType === "authority" && !fm.authority) {
+            fm.authority = flattenText(noteNode.children);
+          }
+          if (noteNode.noteType === "regulatorySource" && !fm.regulatory_source) {
+            fm.regulatory_source = flattenText(noteNode.children);
+          }
+        }
+      }
+      break;
+    }
+  }
+}
+
+function flattenText(nodes: ASTNode[]): string {
+  const parts: string[] = [];
+  for (const node of nodes) {
+    if (node.type === "content" && "children" in node) {
+      for (const inline of (node as { children: ASTNode[] }).children) {
+        if (inline.type === "inline" && "text" in inline && inline.text) {
+          parts.push(inline.text as string);
+        }
+      }
+    }
+  }
+  return parts.join("").trim();
+}
+
+function buildDryRunResult(
+  collected: CollectedSection[],
+  titleNumber: string,
+  titleName: string,
+  peakMemory: number,
+): EcfrConvertResult {
+  let totalEstimate = 0;
+  for (const { node } of collected) {
+    totalEstimate += estimateTokens(node);
+  }
+
+  return {
+    sectionsWritten: collected.length,
+    files: [],
+    titleNumber,
+    titleName,
+    dryRun: true,
+    partCount: new Set(
+      collected.map(
+        (c) => c.context.ancestors.find((a) => a.levelType === "part")?.numValue ?? "0",
+      ),
+    ).size,
+    totalTokenEstimate: totalEstimate,
+    peakMemoryBytes: peakMemory,
+  };
+}
+
+function estimateTokens(node: LevelNode): number {
+  let length = 0;
+
+  function walk(n: ASTNode): void {
+    if (n.type === "inline" && "text" in n && n.text) {
+      length += (n.text as string).length;
+    }
+    if ("children" in n && Array.isArray(n.children)) {
+      for (const child of n.children) {
+        walk(child as ASTNode);
+      }
+    }
+  }
+
+  walk(node);
+  return Math.ceil(length / 4);
+}
+
+function buildNotesFilter(options: EcfrConvertOptions): NotesFilter | undefined {
+  if (options.includeNotes) return undefined; // Include all
+
+  // Check if any selective flag is set
+  const hasSelective =
+    options.includeEditorialNotes || options.includeStatutoryNotes || options.includeAmendments;
+
+  if (!hasSelective) {
+    return { editorial: false, statutory: false, amendments: false };
+  }
+
+  return {
+    editorial: options.includeEditorialNotes,
+    statutory: options.includeStatutoryNotes,
+    amendments: options.includeAmendments,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Metadata file generation (_meta.json + README.md)
+// ---------------------------------------------------------------------------
+
+interface PartMeta {
+  identifier: string;
+  number: string;
+  name: string;
+  directory: string;
+  sections: Array<{
+    identifier: string;
+    number: string;
+    name: string;
+    file: string;
+    token_estimate: number;
+    has_notes: boolean;
+    status: string;
+  }>;
+}
+
+/**
+ * Write _meta.json and README.md files for the converted title.
+ */
+async function writeMetaFiles(
+  sectionMetas: SectionMeta[],
+  titleNumber: string,
+  titleName: string,
+  outputRoot: string,
+  granularity: string,
+  sourceXml: string,
+): Promise<void> {
+  // Group sections by part
+  const partMap = new Map<string, SectionMeta[]>();
+  for (const meta of sectionMetas) {
+    const key = meta.partNumber;
+    const arr = partMap.get(key) ?? [];
+    arr.push(meta);
+    partMap.set(key, arr);
+  }
+
+  // Build part metas
+  const parts: PartMeta[] = [];
+  for (const [partNum, sections] of partMap) {
+    const first = sections[0]!;
+    parts.push({
+      identifier: first.partIdentifier || `/us/cfr/t${titleNumber}/pt${partNum}`,
+      number: partNum,
+      name: first.partName,
+      directory: `part-${partNum}`,
+      sections: sections.map((s) => ({
+        identifier: s.identifier,
+        number: s.number,
+        name: s.name,
+        file: s.fileName,
+        token_estimate: Math.ceil(s.contentLength / 4),
+        has_notes: s.hasNotes,
+        status: s.status,
+      })),
+    });
+  }
+
+  const titleDir = buildTitleDir(titleNumber, outputRoot);
+  await mkdir(titleDir, { recursive: true });
+
+  // Write part-level _meta.json files
+  for (const part of parts) {
+    const partDir = join(titleDir, getPartDirPath(sectionMetas, part.number));
+    await mkdir(partDir, { recursive: true });
+
+    const partMeta = {
+      format_version: FORMAT_VERSION,
+      identifier: part.identifier,
+      part_number: part.number,
+      part_name: part.name,
+      title_number: parseInt(titleNumber, 10),
+      section_count: part.sections.length,
+      sections: part.sections,
+    };
+
+    await writeFile(join(partDir, "_meta.json"), JSON.stringify(partMeta, null, 2) + "\n", "utf-8");
+  }
+
+  // Write title-level _meta.json
+  const totalTokens = sectionMetas.reduce((sum, m) => sum + m.contentLength, 0);
+  const titleMeta = {
+    format_version: FORMAT_VERSION,
+    generator: GENERATOR,
+    generated_at: new Date().toISOString(),
+    identifier: `/us/cfr/t${titleNumber}`,
+    title_number: parseInt(titleNumber, 10),
+    title_name: titleName,
+    source: "ecfr",
+    legal_status: "authoritative_unofficial",
+    currency: new Date().toISOString().slice(0, 10),
+    source_xml: basename(sourceXml),
+    granularity,
+    stats: {
+      part_count: parts.length,
+      section_count: sectionMetas.length,
+      total_files: sectionMetas.length,
+      total_tokens_estimate: Math.ceil(totalTokens / 4),
+    },
+    parts,
+  };
+
+  await writeFile(join(titleDir, "_meta.json"), JSON.stringify(titleMeta, null, 2) + "\n", "utf-8");
+
+  // Write README.md
+  const readme = buildReadme(titleNumber, titleName, parts, sectionMetas, granularity);
+  await writeFile(join(titleDir, "README.md"), readme, "utf-8");
+}
+
+/**
+ * Determine the relative directory path for a part within the title dir.
+ */
+function getPartDirPath(sectionMetas: SectionMeta[], partNumber: string): string {
+  // Get the relative file path of the first section in this part
+  const first = sectionMetas.find((m) => m.partNumber === partNumber);
+  if (!first) return `part-${partNumber}`;
+
+  // Extract the directory portion of the relative file path
+  const dir = dirname(first.relativeFile);
+  return dir === "." ? `part-${partNumber}` : dir;
+}
+
+function buildReadme(
+  titleNumber: string,
+  titleName: string,
+  parts: PartMeta[],
+  sectionMetas: SectionMeta[],
+  granularity: string,
+): string {
+  const totalTokens = Math.ceil(sectionMetas.reduce((sum, m) => sum + m.contentLength, 0) / 4);
+
+  const lines: string[] = [];
+  lines.push(`# Title ${titleNumber} — ${titleName}`);
+  lines.push("");
+  lines.push("| Metric | Value |");
+  lines.push("|--------|-------|");
+  lines.push(`| Source | eCFR (govinfo.gov) |`);
+  lines.push(`| Legal Status | Authoritative, unofficial |`);
+  lines.push(`| Parts | ${parts.length.toLocaleString()} |`);
+  lines.push(`| Sections | ${sectionMetas.length.toLocaleString()} |`);
+  lines.push(`| Estimated Tokens | ${totalTokens.toLocaleString()} |`);
+  lines.push(`| Granularity | ${granularity} |`);
+  lines.push("");
+  lines.push("## Parts");
+  lines.push("");
+
+  for (const part of parts) {
+    lines.push(`### Part ${part.number} — ${part.name} (${part.sections.length} sections)`);
+    lines.push("");
+  }
+
+  lines.push("---");
+  lines.push("");
+  lines.push("Generated by LexBuild");
+  lines.push("");
+
+  return lines.join("\n");
+}

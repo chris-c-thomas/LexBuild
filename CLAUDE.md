@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-LexBuild converts U.S. legislative XML (USLM schema) into structured Markdown for AI/RAG ingestion. It is a monorepo built with Turborepo, pnpm workspaces, TypeScript, and Node.js.
+LexBuild converts U.S. legal XML into structured Markdown for AI/RAG ingestion. It supports multiple source formats: U.S. Code (USLM schema) and eCFR (GPO/SGML-derived XML), with an architecture designed for additional sources (annual CFR, Federal Register, state statutes). It is a monorepo built with Turborepo, pnpm workspaces, TypeScript, and Node.js.
 
 ## Repository Structure
 
@@ -11,12 +11,15 @@ lexbuild/
 ├── packages/
 │   ├── core/        # @lexbuild/core — XML parsing, AST, Markdown rendering, shared utilities
 │   ├── usc/         # @lexbuild/usc — U.S. Code-specific element handlers and downloader
+│   ├── ecfr/        # @lexbuild/ecfr — eCFR (Code of Federal Regulations) converter and downloader
 │   └── cli/         # @lexbuild/cli — CLI binary (the published npm package users install)
 ├── apps/
 │   └── web/         # Documentation site — Next.js 16, SSR, browse U.S. Code as Markdown
 ├── downloads/
-│   └── usc/
-│       └── xml/     # Full USC XML files (usc01.xml ... usc54.xml) — gitignored
+│   ├── usc/
+│   │   └── xml/     # Full USC XML files (usc01.xml ... usc54.xml) — gitignored
+│   └── ecfr/
+│       └── xml/     # Full eCFR XML files (ECFR-title1.xml ... ECFR-title50.xml) — gitignored
 ├── fixtures/
 │   ├── fragments/   # Small synthetic XML snippets for unit tests
 │   └── expected/    # Expected output snapshots for integration tests
@@ -31,6 +34,7 @@ Each package and app has its own `CLAUDE.md` with architecture details, module s
 
 - [`packages/core/CLAUDE.md`](packages/core/CLAUDE.md) — XML→AST→Markdown pipeline, emit-at-level streaming, AST node types, rendering, link resolution
 - [`packages/usc/CLAUDE.md`](packages/usc/CLAUDE.md) — Collect-then-write pattern, granularity output, edge cases (duplicates, appendices), downloader
+- [`packages/ecfr/CLAUDE.md`](packages/ecfr/CLAUDE.md) — eCFR GPO/SGML XML→AST→Markdown, DIV-based hierarchy, element classification, downloader
 - [`packages/cli/CLAUDE.md`](packages/cli/CLAUDE.md) — Commands, options, UI module, title parser, build config
 - [`apps/web/CLAUDE.md`](apps/web/CLAUDE.md) — Next.js 16 SSR site, content provider abstraction, routes, sidebar, search, deployment
 
@@ -85,6 +89,14 @@ node packages/cli/dist/index.js convert --all
 node packages/cli/dist/index.js convert --titles 1-5 -o ./test-output
 node packages/cli/dist/index.js convert ./downloads/usc/xml/usc01.xml -o ./test-output
 node packages/cli/dist/index.js convert --titles 1 -g title -o ./test-output
+
+# eCFR commands
+node packages/cli/dist/index.js download-ecfr --all
+node packages/cli/dist/index.js download-ecfr --titles 1,17
+node packages/cli/dist/index.js convert-ecfr --all
+node packages/cli/dist/index.js convert-ecfr --titles 1 -o ./test-output
+node packages/cli/dist/index.js convert-ecfr ./downloads/ecfr/xml/ECFR-title1.xml -o ./test-output
+node packages/cli/dist/index.js convert-ecfr --titles 17 -g part -o ./test-output
 
 # Web app (apps/web/) — NOT included in default `pnpm turbo build`
 pnpm turbo dev:web                    # Dev server (http://localhost:3000)

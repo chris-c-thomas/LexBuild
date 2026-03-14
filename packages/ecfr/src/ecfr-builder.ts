@@ -434,6 +434,16 @@ export class EcfrASTBuilder {
     let numValue = nAttr.replace(/^§\s*/, "").trim();
     const num = nAttr.trim();
 
+    // For title-level DIVs, the N attribute is the VOLUME number (not the title number).
+    // Multi-volume titles (e.g., Title 17) have multiple DIV1 elements: N="1", N="2", etc.
+    // The actual title number is the prefix of the NODE attribute (e.g., NODE="17:1" → 17).
+    if (levelType === "title") {
+      const titleFromNode = nodeAttr.split(":")[0];
+      if (titleFromNode) {
+        numValue = titleFromNode;
+      }
+    }
+
     // Build identifier from title number and section number
     let identifier: string | undefined;
     if (levelType === "title") {

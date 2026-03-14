@@ -5,6 +5,59 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
 
+## [1.9.0]
+
+### Added
+
+#### Multi-Source Architecture
+
+- **`@lexbuild/ecfr` package**: new source package for the Electronic Code of Federal Regulations (eCFR). Converts GPO/SGML-derived XML from govinfo bulk data into structured Markdown with the same output contract as `@lexbuild/usc`. Includes downloader, SAX-based AST builder (`EcfrASTBuilder`), converter with full feature parity, and element classification for 60+ GPO/SGML elements.
+- **eCFR downloader**: fetches individual title XML files directly from `govinfo.gov/bulkdata/ECFR` (plain XML, no ZIP). Reserved Title 35 (Panama Canal) is silently skipped during `--all` downloads.
+- **Four granularity modes for eCFR**: `section` (default), `part`, `chapter`, and `title`. Chapter granularity groups sections by chapter ancestor into composite files. Part is the CFR equivalent of USC chapter.
+- **eCFR `_meta.json` and `README.md`**: part-level and title-level metadata indexes with section listings, token estimates, and summary READMEs — matching USC's sidecar metadata pattern.
+- **Part-level authority/source enrichment**: the eCFR builder captures AUTH and SOURCE notes at the part level in a `partNotes` map during parsing. The converter enriches section frontmatter from this map.
+
+#### CLI Commands
+
+- **`lexbuild download-ecfr`**: download eCFR XML from govinfo with `--titles` or `--all`, spinners, and summary table.
+- **`lexbuild convert-ecfr`**: convert eCFR XML with full option parity — granularity (`section`/`part`/`chapter`/`title`), link style, note filtering, dry-run, verbose output.
+- **`lexbuild download-usc` / `lexbuild convert-usc`**: renamed from bare `download`/`convert` for consistency with the `{action}-{source}` naming convention.
+- **Bare `download` / `convert` stubs**: running `lexbuild download` or `lexbuild convert` without a source suffix prints a helpful error listing available source-specific commands.
+
+#### Core Multi-Source Types
+
+- **`SourceType` and `LegalStatus` types** (`@lexbuild/core`): `source` (`"usc"` | `"ecfr"`) and `legal_status` (`"official_legal_evidence"` | `"official_prima_facie"` | `"authoritative_unofficial"`) added as required fields on `FrontmatterData`.
+- **Source-specific optional fields**: `authority`, `regulatory_source`, `agency`, `cfr_part`, `cfr_subpart`, `part_count` added to `FrontmatterData` for eCFR/CFR content.
+- **CFR link resolution**: `parseIdentifier()` and `fallbackUrl()` now handle `/us/cfr/` identifiers with ecfr.gov fallback URLs.
+- **`FORMAT_VERSION` bumped to `"1.1.0"`** to reflect the new frontmatter fields.
+- **`UslmASTBuilder` alias**: `ASTBuilder` re-exported as `UslmASTBuilder` for clarity in multi-source context.
+
+#### Test Fixtures
+
+- **eCFR XML fixtures** (`fixtures/fragments/ecfr/`): 7 synthetic fixtures — simple section, authority, notes, emphasis, table, title structure, appendix.
+- **12 eCFR builder unit tests**: DIV/HEAD/P/AUTH/SOURCE/emphasis/hierarchy/emit-at-level/appendix coverage.
+
+### Changed
+
+- **File renames in `@lexbuild/core`**: `builder.ts` → `uslm-builder.ts`, `namespace.ts` → `uslm-elements.ts` — clarifies these are USLM-specific. All imports updated.
+- **`parseTitles()` accepts `maxTitle` parameter**: defaults to 54 (USC), 50 for eCFR.
+- **USC converter updated**: all three frontmatter construction sites now include `source: "usc"` and `legal_status` fields.
+- **Snapshot files updated**: all 16 expected output files include new `source`, `legal_status`, and `format_version: "1.1.0"` fields.
+- **`@lexbuild/ecfr` added to changeset lockstep**: all four packages (`core`, `usc`, `ecfr`, `cli`) versioned together.
+- **Documentation overhaul**: root `README.md`, all package `README.md` files, root `CLAUDE.md`, and all package `CLAUDE.md` files updated for multi-source architecture, eCFR commands, output structures, and dependency graph.
+
+### Fixed
+
+- **Multi-volume title number extraction** (`ecfr-builder.ts`): eCFR titles with multiple volumes (e.g., Title 17) have multiple DIV1 elements where the `N` attribute is the volume number, not the title number. Fixed to extract from the `NODE` attribute prefix.
+- **Two-pass link registration** (`ecfr/converter.ts`): restructured section granularity into true two-pass — pass 1 registers all identifiers, pass 2 renders. Forward cross-references now resolve correctly.
+- **Duplicate section link registration**: removed dead code branch (`suffix && occurrence === 1` was unreachable). Canonical identifier now registered only for the first occurrence.
+- **Chapter granularity double-nested paths**: `buildEcfrOutputPath` was adding `chapter-X` from ancestor lookup then again as filename, producing `title-17/chapter-I/chapter-I.md`. Fixed with early return for chapter nodes.
+- **Regex backtracking vulnerability**: replaced `/\s*--Volume\s+\d+$/i` (super-linear backtracking risk) with `indexOf`-based approach in `stripLevelPrefix`.
+- **ESLint clean**: resolved all 18 lint errors in the eCFR package — unused imports, non-null assertions, prefer-const, unnecessary regex escapes, useless assignments.
+- **TypeScript strict compliance**: added missing `source` and `legal_status` to `FrontmatterData` test literals in `types.test.ts` and `renderer.test.ts`.
+
+---
+
 ## [1.8.0]
 
 ### Added

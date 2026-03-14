@@ -17,8 +17,11 @@ const ECFR_BULK_BASE = "https://www.govinfo.gov/bulkdata/ECFR";
 /** Total number of CFR titles */
 export const ECFR_TITLE_COUNT = 50;
 
-/** All valid eCFR title numbers */
+/** All eCFR title numbers (1-50) */
 export const ECFR_TITLE_NUMBERS = Array.from({ length: ECFR_TITLE_COUNT }, (_, i) => i + 1);
+
+/** Titles that are reserved and have no bulk XML on govinfo */
+const RESERVED_TITLES = new Set([35]);
 
 /** Options for downloading eCFR titles */
 export interface EcfrDownloadOptions {
@@ -77,6 +80,9 @@ export async function downloadEcfrTitles(
   let totalBytes = 0;
 
   for (const titleNum of titles) {
+    // Skip reserved titles (e.g., Title 35 — Panama Canal) that have no bulk XML
+    if (RESERVED_TITLES.has(titleNum)) continue;
+
     const url = buildEcfrDownloadUrl(titleNum);
     const filePath = join(output, `ECFR-title${titleNum}.xml`);
 

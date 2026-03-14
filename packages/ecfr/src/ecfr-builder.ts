@@ -871,9 +871,13 @@ function stripLevelPrefix(heading: string): string {
   // Handle "Title N—text" format
   const titleMatch = /^Title\s+\d+\s*[—–-]\s*/i.exec(heading);
   if (titleMatch) {
-    const stripped = heading.slice(titleMatch[0].length).trim();
-    // Also strip volume suffix like "--Volume 1"
-    return stripped.replace(/\s*--Volume\s+\d+$/i, "").trim() || heading.trim();
+    let stripped = heading.slice(titleMatch[0].length).trim();
+    // Strip volume suffix like "--Volume 1"
+    const volIdx = stripped.search(/--Volume\s/i);
+    if (volIdx !== -1) {
+      stripped = stripped.slice(0, volIdx).trim();
+    }
+    return stripped || heading.trim();
   }
 
   return heading.trim();

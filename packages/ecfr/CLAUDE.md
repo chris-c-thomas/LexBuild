@@ -146,11 +146,13 @@ eCFR uses **HTML-style tables** (`TABLE`, `TR`, `TH`, `TD`), NOT GPOTABLE format
 
 ```
 eCFR XML → [XMLParser(defaultNamespace: "")] → SAX events
-  → [EcfrASTBuilder] → collected sections/parts
-  → [Two-pass link registration] (section granularity)
-  → [renderDocument()] → Markdown + YAML frontmatter
-  → Write phase: .md files, _meta.json, README.md
+  → [EcfrASTBuilder] → collected sections/parts + partNotes map
+  → [Pass 1] Compute output paths, detect duplicates, register all identifiers
+  → [Pass 2] Render + write .md files (forward & backward cross-refs resolve)
+  → Write _meta.json + README.md (section granularity)
 ```
+
+For chapter granularity, sections are emitted individually then grouped by chapter ancestor into composite files. For part/title granularity, nodes are filtered to the target level.
 
 ## ConvertOptions
 
@@ -212,12 +214,15 @@ eCFR sections include all standard fields plus:
 - **DIV2 (SUBTITLE) not observed** — hierarchy skips from DIV1 to DIV3
 - **SUBJGRP (DIV7)** is organizational only, not a legal subdivision — mapped to `subpart`
 - **Tables are HTML, not GPOTABLE** — the refactor plan's GPOTABLE assumption was wrong
-- **AUTH/SOURCE at part level** — these notes appear on DIV5, not DIV8 sections
+- **AUTH/SOURCE at part level** — these notes appear on DIV5, not DIV8 sections. The builder captures them in a `partNotes` map (keyed by part identifier) during parsing; the converter enriches section frontmatter from this map.
 - **Section headings include number prefix** — `<HEAD>§ 1.1   Definitions.</HEAD>` — builder strips the `§ N.N` prefix
 - **Lowercase `div` wrappers** around tables — handled as pass-through/ignore in the builder
+- **Multi-volume titles** — large titles (e.g., Title 17) have multiple DIV1 elements, one per volume. The `N` attribute on DIV1 is the volume number, not the title number. The builder extracts the title number from the `NODE` attribute prefix (e.g., `NODE="17:1"` → `17`).
+- **CFR chapter numbers are Roman numerals** — `chapter_number` (typed as `number`) is only set when the value parses as an integer. Roman numeral chapter designators (I, II, IV) are captured in `chapter_name` instead.
+- **Reserved titles** — Title 35 (Panama Canal) has no bulk XML on govinfo. The downloader silently skips reserved titles via the `RESERVED_TITLES` set.
 
 ## Dependency on @lexbuild/core
 
-Imports: `XMLParser`, `LevelNode`, `EmitContext`, `FrontmatterData`, `renderDocument`, `generateFrontmatter`, `createLinkResolver`, `BIG_LEVELS`, `LEVEL_TYPES`, `FORMAT_VERSION`, `GENERATOR`.
+Imports: `XMLParser`, `LevelNode`, `EmitContext`, `AncestorInfo`, `renderDocument`, `createLinkResolver`, `FORMAT_VERSION`, `GENERATOR`.
 
 Does NOT import from `@lexbuild/usc`. Source packages are independent.

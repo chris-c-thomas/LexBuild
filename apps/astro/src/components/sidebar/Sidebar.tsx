@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { ChevronRight, Menu, X } from "lucide-react";
 import { SectionList } from "./SectionList";
+import { toTitleCase } from "@/lib/utils";
 import type { SourceId, TitleSummary, ChapterNav, PartNav } from "@/lib/types";
 
 interface SidebarProps {
@@ -185,7 +186,7 @@ export function Sidebar({ sourceId, currentPath }: SidebarProps) {
                           {title.number}
                         </span>
                         <span className="min-w-0 truncate font-medium">
-                          {title.name}
+                          {toTitleCase(title.name)}
                         </span>
                       </button>
 
@@ -284,7 +285,7 @@ function ChapterList({
               <span className="shrink-0 font-mono text-[0.65rem] text-sidebar-foreground/50">
                 Ch. {chapter.number}
               </span>
-              <span className="min-w-0 truncate">{chapter.name}</span>
+              <span className="min-w-0 truncate">{toTitleCase(chapter.name)}</span>
             </button>
 
             {isExpanded && (
@@ -365,7 +366,7 @@ function PartList({
               <span className="shrink-0 font-mono text-[0.6rem] text-sidebar-foreground/50">
                 Pt. {part.number}
               </span>
-              <span className="min-w-0 truncate">{part.name}</span>
+              <span className="min-w-0 truncate">{toTitleCase(part.name)}</span>
             </button>
 
             {isExpanded && (

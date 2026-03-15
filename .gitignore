@@ -1,71 +1,9 @@
 # =============================================================================
-# lexbuild .gitignore
+# LexBuild .gitignore
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# Dependencies
-# -----------------------------------------------------------------------------
-node_modules/
-
-# -----------------------------------------------------------------------------
-# Build outputs
-# -----------------------------------------------------------------------------
-dist/
-*.tsbuildinfo
-*.tsbuildinfo.*
-*.metafile.json
-
-# -----------------------------------------------------------------------------
-# Turborepo
-# -----------------------------------------------------------------------------
-.turbo/
-
-# -----------------------------------------------------------------------------
-# TypeScript
-# -----------------------------------------------------------------------------
-*.js.map
-*.d.ts.map
-
-# Don't ignore .js and .d.ts globally — only dist/ matters.
-# Source is TypeScript-only; emitted JS lives exclusively in dist/.
-
-# -----------------------------------------------------------------------------
-# Testing & coverage
-# -----------------------------------------------------------------------------
-coverage/
-.vitest/
-*.lcov
-
-# -----------------------------------------------------------------------------
-# Environment & secrets
-# -----------------------------------------------------------------------------
-.env
-.env.*
-!.env.example
-
-# -----------------------------------------------------------------------------
-# AI coding agents
-# -----------------------------------------------------------------------------
-
-# Agents
-/.agents/
-
-# Skills
-skills-lock.json
-
-# Claude Code
-/.claude/
-.mcp.json
-
-# Cursor
-.cursorignore
-.cursorindexingignore
-
-# Codex / OpenAI
-/.codex/
-
-# -----------------------------------------------------------------------------
-# OS metadata
+# OS Metadata
 # -----------------------------------------------------------------------------
 
 # macOS
@@ -89,10 +27,51 @@ $RECYCLE.BIN/
 .directory
 
 # -----------------------------------------------------------------------------
-# IDEs & editors
+# Dependencies
+# -----------------------------------------------------------------------------
+node_modules/
+
+# -----------------------------------------------------------------------------
+# Build Outputs
+# -----------------------------------------------------------------------------
+dist/
+*.tsbuildinfo
+*.tsbuildinfo.*
+*.metafile.json
+
+# -----------------------------------------------------------------------------
+# Turborepo
+# -----------------------------------------------------------------------------
+.turbo/
+
+# Vercel (No Longer Used)
+.vercel/
+
+# -----------------------------------------------------------------------------
+# TypeScript
+# -----------------------------------------------------------------------------
+*.js.map
+*.d.ts.map
+
+# -----------------------------------------------------------------------------
+# Testing & Coverage
+# -----------------------------------------------------------------------------
+coverage/
+.vitest/
+*.lcov
+
+# -----------------------------------------------------------------------------
+# Environment & Secrets
+# -----------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+
+# -----------------------------------------------------------------------------
+# AI, IDE, and Other Editor Metadata
 # -----------------------------------------------------------------------------
 
-# Backup/swap files (Vim, Emacs, etc.)
+# Backup/Swap Files
 *~
 *.swp
 *.swo
@@ -104,12 +83,19 @@ Session.vim
 .netrwhist
 tags
 
-# VS Code — workspace settings are personal; extensions.json can be committed
-# separately if the team agrees on shared recommendations.
+# VS Code
 .vscode/*
 !.vscode/extensions.json
 
-# JetBrains (WebStorm, IntelliJ)
+# Cursor
+.cursor/
+.cursorignore
+.cursorindexingignore
+
+# Zed
+.zed/
+
+# JetBrains
 .idea/
 *.iml
 
@@ -117,30 +103,41 @@ tags
 *.sublime-project
 *.sublime-workspace
 
-# Zed
-.zed/
+# Agents
+/.agents/
+
+# Anthropic
+/.claude/
+.mcp.json
+
+# OpenAI
+/.codex/
+
+# Google
+/.gemini/
+
+# Skills
+skills-lock.json
+
+# Plugins
+
+# MCPs
+.playwright-mcp/
 
 # -----------------------------------------------------------------------------
-# lexbuild operational outputs
+# LexBuild Operational Outputs
 # -----------------------------------------------------------------------------
 
-# Downloaded source files (large, regenerable)
+# Downloaded Source Files (Large, Regenerable)
 downloads/
 
-# Legacy locations for downloaded XML
-xml/
-fixtures/xml/
-
-# USLM reference materials (PDF, XSD, CSS — available from OLRC)
-docs/reference/uslm/
-
-# AI agent transcripts
-docs/transcripts/
-
-# Converted Markdown output (regenerable from source XML)
+# Converted Markdown Output (Regenerable from Source XML)
 output/
+output-chapter/
+output-part/
+output-title/
 
-# Test output from local development runs
+# Test Output
 test-output/
 
 # -----------------------------------------------------------------------------
@@ -150,7 +147,7 @@ test-output/
 logs/
 
 # -----------------------------------------------------------------------------
-# Archives & binaries
+# Archives & Binaries
 # -----------------------------------------------------------------------------
 *.zip
 *.tar.gz
@@ -159,7 +156,7 @@ logs/
 *.7z
 
 # -----------------------------------------------------------------------------
-# Other package managers (not used — this project uses pnpm)
+# Other Package Managers
 # -----------------------------------------------------------------------------
 package-lock.json
 .yarn/
@@ -170,6 +167,6 @@ bun.lockb
 bun.lock
 .pnpm-store/
 
-# Verdaccio local registry (if used for testing publishes locally)
+# Verdaccio Local Registry
 .verdaccio/
 storage/

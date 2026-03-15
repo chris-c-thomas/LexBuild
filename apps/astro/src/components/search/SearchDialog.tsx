@@ -12,9 +12,10 @@ export function SearchDialog({ meiliUrl, meiliSearchKey }: SearchDialogProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [sourceFilter, setSourceFilter] = useState<"usc" | "ecfr" | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   // Initialize client with config from Astro
   useEffect(() => {
@@ -43,6 +44,7 @@ export function SearchDialog({ meiliUrl, meiliSearchKey }: SearchDialogProps) {
     } else {
       setQuery("");
       setResults(null);
+      setError(null);
       setSourceFilter(null);
     }
   }, [open]);
@@ -55,6 +57,7 @@ export function SearchDialog({ meiliUrl, meiliSearchKey }: SearchDialogProps) {
         return;
       }
       setLoading(true);
+      setError(null);
       try {
         const { search } = await import("@/lib/search");
         const result = await search(q, {
@@ -62,8 +65,14 @@ export function SearchDialog({ meiliUrl, meiliSearchKey }: SearchDialogProps) {
           limit: 20,
         });
         setResults(result);
-      } catch {
+      } catch (err) {
         setResults(null);
+        const message = err instanceof Error ? err.message : String(err);
+        if (message.includes("fetch") || message.includes("connect") || message.includes("ECONNREFUSED")) {
+          setError("Search service is unavailable at this time. Meilisearch may be down or experiencing issues.");
+        } else {
+          setError("Search failed. Please try again.");
+        }
       } finally {
         setLoading(false);
       }
@@ -161,7 +170,13 @@ export function SearchDialog({ meiliUrl, meiliSearchKey }: SearchDialogProps) {
               </div>
             )}
 
-            {!loading && query && results && results.hits.length === 0 && (
+            {!loading && error && (
+              <div className="px-4 py-8 text-center text-sm text-destructive">
+                {error}
+              </div>
+            )}
+
+            {!loading && !error && query && results && results.hits.length === 0 && (
               <div className="px-4 py-8 text-center text-sm text-muted-foreground">
                 No results for "{query}"
               </div>

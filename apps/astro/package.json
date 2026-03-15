@@ -20,6 +20,7 @@
     "clsx": "^2.1.1",
     "gray-matter": "^4.0.3",
     "lucide-react": "^0.500.0",
+    "meilisearch": "^0.55.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "rehype-sanitize": "^6.0.0",

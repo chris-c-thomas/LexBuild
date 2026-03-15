@@ -2,6 +2,7 @@
 import "@/styles/global.css";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import { Sidebar } from "@/components/sidebar/Sidebar";
+import { SearchDialog } from "@/components/search/SearchDialog";
 import type { SourceId } from "@/lib/types";
 
 interface Props {
@@ -14,6 +15,9 @@ const { title, description = "U.S. legal code as structured Markdown — LexBuil
 const siteUrl = import.meta.env.SITE_URL ?? "https://lexbuild.dev";
 const canonicalUrl = new URL(Astro.url.pathname, siteUrl).href;
 const currentPath = Astro.url.pathname;
+const enableSearch = (import.meta.env.ENABLE_SEARCH ?? "false") === "true";
+const meiliUrl = import.meta.env.MEILI_URL ?? "http://127.0.0.1:7700";
+const meiliSearchKey = import.meta.env.MEILI_SEARCH_KEY ?? "";
 ---
 
 <!doctype html>
@@ -62,6 +66,9 @@ const currentPath = Astro.url.pathname;
           </nav>
         </div>
         <div class="flex items-center gap-2">
+          {enableSearch && (
+            <SearchDialog client:idle meiliUrl={meiliUrl} meiliSearchKey={meiliSearchKey} />
+          )}
           <ThemeToggle client:load />
         </div>
       </div>

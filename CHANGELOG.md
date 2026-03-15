@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
 
+## [1.9.2]
+
+### Changed
+
+- Use `turbo run` instead of shorthand `turbo` in root package.json scripts per Turborepo best practices
+- Change `test` task dependency from `build` (same package) to `^build` (upstream packages only) since most tests run against source, not dist
+- Add transit node pattern for `lint` and `lint:fix` tasks for correct cross-package cache invalidation without sacrificing parallelism
+- Add package-level `turbo.json` for `@lexbuild/cli` to override `test` task with `["build", "^build"]` since CLI tests execute the built `dist/index.js` binary
+- Add package-level `turbo.json` for `apps/web` to cache `tsconfig.tsbuildinfo` output from incremental typecheck
+- Exclude `.next/cache/**` from `build:web` task outputs
+
 ## [1.9.1]
 
 ### Fixed

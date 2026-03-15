@@ -1,0 +1,58 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { getSource } from "@/lib/sources";
+import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
+import type { TitleSummary } from "@/lib/types";
+import { toTitleCase } from "@/lib/utils";
+
+const source = getSource("usc");
+const navDir = resolve(process.env.NAV_DIR ?? "./public/nav");
+
+let titles: TitleSummary[] = [];
+try {
+  const raw = await readFile(resolve(navDir, "usc/titles.json"), "utf-8");
+  titles = JSON.parse(raw) as TitleSummary[];
+} catch {
+  // Nav data not yet generated — show empty state
+}
+---
+
+<BaseLayout title="U.S. Code" source="usc" description="Browse all 54 titles of the U.S. Code as structured Markdown.">
+  <div class="flex flex-col gap-6">
+    <div>
+      <h1 class="text-3xl font-bold text-foreground">{source.name}</h1>
+      <p class="mt-2 text-muted-foreground">{source.description}</p>
+    </div>
+
+    {titles.length > 0 ? (
+      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {titles.map((t) => (
+          <a
+            href={`/usc/${t.directory}`}
+            class="group rounded-lg border border-border p-4 transition-all hover:border-slate-blue-400 hover:shadow-sm"
+          >
+            <div class="flex items-baseline gap-2">
+              <span class="text-lg font-bold text-slate-blue-600 dark:text-slate-blue-400">
+                {t.number}
+              </span>
+              <span class="text-sm font-medium text-foreground group-hover:text-slate-blue-700 dark:group-hover:text-slate-blue-300 transition-colors">
+                {toTitleCase(t.name)}
+              </span>
+            </div>
+            <div class="mt-2 flex gap-4 text-xs text-muted-foreground">
+              <span>{t.chapterCount} chapters</span>
+              <span>{t.sectionCount} sections</span>
+              <span>{t.tokenEstimate.toLocaleString()} tokens</span>
+            </div>
+          </a>
+        ))}
+      </div>
+    ) : (
+      <div class="rounded-lg border border-dashed border-border p-12 text-center text-muted-foreground">
+        <p>No navigation data available.</p>
+        <p class="mt-1 text-sm">Run <code class="text-foreground">scripts/generate-nav.ts</code> after converting content.</p>
+      </div>
+    )}
+  </div>
+</BaseLayout>

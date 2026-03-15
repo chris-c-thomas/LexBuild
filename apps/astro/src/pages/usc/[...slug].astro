@@ -1,0 +1,65 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import ContentViewer from "@/components/content/ContentViewer";
+import FrontmatterPanel from "@/components/content/FrontmatterPanel.astro";
+import BreadcrumbNav from "@/components/content/BreadcrumbNav.astro";
+import { resolveRoute } from "@/lib/routes";
+import { getFile } from "@/lib/content";
+import { getHighlightedHtml } from "@/lib/highlight";
+import { renderMarkdown } from "@/lib/markdown";
+import { parseFrontmatter } from "@/lib/frontmatter";
+import type { SourceId } from "@/lib/types";
+import { toTitleCase } from "@/lib/utils";
+
+const SOURCE_ID: SourceId = "usc";
+const { slug } = Astro.params;
+
+// Resolve route — slug is a string in Astro, split on "/"
+const route = resolveRoute(SOURCE_ID, slug?.split("/"));
+if (!route) {
+  return new Response(null, { status: 404, statusText: "Not found" });
+}
+
+// Read content
+const rawFile = await getFile(route.contentPath);
+if (!rawFile) {
+  return new Response(null, { status: 404, statusText: "Not found" });
+}
+
+// Parse frontmatter + body
+const { frontmatter, body } = parseFrontmatter(rawFile);
+
+// Get highlighted source HTML and render Markdown in parallel
+const [highlightedSource, renderedHtml] = await Promise.all([
+  getHighlightedHtml(route.contentPath, body),
+  renderMarkdown(body),
+]);
+
+// Build page title
+const pageTitle = frontmatter.title ? toTitleCase(frontmatter.title) : `USC - ${slug}`;
+
+// Cache headers — CDN caches for 1 year, revalidates in background
+Astro.response.headers.set(
+  "Cache-Control",
+  "public, s-maxage=31536000, stale-while-revalidate=86400",
+);
+---
+
+<BaseLayout title={pageTitle} source={SOURCE_ID} description={`${pageTitle} — Structured Markdown from LexBuild.`}>
+  <BreadcrumbNav breadcrumbs={route.breadcrumbs} />
+  <div class="flex flex-col gap-6">
+    <div class="flex flex-col gap-4">
+      <h1 class="text-2xl font-bold text-foreground">{toTitleCase(frontmatter.title)}</h1>
+      <FrontmatterPanel frontmatter={frontmatter} source={SOURCE_ID} />
+    </div>
+    <ContentViewer
+      client:load
+      rawMarkdown={body}
+      highlightedSource={highlightedSource}
+      renderedHtml={renderedHtml}
+      frontmatter={frontmatter}
+      granularity={route.granularity}
+      downloadFilename={`${slug?.split("/").pop() ?? "content"}.md`}
+    />
+  </div>
+</BaseLayout>

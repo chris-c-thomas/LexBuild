@@ -1,0 +1,44 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { SOURCES } from "@/lib/sources";
+
+const sources = Object.values(SOURCES);
+---
+
+<BaseLayout title="Home" description="U.S. legal text as structured Markdown for AI/RAG ingestion.">
+  <div class="flex flex-col items-center gap-12 py-12">
+    <div class="max-w-2xl text-center">
+      <h1 class="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+        LexBuild
+      </h1>
+      <p class="mt-4 text-lg text-muted-foreground">
+        Browse the full U.S. Code and Code of Federal Regulations as structured Markdown
+        &mdash; optimized for AI and RAG pipelines.
+      </p>
+    </div>
+
+    <div class="grid w-full max-w-3xl gap-6 sm:grid-cols-2">
+      {sources.map((source) => (
+        <a
+          href={source.basePath}
+          class="group rounded-xl border border-border bg-card p-6 transition-all hover:border-slate-blue-400 hover:shadow-md"
+        >
+          <div class="flex items-center gap-3">
+            <span class="text-sm font-semibold uppercase tracking-wider text-slate-blue-600 dark:text-slate-blue-400">
+              {source.shortName}
+            </span>
+          </div>
+          <h2 class="mt-2 text-xl font-semibold text-foreground group-hover:text-slate-blue-700 dark:group-hover:text-slate-blue-300 transition-colors">
+            {source.name}
+          </h2>
+          <p class="mt-2 text-sm text-muted-foreground">
+            {source.description}
+          </p>
+          <div class="mt-4 text-xs text-muted-foreground">
+            {source.titleCount} titles
+          </div>
+        </a>
+      ))}
+    </div>
+  </div>
+</BaseLayout>

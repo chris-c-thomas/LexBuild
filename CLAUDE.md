@@ -32,7 +32,7 @@ lexbuild/
 
 Each package and app has its own `CLAUDE.md` with architecture details, module structure, and package-specific conventions:
 
-- [`packages/core/CLAUDE.md`](packages/core/CLAUDE.md) — XML→AST→Markdown pipeline, emit-at-level streaming, AST node types, rendering, link resolution
+- [`packages/core/CLAUDE.md`](packages/core/CLAUDE.md) — XML→AST→Markdown pipeline, emit-at-level streaming, AST node types, rendering, link resolution, resilient filesystem utilities
 - [`packages/usc/CLAUDE.md`](packages/usc/CLAUDE.md) — Collect-then-write pattern, granularity output, edge cases (duplicates, appendices), downloader
 - [`packages/ecfr/CLAUDE.md`](packages/ecfr/CLAUDE.md) — eCFR GPO/SGML XML→AST→Markdown, DIV-based hierarchy, element classification, downloader
 - [`packages/cli/CLAUDE.md`](packages/cli/CLAUDE.md) — Commands, options, UI module, title parser, build config
@@ -101,6 +101,14 @@ node packages/cli/dist/index.js convert-ecfr --titles 17 -g part -o ./test-outpu
 # Astro app (apps/astro/) — NOT included in default `pnpm turbo build`
 pnpm turbo dev:astro --filter=astro   # Dev server (http://localhost:4321)
 pnpm turbo build:astro --filter=astro # Production build
+
+# Astro content pipeline scripts (run from apps/astro/)
+cd apps/astro
+bash scripts/link-content.sh                      # Symlink CLI output into content/
+npx tsx scripts/generate-nav.ts                    # Build sidebar JSON from _meta.json
+npx tsx scripts/generate-highlights.ts             # Pre-render Shiki HTML for all .md files
+npx tsx scripts/generate-highlights.ts --limit 50  # Test on subset
+npx tsx scripts/generate-sitemap.ts                # Build sitemap.xml
 ```
 
 ### Astro App Notes
@@ -110,7 +118,7 @@ The Astro app (`apps/astro/`) is deployed to a self-managed VPS (AWS Lightsail) 
 Key points:
 - **Excluded from `pnpm turbo build`** — no `build` script in its `package.json` (only `build:astro`). This prevents CI failures since the app requires content files that aren't in git.
 - **Excluded from changesets** — `"private": true` and listed in `.changeset/config.json` `ignore`.
-- **Content is gitignored** — `apps/astro/content/`, `public/nav/`, `public/sitemap.xml` are all generated artifacts.
+- **Content is gitignored** — `apps/astro/content/`, `public/nav/`, `public/sitemap.xml`, `*.highlighted.html` are all generated artifacts.
 - **Content served from local filesystem** in production (`fs.readFile` from `/srv/lexbuild/content/`).
 - **Production URL**: `https://lexbuild.dev` — served via Cloudflare (orange-cloud proxy) → Caddy → Astro Node server.
 - See `apps/astro/CLAUDE.md` for the full architecture spec.
@@ -385,6 +393,8 @@ Where `{N}` is the title number (1-50, not zero-padded). Example: `ECFR-title17.
 11. **Footnotes**: Rendered as Markdown footnotes (`[^N]` at reference site, `[^N]: text` at bottom of section file).
 
 12. **Identifier scheme**: USC uses `/us/usc/` identifiers from USLM `identifier` attributes. CFR uses `/us/cfr/` identifiers constructed from the eCFR `NODE` and `N` attributes. Both eCFR and future annual CFR share the `/us/cfr/` space since they represent the same content.
+
+13. **Resilient file I/O**: `@lexbuild/core` exports `writeFile` and `mkdir` wrappers (`packages/core/src/fs.ts`) that retry on `ENFILE`/`EMFILE` errors with exponential backoff. Both USC and eCFR converters use these instead of `node:fs/promises` directly, preventing file descriptor exhaustion when writing ~60k+ files while external processes (Spotlight, editor file watchers) react to the new files.
 
 ## Common Pitfalls
 

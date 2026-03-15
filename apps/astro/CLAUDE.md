@@ -198,6 +198,7 @@ apps/astro/
 │       └── global.css                  # Tailwind base, theme tokens, Shiki theme overrides
 ├── scripts/
 │   ├── generate-nav.ts                 # Build sidebar JSON from _meta.json sidecars
+│   ├── generate-highlights.ts          # Batch Shiki pre-rendering (.highlighted.html)
 │   ├── generate-sitemap.ts             # Build sitemap.xml for all sources
 │   ├── index-search.ts                 # Index content into Meilisearch (Phase 3)
 │   └── link-content.sh                # Symlink CLI output into content/ for local dev
@@ -945,6 +946,46 @@ During local development, you can skip generating highlight files entirely. The 
 
 ---
 
+## Content Pipeline Scripts
+
+All scripts run from `apps/astro/` and operate on the `content/` directory (symlinked from CLI output).
+
+### Run Order (after CLI conversion)
+
+```bash
+cd apps/astro
+
+# 1. Symlink CLI output into content/
+bash scripts/link-content.sh
+
+# 2. Generate sidebar navigation JSON (reads _meta.json, writes public/nav/)
+npx tsx scripts/generate-nav.ts
+
+# 3. Pre-render Shiki highlights (reads .md, writes .highlighted.html alongside each)
+npx tsx scripts/generate-highlights.ts            # Full run (~287k files, ~6 min)
+npx tsx scripts/generate-highlights.ts --limit 50 # Test subset
+
+# 4. Generate sitemap (reads _meta.json, writes public/sitemap.xml)
+npx tsx scripts/generate-sitemap.ts
+```
+
+### Script Details
+
+| Script | Input | Output | Incremental? |
+|---|---|---|---|
+| `generate-nav.ts` | `_meta.json` sidecars + filesystem chapter directories | `public/nav/{source}/titles.json` + per-title JSON | No (fast, <2s) |
+| `generate-highlights.ts` | `.md` files (frontmatter stripped, body highlighted) | `.highlighted.html` alongside each `.md` | Yes (mtime-based skip) |
+| `generate-sitemap.ts` | `_meta.json` sidecars + filesystem directories | `public/sitemap.xml` | No (fast, <5s) |
+
+### Notes
+
+- **`generate-nav.ts`** includes reserved title placeholders (USC Title 53, eCFR Title 35) so the sidebar shows the full numbering sequence.
+- **`generate-highlights.ts`** uses Shiki dual themes (`github-light-default` + `github-dark-default`). To change themes, update both this script and `src/lib/shiki.ts`, then re-run. Delete existing `.highlighted.html` files first since mtime skip won't detect a theme change.
+- **`generate-sitemap.ts`** produces ~292k URLs. Depth-based priority: index/title pages (0.8), chapter/part pages (0.6), section pages (0.5).
+- All outputs (`public/nav/`, `public/sitemap.xml`, `*.highlighted.html`) are gitignored.
+
+---
+
 ## Search — Phase 3 (Deferred)
 
 Search is gated behind the `ENABLE_SEARCH` environment variable. When disabled (default), the SearchDialog component is not rendered and no Meilisearch connection is attempted.
@@ -1084,12 +1125,14 @@ export default defineConfig({
 - **Caddy handles TLS in production.** The Astro server listens on HTTP localhost only. Do not configure Astro to serve HTTPS.
 - **`rehype-sanitize` is critical.** Content is user-visible legal text, but defense-in-depth against any injection in Markdown content.
 - **PM2 restart is not zero-downtime by default.** Use `pm2 reload` (not `pm2 restart`) for graceful reload in production.
+- **Changing Shiki themes requires regenerating all highlights.** Update themes in both `scripts/generate-highlights.ts` and `src/lib/shiki.ts`, delete existing `.highlighted.html` files, then re-run the script. The mtime-based skip won't detect theme changes.
+- **eCFR title `_meta.json` has flat `parts[]`, not nested chapters.** Chapter grouping for the sidebar is derived from filesystem `chapter-X/` directories, not from metadata. The `generate-nav.ts` script walks the directory tree to build the chapter → part → section hierarchy.
 
 ---
 
 ## Implementation Phases
 
-### Phase 1: Astro Scaffold (2-3 days)
+### Phase 1: Astro Scaffold ✅
 
 **Goal**: A working local dev server that renders USC and eCFR section-level content from the filesystem.
 
@@ -1108,17 +1151,17 @@ export default defineConfig({
 
 **Acceptance**: `pnpm dev` serves USC and eCFR content at correct routes, frontmatter displays, source/preview toggle works, dark mode works.
 
-### Phase 2: Navigation + Content Pipeline (2-3 days)
+### Phase 2: Navigation + Content Pipeline ✅
 
 **Goal**: Sidebar navigation, pre-rendered highlights, and sitemap.
 
-1. Write `scripts/generate-nav.ts` — reads `_meta.json` from both sources, writes `public/nav/{source}/titles.json` and per-title JSON
-2. Implement `Sidebar.tsx` (React island) — eCFR's 4-level hierarchy (add `PartNav` accordion level)
-3. Implement `SectionList.tsx` with @tanstack/react-virtual
-4. Write `scripts/generate-highlights.ts` — batch Shiki 4.x pre-rendering
-5. Write `scripts/generate-sitemap.ts` — covers both sources
-6. Wire sidebar into `BaseLayout.astro` — receives `sourceId` prop, loads nav JSON lazily
-8. Test with full converted output (all USC + all eCFR)
+1. Write `scripts/generate-nav.ts` — reads `_meta.json` from both sources, writes `public/nav/{source}/titles.json` and per-title JSON. Includes reserved title placeholders (USC 53, eCFR 35).
+2. Implement `Sidebar.tsx` (React island) — lazy-load per-title JSON on expand, 3-level USC (Title > Chapter > Section) and 4-level eCFR (Title > Chapter > Part > Section) accordion, active item tracking from URL, auto-expand ancestors, mobile toggle with overlay, loading skeletons.
+3. Implement `SectionList.tsx` with `@tanstack/react-virtual` — virtualizes section lists > 100 entries, falls back to plain list for smaller lists.
+4. Write `scripts/generate-highlights.ts` — batch Shiki 4.x pre-rendering with dual themes (`github-light-default`, `github-dark-default`), mtime-based skip for incremental runs. ~287k files in ~6 minutes.
+5. Write `scripts/generate-sitemap.ts` — 292k URLs across both sources with depth-based priority.
+6. Wire sidebar into `BaseLayout.astro` — sidebar renders on source pages (USC/eCFR), full-width layout on landing page. Sidebar is a React island (`client:load`) receiving `sourceId` and `currentPath`.
+7. Tested with full converted output: 54 USC titles (60k sections) + 50 eCFR titles (227k sections).
 
 **Acceptance**: Sidebar navigates full hierarchy for both sources. Pre-rendered highlights load correctly. Sitemap covers all URLs. Title-level pages render without timeout.
 
@@ -1198,6 +1241,7 @@ export default defineConfig({
     "rehype-sanitize": "^6.0.0",
     "shiki": "^4.0.2",
     "lucide-react": "^0.500.0",
+    "@tanstack/react-virtual": "^3.13.22",
     "tailwindcss": "^4.1.8",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -1211,7 +1255,7 @@ export default defineConfig({
 }
 ```
 
-**Note**: Astro 6 requires Node.js >= 22.12.0 and bundles Vite 7. The `@astrojs/tailwind` integration is NOT used — it is for Tailwind v3. Tailwind v4 is integrated via `@tailwindcss/vite` as a Vite plugin in `astro.config.ts`. `@tanstack/react-virtual` will be added in Phase 2 (sidebar virtualization).
+**Note**: Astro 6 requires Node.js >= 22.12.0 and bundles Vite 7. The `@astrojs/tailwind` integration is NOT used — it is for Tailwind v3. Tailwind v4 is integrated via `@tailwindcss/vite` as a Vite plugin in `astro.config.ts`. `@tanstack/react-virtual` virtualizes section lists in the sidebar for chapters/parts with 100+ entries.
 
 ### shadcn/ui
 

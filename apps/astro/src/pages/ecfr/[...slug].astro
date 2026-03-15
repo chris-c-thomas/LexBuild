@@ -64,7 +64,7 @@ if (route.granularity === "title") {
     const partCount = ch.parts?.length ?? 0;
     const sectionCount = ch.parts?.reduce((s, p) => s + p.sections.length, 0) ?? 0;
     return {
-      label: `Ch. ${ch.number}`,
+      label: `Chapter ${ch.number}`,
       sublabel: ch.name,
       href: `/ecfr/${titleDir}/${ch.directory}`,
       stats: [
@@ -86,7 +86,7 @@ if (route.granularity === "title") {
   }
 
   const chapterNumber = chapterDir.replace("chapter-", "");
-  pageTitle = `Title ${titleSummary.number}, Ch. ${chapterNumber} — ${toTitleCase(chapter.name)}`;
+  pageTitle = `Title ${titleSummary.number}, Chapter ${chapterNumber} — ${toTitleCase(chapter.name)}`;
   indexDescription = `${chapter.parts?.length ?? 0} parts`;
   downloadPath = route.contentPath;
   downloadFilename = `${chapterDir}.md`;
@@ -123,7 +123,7 @@ if (route.granularity === "title") {
   downloadFilename = `${partDir}.md`;
 
   indexChildren = part.sections.map((s) => ({
-    label: `§ ${s.number}`,
+    label: `Section ${s.number}`,
     sublabel: s.name,
     href: `/ecfr/${titleDir}/${chapterDir}/${partDir}/${s.file}`,
     stats: s.status !== "current" ? [{ label: s.status, value: "" }] : [],
@@ -167,7 +167,7 @@ const isIndexPage = route.granularity !== "section";
   ) : frontmatter ? (
     <div class="flex flex-col gap-6">
       <div class="flex flex-col gap-4">
-        <h1 class="text-2xl font-bold text-foreground">{toTitleCase(frontmatter.title)}</h1>
+        <h1 class="text-2xl font-bold text-slate-blue-800 dark:text-slate-blue-200">{toTitleCase(frontmatter.title)}</h1>
         <FrontmatterPanel frontmatter={frontmatter} source={SOURCE_ID} />
       </div>
       <ContentViewer

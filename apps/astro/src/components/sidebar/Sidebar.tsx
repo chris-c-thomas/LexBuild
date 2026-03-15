@@ -141,7 +141,7 @@ export function Sidebar({ sourceId, currentPath }: SidebarProps) {
       {/* Sidebar */}
       <div
         ref={sidebarRef}
-        className={`fixed inset-y-0 left-0 z-40 w-72 overflow-y-auto border-r border-sidebar-border bg-sidebar pt-14 transition-transform lg:sticky lg:top-14 lg:z-auto lg:h-[calc(100vh-3.5rem)] lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 w-72 overflow-y-auto border-r border-sidebar-border bg-sidebar pt-14 transition-transform lg:sticky lg:top-14 lg:z-auto lg:h-[calc(100vh-3.5rem)] lg:pt-0 lg:translate-x-0 ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >

@@ -62,7 +62,7 @@ if (route.granularity === "title") {
   downloadFilename = `${titleDir}.md`;
 
   indexChildren = titleNav.chapters.map((ch) => ({
-    label: `Ch. ${ch.number}`,
+    label: `Chapter ${ch.number}`,
     sublabel: ch.name,
     href: `/usc/${titleDir}/${ch.directory}`,
     stats: [
@@ -81,13 +81,13 @@ if (route.granularity === "title") {
     return new Response(null, { status: 404, statusText: "Not found" });
   }
 
-  pageTitle = `Title ${titleSummary.number}, Ch. ${chapter.number} — ${toTitleCase(chapter.name)}`;
+  pageTitle = `Title ${titleSummary.number}, Chapter ${chapter.number} — ${toTitleCase(chapter.name)}`;
   indexDescription = `${chapter.sections?.length ?? 0} sections`;
   downloadPath = route.contentPath;
   downloadFilename = `${chapterDir}.md`;
 
   indexChildren = (chapter.sections ?? []).map((s) => ({
-    label: `§ ${s.number}`,
+    label: `Section ${s.number}`,
     sublabel: s.name,
     href: `/usc/${titleDir}/${chapterDir}/${s.file}`,
     stats: s.status !== "current" ? [{ label: s.status, value: "" }] : [],
@@ -131,7 +131,7 @@ const isIndexPage = route.granularity === "title" || route.granularity === "chap
   ) : frontmatter ? (
     <div class="flex flex-col gap-6">
       <div class="flex flex-col gap-4">
-        <h1 class="text-2xl font-bold text-foreground">{toTitleCase(frontmatter.title)}</h1>
+        <h1 class="text-2xl font-bold text-slate-blue-800 dark:text-slate-blue-200">{toTitleCase(frontmatter.title)}</h1>
         <FrontmatterPanel frontmatter={frontmatter} source={SOURCE_ID} />
       </div>
       <ContentViewer

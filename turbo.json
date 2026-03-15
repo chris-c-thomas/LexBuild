@@ -32,6 +32,15 @@
     "dev:web": {
       "cache": false,
       "persistent": true
+    },
+    "build:astro": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"],
+      "cache": false
+    },
+    "dev:astro": {
+      "cache": false,
+      "persistent": true
     }
   }
 }

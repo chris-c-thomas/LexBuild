@@ -1,0 +1,18 @@
+# Astro generated
+.astro/
+dist/
+
+# Content (symlinked or copied from CLI output)
+content/
+
+# Navigation data (generated)
+public/nav/
+
+# Sitemap (generated)
+public/sitemap.xml
+
+# Environment
+.env.local
+
+# Node
+node_modules/

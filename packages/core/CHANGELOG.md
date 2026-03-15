@@ -1,5 +1,11 @@
 # @lexbuild/core
 
+## 1.9.2
+
+### Patch Changes
+
+- [#44](https://github.com/chris-c-thomas/LexBuild/pull/44) [`077dad9`](https://github.com/chris-c-thomas/LexBuild/commit/077dad9d95ca141582370e17663b1a9e53900a04) Thanks [@chris-c-thomas](https://github.com/chris-c-thomas)! - Update turbo configuations and build scripts to better align with best practices
+
 ## 1.9.1
 
 ## 1.9.0

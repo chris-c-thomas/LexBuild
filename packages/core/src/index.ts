@@ -56,3 +56,6 @@ export type { RenderOptions, NotesFilter } from "./markdown/renderer.js";
 export { generateFrontmatter, FORMAT_VERSION, GENERATOR } from "./markdown/frontmatter.js";
 export { createLinkResolver, parseIdentifier } from "./markdown/links.js";
 export type { LinkResolver, ParsedIdentifier } from "./markdown/links.js";
+
+// Resilient filesystem utilities
+export { writeFile, mkdir } from "./fs.js";

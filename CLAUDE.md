@@ -126,7 +126,7 @@ Key points:
 - **Excluded from changesets** — `"private": true` and listed in `.changeset/config.json` `ignore`.
 - **Content is gitignored** — `apps/astro/content/`, `public/nav/`, `public/sitemap.xml`, `*.highlighted.html` are all generated artifacts.
 - **Content served from local filesystem** in production (`fs.readFile` from `/srv/lexbuild/content/`).
-- **UI**: shadcn/ui (radix-nova preset, zinc theme) + Tailwind CSS 4 + Google Sans / JetBrains Mono fonts. Slate-blue accent palette for headings and labels.
+- **UI**: shadcn/ui (radix-nova preset, zinc theme) + Tailwind CSS 4 + Google Sans / JetBrains Mono fonts. Slate-blue accent palette for headings and labels. Mobile navigation uses a shadcn Sheet (Radix Dialog drawer) with source dropdown; desktop uses a sticky sidebar. Both share `SidebarContent.tsx` for the tree. Breakpoint: `lg` (1024px).
 - **Production URL**: `https://lexbuild.dev` — served via Cloudflare (orange-cloud proxy) → Caddy → Astro Node server.
 - See `apps/astro/CLAUDE.md` for the full architecture spec.
 

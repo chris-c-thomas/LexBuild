@@ -26,6 +26,7 @@ const MEILI_MASTER_KEY = process.env.MEILI_MASTER_KEY ?? "";
 const INDEX_NAME = "lexbuild";
 const BATCH_SIZE = 500;
 const BODY_TRUNCATE_CHARS = 5000;
+const GC_INTERVAL = 50_000; // Force GC every N files to prevent heap exhaustion
 
 // ---------------------------------------------------------------------------
 // Types
@@ -128,6 +129,21 @@ async function readTruncatedBody(mdPath: string): Promise<string> {
   }
 }
 
+/** Track files processed and force GC at intervals to prevent heap exhaustion. */
+let filesProcessed = 0;
+function trackFileAndGC(): void {
+  filesProcessed++;
+  if (filesProcessed % GC_INTERVAL === 0) {
+    const mem = (process.memoryUsage.rss() / 1024 / 1024).toFixed(0);
+    console.log(`  [GC] ${filesProcessed} files processed, ${mem}MB RSS — forcing garbage collection`);
+    if (global.gc) {
+      global.gc();
+      const memAfter = (process.memoryUsage.rss() / 1024 / 1024).toFixed(0);
+      console.log(`  [GC] After collection: ${memAfter}MB RSS`);
+    }
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Batch sender — flushes when batch is full
 // ---------------------------------------------------------------------------
@@ -214,6 +230,7 @@ async function indexUscDocuments(contentDir: string, indexer: BatchIndexer): Pro
           url: `/usc/${titleDir}/${chapter.directory}/${section.file.replace(/\.md$/, "")}`,
         });
         count++;
+        trackFileAndGC();
       }
     }
   }
@@ -270,6 +287,7 @@ async function indexEcfrDocuments(contentDir: string, indexer: BatchIndexer): Pr
             url: `/ecfr/${titleDir}/${chapterDir}/${partDir}/${section.file.replace(/\.md$/, "")}`,
           });
           count++;
+          trackFileAndGC();
         }
       }
     }

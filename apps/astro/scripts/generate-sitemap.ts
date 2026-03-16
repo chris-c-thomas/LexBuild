@@ -1,8 +1,17 @@
 /**
- * Generate sitemap.xml from _meta.json sidecar files.
+ * Generate a sitemap index with chunked sitemap files.
  *
- * Enumerates all browsable URLs for both USC and eCFR at section granularity
- * and writes a sitemap.xml to public/.
+ * Enumerates all browsable URLs for both USC and eCFR at section granularity,
+ * splits them into ≤50k-URL files per the sitemap spec, and writes a sitemap
+ * index to public/sitemap.xml that references each part.
+ *
+ * Output:
+ *   public/sitemap.xml           ← sitemap index
+ *   public/sitemap-usc-0.xml     ← first chunk of USC URLs
+ *   public/sitemap-usc-1.xml     ← next chunk (if needed)
+ *   public/sitemap-ecfr-0.xml    ← first chunk of eCFR URLs
+ *   ...
+ *   public/sitemap-misc-0.xml    ← homepage + index pages
  *
  * Usage: npx tsx scripts/generate-sitemap.ts [content-dir]
  */
@@ -11,6 +20,7 @@ import { readdir, readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
 const SITE_URL = process.env.SITE_URL ?? "https://lexbuild.dev";
+const MAX_URLS_PER_FILE = 50_000;
 
 // ---------------------------------------------------------------------------
 // _meta.json shapes (subset of fields we need)
@@ -139,19 +149,13 @@ async function collectEcfrUrls(contentDir: string): Promise<string[]> {
 // Sitemap XML generation
 // ---------------------------------------------------------------------------
 
-function buildSitemap(urls: string[]): string {
-  const today = new Date().toISOString().split("T")[0];
-
+function buildUrlset(urls: string[], today: string): string {
   let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
   xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
 
-  // Homepage
-  xml += `  <url>\n    <loc>${xmlEscape(SITE_URL)}/</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>1.0</priority>\n  </url>\n`;
-
   for (const path of urls) {
     const depth = path.split("/").length - 1;
-    // Higher priority for index/title pages, lower for sections
-    const priority = depth <= 2 ? "0.8" : depth <= 3 ? "0.6" : "0.5";
+    const priority = depth <= 1 ? "1.0" : depth <= 2 ? "0.8" : depth <= 3 ? "0.6" : "0.5";
     const changefreq = depth <= 2 ? "monthly" : "yearly";
 
     xml += `  <url>\n    <loc>${xmlEscape(SITE_URL)}${path}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>${changefreq}</changefreq>\n    <priority>${priority}</priority>\n  </url>\n`;
@@ -161,29 +165,75 @@ function buildSitemap(urls: string[]): string {
   return xml;
 }
 
+function buildSitemapIndex(filenames: string[], today: string): string {
+  let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+  xml += '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+
+  for (const filename of filenames) {
+    xml += `  <sitemap>\n    <loc>${xmlEscape(SITE_URL)}/${filename}</loc>\n    <lastmod>${today}</lastmod>\n  </sitemap>\n`;
+  }
+
+  xml += "</sitemapindex>\n";
+  return xml;
+}
+
+/** Split a URL list into chunks and write each as a sitemap file. Returns filenames written. */
+async function writeChunkedSitemaps(
+  urls: string[],
+  prefix: string,
+  outputDir: string,
+  today: string,
+): Promise<string[]> {
+  const filenames: string[] = [];
+
+  for (let i = 0; i < urls.length; i += MAX_URLS_PER_FILE) {
+    const chunk = urls.slice(i, i + MAX_URLS_PER_FILE);
+    const chunkIndex = Math.floor(i / MAX_URLS_PER_FILE);
+    const filename = `sitemap-${prefix}-${chunkIndex}.xml`;
+    const xml = buildUrlset(chunk, today);
+    await writeFile(join(outputDir, filename), xml, "utf-8");
+    filenames.push(filename);
+    console.log(`  Wrote ${filename} (${chunk.length.toLocaleString()} URLs)`);
+  }
+
+  return filenames;
+}
+
 // ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
   const contentDir = resolve(process.argv[2] ?? "./content");
-  const outputPath = resolve("./public/sitemap.xml");
+  const outputDir = resolve("./public");
+  const today = new Date().toISOString().split("T")[0]!;
 
   console.log(`Content directory: ${contentDir}`);
+  console.log(`Output directory: ${outputDir}\n`);
 
   const [uscUrls, ecfrUrls] = await Promise.all([
     collectUscUrls(contentDir),
     collectEcfrUrls(contentDir),
   ]);
 
-  const allUrls = [...uscUrls, ...ecfrUrls];
-  console.log(`  USC: ${uscUrls.length} URLs`);
-  console.log(`  eCFR: ${ecfrUrls.length} URLs`);
-  console.log(`  Total: ${allUrls.length} URLs`);
+  console.log(`USC: ${uscUrls.length.toLocaleString()} URLs`);
+  console.log(`eCFR: ${ecfrUrls.length.toLocaleString()} URLs`);
+  console.log(`Total: ${(uscUrls.length + ecfrUrls.length + 1).toLocaleString()} URLs\n`);
 
-  const sitemap = buildSitemap(allUrls);
-  await writeFile(outputPath, sitemap, "utf-8");
-  console.log(`\nWrote ${outputPath}`);
+  // Write homepage as a misc sitemap
+  const miscUrls = ["/"];
+  const allFilenames: string[] = [];
+
+  allFilenames.push(...(await writeChunkedSitemaps(miscUrls, "misc", outputDir, today)));
+  allFilenames.push(...(await writeChunkedSitemaps(uscUrls, "usc", outputDir, today)));
+  allFilenames.push(...(await writeChunkedSitemaps(ecfrUrls, "ecfr", outputDir, today)));
+
+  // Write sitemap index
+  const indexXml = buildSitemapIndex(allFilenames, today);
+  const indexPath = join(outputDir, "sitemap.xml");
+  await writeFile(indexPath, indexXml, "utf-8");
+
+  console.log(`\nWrote sitemap index: ${indexPath} (${allFilenames.length} sitemaps)`);
 }
 
 main().catch((err) => {

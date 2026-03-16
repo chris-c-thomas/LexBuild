@@ -8,8 +8,9 @@ dist/
 # Navigation data (generated)
 public/nav/
 
-# Sitemap (generated)
+# Sitemaps (generated)
 public/sitemap.xml
+public/sitemap-*.xml
 
 # Environment
 .env.local

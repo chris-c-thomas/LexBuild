@@ -159,6 +159,29 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* Shiki word-wrap overrides — inline styles on <pre> set white-space:pre */
+.shiki-wrap pre.shiki {
+  white-space: pre-wrap !important;
+  overflow-wrap: break-word !important;
+  word-break: break-word !important;
+  overflow-x: hidden !important;
+  background: transparent !important;
+  padding: 1rem !important;
+  border-radius: 0.5rem !important;
+}
+
+.shiki-wrap pre.shiki code {
+  white-space: pre-wrap !important;
+  overflow-wrap: break-word !important;
+  word-break: break-word !important;
+  font-size: 0.8rem !important;
+  line-height: 1.625 !important;
+}
+
+.shiki-wrap .line {
+  display: inline !important;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

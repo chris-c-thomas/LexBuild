@@ -66,12 +66,12 @@ const meiliSearchKey = import.meta.env.MEILI_SEARCH_KEY ?? "";
       <div class="mx-auto flex h-14 items-center justify-between px-4 sm:px-6 lg:px-8">
         <div class="flex items-center gap-6">
           <MobileNav client:load source={source} currentPath={currentPath} />
-          <a href="/" class="text-2xl font-bold text-foreground"> LexBuild </a>
+          <a href="/" class="text-2xl font-bold text-slate-blue-800 dark:text-slate-blue-200"> LexBuild </a>
           <nav class="hidden items-center gap-4 text-md font-medium lg:flex">
             <a
               href="/usc"
               class:list={[
-                "inline-flex items-center gap-1.5 transition-colors hover:text-slate-blue-700 dark:hover:text-slate-400",
+                "inline-flex items-center gap-1.5 transition-colors hover:text-slate-blue-700 dark:hover:text-slate-blue-300",
                 source === "usc" ? "text-foreground" : "text-muted-foreground",
               ]}
             >
@@ -83,7 +83,7 @@ const meiliSearchKey = import.meta.env.MEILI_SEARCH_KEY ?? "";
             <a
               href="/ecfr"
               class:list={[
-                "inline-flex items-center gap-1.5 transition-colors hover:text-slate-blue-700 dark:hover:text-slate-400",
+                "inline-flex items-center gap-1.5 transition-colors hover:text-slate-blue-700 dark:hover:text-slate-blue-300",
                 source === "ecfr" ? "text-foreground" : "text-muted-foreground",
               ]}
             >
@@ -131,7 +131,7 @@ const meiliSearchKey = import.meta.env.MEILI_SEARCH_KEY ?? "";
     }
     <footer class="border-t border-border py-6 text-center text-sm text-muted-foreground">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        LexBuild &mdash; U.S. legal text as structured Markdown for AI/RAG
+        <span class="font-medium text-slate-blue-700 dark:text-slate-blue-400">LexBuild</span> &mdash; U.S. legal text as structured Markdown for AI/RAG
       </div>
     </footer>
   </body>

@@ -197,7 +197,7 @@ export function SearchDialog({ meiliUrl, meiliSearchKey }: SearchDialogProps) {
                     >
                       <div className="min-w-0 flex-1">
                         <div className="flex items-baseline gap-2">
-                          <span className="bg-muted text-muted-foreground shrink-0 rounded px-1.5 py-0.5 font-mono text-[0.6rem] font-medium uppercase">
+                          <span className="bg-slate-blue-100 text-slate-blue-700 dark:bg-slate-blue-900 dark:text-slate-blue-300 shrink-0 rounded px-1.5 py-0.5 font-mono text-[0.6rem] font-medium uppercase">
                             {hit.source}
                           </span>
                           <span className="text-foreground truncate text-sm font-medium">
@@ -258,9 +258,9 @@ function FilterTab({
   return (
     <button
       onClick={onClick}
-      className={`rounded-md px-2.5 py-1 text-xs transition-colors ${
+      className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
         active
-          ? "bg-primary text-primary-foreground"
+          ? "bg-slate-blue-600 text-white dark:bg-slate-blue-500 dark:text-slate-blue-950"
           : "text-muted-foreground hover:bg-muted hover:text-foreground"
       }`}
     >

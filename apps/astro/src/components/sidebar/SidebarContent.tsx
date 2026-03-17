@@ -149,7 +149,7 @@ export function SidebarContent({ sourceId, currentPath }: SidebarContentProps) {
                         isExpanded ? "rotate-90" : ""
                       }`}
                     />
-                    <span className="text-slate-blue-700 dark:text-slate-blue-600 shrink-0 font-mono text-xs font-semibold">
+                    <span className="text-slate-blue-700 dark:text-slate-blue-400 shrink-0 font-mono text-xs font-semibold">
                       {title.number}
                     </span>
                     <span className="min-w-0 truncate font-medium">{toTitleCase(title.name)}</span>
@@ -245,7 +245,7 @@ function ChapterList({
                   isExpanded ? "rotate-90" : ""
                 }`}
               />
-              <span className="text-slate-blue-700 dark:text-slate-blue-600 shrink-0 font-mono text-[0.65rem] font-semibold">
+              <span className="text-slate-blue-700 dark:text-slate-blue-400 shrink-0 font-mono text-[0.65rem] font-semibold">
                 Ch. {chapter.number}
               </span>
               <span className="min-w-0 truncate">{toTitleCase(chapter.name)}</span>
@@ -326,7 +326,7 @@ function PartList({
                   isExpanded ? "rotate-90" : ""
                 }`}
               />
-              <span className="text-slate-blue-700 dark:text-slate-blue-600 shrink-0 font-mono text-[0.6rem] font-semibold">
+              <span className="text-slate-blue-700 dark:text-slate-blue-400 shrink-0 font-mono text-[0.6rem] font-semibold">
                 Pt. {part.number}
               </span>
               <span className="min-w-0 truncate">{toTitleCase(part.name)}</span>

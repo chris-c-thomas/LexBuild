@@ -13,8 +13,8 @@ const titles = await getTitles("usc");
 <BaseLayout title="U.S. Code" source="usc" description="Browse all 54 titles of the U.S. Code as structured Markdown.">
   <div class="flex flex-col gap-6">
     <div>
-      <h1 class="text-3xl font-bold text-foreground">{source.name}</h1>
-      <p class="mt-2 text-muted-foreground">{source.description}</p>
+      <h1 class="text-3xl font-bold text-slate-blue-800 dark:text-slate-blue-200">{source.name}</h1>
+      <p class="mt-2 leading-relaxed text-muted-foreground">{source.description}</p>
     </div>
 
     {titles.length > 0 ? (

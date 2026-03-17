@@ -4,7 +4,7 @@
 export { convertEcfrTitle } from "./converter.js";
 export type { EcfrConvertOptions, EcfrConvertResult } from "./converter.js";
 
-// Downloader
+// Downloader (govinfo bulk data)
 export {
   downloadEcfrTitles,
   buildEcfrDownloadUrl,
@@ -17,6 +17,20 @@ export type {
   EcfrDownloadedFile,
   EcfrDownloadError,
 } from "./downloader.js";
+
+// Downloader (eCFR API — daily-updated, point-in-time)
+export {
+  downloadEcfrTitlesFromApi,
+  buildEcfrApiDownloadUrl,
+  fetchEcfrTitlesMeta,
+} from "./ecfr-api-downloader.js";
+export type {
+  EcfrApiDownloadOptions,
+  EcfrApiDownloadResult,
+  EcfrApiDownloadedFile,
+  EcfrTitleMeta,
+  EcfrTitlesResponse,
+} from "./ecfr-api-downloader.js";
 
 // AST Builder
 export { EcfrASTBuilder } from "./ecfr-builder.js";

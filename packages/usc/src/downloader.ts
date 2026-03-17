@@ -3,6 +3,9 @@
  *
  * Downloads USC title XML zip files from the Office of the Law Revision Counsel
  * and extracts them to a local directory.
+ *
+ * By default, auto-detects the latest release point from the OLRC download page.
+ * Falls back to a hardcoded release point if detection fails.
  */
 
 import { createWriteStream } from "node:fs";
@@ -12,21 +15,26 @@ import { pipeline } from "node:stream/promises";
 import { Readable } from "node:stream";
 import { open as yauzlOpen } from "yauzl";
 import type { ZipFile, Entry } from "yauzl";
+import { detectLatestReleasePoint } from "./release-points.js";
 
 // ---------------------------------------------------------------------------
 // Release point configuration
 // ---------------------------------------------------------------------------
 
 /**
- * Current OLRC release point.
+ * Fallback OLRC release point, used when auto-detection fails.
  *
- * Update this value when OLRC publishes a new release point.
- * The release point appears in download URLs and identifies which
- * public laws are incorporated. Format: "{congress}-{law}[not{excluded}]"
- *
- * Check https://uscode.house.gov/download/download.shtml for the latest.
+ * The downloader auto-detects the latest release point from the OLRC
+ * download page. This constant is only used as a last resort if the
+ * page is unreachable or its format changes.
  */
-export const CURRENT_RELEASE_POINT = "119-73not60";
+export const FALLBACK_RELEASE_POINT = "119-73not60";
+
+/**
+ * @deprecated Use `FALLBACK_RELEASE_POINT` instead.
+ * Kept for backward compatibility with existing consumers.
+ */
+export const CURRENT_RELEASE_POINT = FALLBACK_RELEASE_POINT;
 
 /** OLRC base URL for release point downloads */
 const OLRC_BASE_URL = "https://uscode.house.gov/download/releasepoints/us/pl";
@@ -93,12 +101,19 @@ export interface DownloadError {
 /**
  * Download USC title XML files from OLRC.
  *
+ * Auto-detects the latest release point from the OLRC download page unless
+ * an explicit release point is provided via `options.releasePoint`.
+ *
  * When all 54 titles are requested, uses the bulk `uscAll` zip for a single
  * HTTP round-trip instead of 54 individual requests. Falls back to per-title
  * downloads if the bulk download fails.
  */
 export async function downloadTitles(options: DownloadOptions): Promise<DownloadResult> {
-  const releasePoint = options.releasePoint ?? CURRENT_RELEASE_POINT;
+  let releasePoint = options.releasePoint;
+  if (!releasePoint) {
+    const detected = await detectLatestReleasePoint();
+    releasePoint = detected?.releasePoint ?? FALLBACK_RELEASE_POINT;
+  }
   const titles = options.titles ?? USC_TITLE_NUMBERS;
 
   await mkdir(options.outputDir, { recursive: true });

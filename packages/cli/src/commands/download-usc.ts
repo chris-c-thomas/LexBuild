@@ -1,10 +1,12 @@
 /**
  * `lexbuild download-usc` command — downloads USC XML from OLRC.
+ *
+ * Auto-detects the latest OLRC release point unless overridden with --release-point.
  */
 
 import { Command } from "commander";
 import { relative, resolve } from "node:path";
-import { downloadTitles, CURRENT_RELEASE_POINT } from "@lexbuild/usc";
+import { downloadTitles } from "@lexbuild/usc";
 import {
   createSpinner,
   summaryBlock,
@@ -21,7 +23,7 @@ interface DownloadCommandOptions {
   output: string;
   titles?: string | undefined;
   all: boolean;
-  releasePoint: string;
+  releasePoint?: string | undefined;
 }
 
 export const downloadUscCommand = new Command("download-usc")
@@ -29,16 +31,18 @@ export const downloadUscCommand = new Command("download-usc")
   .option("-o, --output <dir>", "Download directory", "./downloads/usc/xml")
   .option("--titles <spec>", "Title(s) to download: 1, 1-5, or 1-5,8,11")
   .option("--all", "Download all 54 titles (single bulk zip)", false)
-  .option("--release-point <id>", "OLRC release point identifier", CURRENT_RELEASE_POINT)
+  .option("--release-point <id>", "OLRC release point (auto-detected if omitted)")
   .addHelpText(
     "after",
     `
 Examples:
-  $ lexbuild download-usc --all                      Download all 54 titles
+  $ lexbuild download-usc --all                      Download all 54 titles (latest release)
   $ lexbuild download-usc --titles 1                 Download Title 1 only
   $ lexbuild download-usc --titles 1-5,8,11          Download specific titles
   $ lexbuild download-usc --all -o ./my-xml          Custom output directory
+  $ lexbuild download-usc --all --release-point 119-73not60  Pin a specific release
 
+The latest release point is auto-detected from the OLRC download page.
 Source: https://uscode.house.gov/download/download.shtml`,
   )
   .action(async (options: DownloadCommandOptions) => {
@@ -61,6 +65,15 @@ Source: https://uscode.house.gov/download/download.shtml`,
 
     const outputDir = resolve(options.output);
     const titleCount = titles ? titles.length : 54;
+
+    // Show detecting spinner if no explicit release point
+    if (!options.releasePoint) {
+      const detectSpinner = createSpinner("Detecting latest OLRC release point...");
+      detectSpinner.start();
+      // Detection happens inside downloadTitles() — stop spinner before download starts
+      detectSpinner.stop();
+    }
+
     const label =
       titleCount === 1 ? `Downloading Title ${titles?.[0]}` : `Downloading ${titleCount} titles`;
 
@@ -89,11 +102,15 @@ Source: https://uscode.house.gov/download/download.shtml`,
 
       const totalBytes = result.files.reduce((sum, f) => sum + f.size, 0);
 
-      // Summary header
+      // Summary header — show the actual release point used (may be auto-detected)
+      const rpLabel = options.releasePoint
+        ? result.releasePoint
+        : `${result.releasePoint} (auto-detected)`;
+
       const output = summaryBlock({
         title: "lexbuild — Download Summary",
         rows: [
-          ["Release Point", options.releasePoint],
+          ["Release Point", rpLabel],
           ["Directory", relative(process.cwd(), outputDir) || outputDir],
         ],
       });

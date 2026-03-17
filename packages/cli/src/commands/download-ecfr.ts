@@ -35,23 +35,23 @@ export const downloadEcfrCommand = new Command("download-ecfr")
   .option("--all", "Download all 50 eCFR titles", false)
   .option(
     "--source <source>",
-    "Download source: govinfo (bulk data) or ecfr-api (daily-updated)",
-    "govinfo",
+    "Download source: ecfr-api (daily-updated) or govinfo (bulk data)",
+    "ecfr-api",
   )
   .option("--date <YYYY-MM-DD>", "Point-in-time date (ecfr-api source only)")
   .addHelpText(
     "after",
     `
 Examples:
-  $ lexbuild download-ecfr --all                          Download all titles from govinfo
-  $ lexbuild download-ecfr --titles 1                     Download Title 1 from govinfo
-  $ lexbuild download-ecfr --all --source ecfr-api        Download all titles from eCFR API
-  $ lexbuild download-ecfr --titles 17 --source ecfr-api  Download Title 17 from eCFR API
-  $ lexbuild download-ecfr --all --source ecfr-api --date 2026-01-01  Point-in-time download
+  $ lexbuild download-ecfr --all                          Download all titles from eCFR API
+  $ lexbuild download-ecfr --titles 1                     Download Title 1 only
+  $ lexbuild download-ecfr --titles 1-5,17                Download specific titles
+  $ lexbuild download-ecfr --all --date 2026-01-01        Point-in-time download
+  $ lexbuild download-ecfr --all --source govinfo         Download from govinfo bulk data
 
 Sources:
-  govinfo   — Bulk XML from govinfo.gov (default, updates irregularly)
-  ecfr-api  — eCFR API from ecfr.gov (daily-updated, point-in-time support)`,
+  ecfr-api  — eCFR API from ecfr.gov (default, daily-updated, point-in-time support)
+  govinfo   — Bulk XML from govinfo.gov (updates irregularly)`,
   )
   .action(async (options: DownloadEcfrOptions) => {
     if (!options.titles && !options.all) {

@@ -51,35 +51,38 @@ export function SearchDialog({ meiliUrl, meiliSearchKey }: SearchDialogProps) {
   }, [open]);
 
   // Debounced search
-  const doSearch = useCallback(
-    async (q: string, source: "usc" | "ecfr" | null) => {
-      if (!q.trim()) {
-        setResults(null);
-        return;
+  const doSearch = useCallback(async (q: string, source: "usc" | "ecfr" | null) => {
+    if (!q.trim()) {
+      setResults(null);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const { search } = await import("@/lib/search");
+      const result = await search(q, {
+        source: source ?? undefined,
+        limit: 20,
+      });
+      setResults(result);
+    } catch (err) {
+      setResults(null);
+      const message = err instanceof Error ? err.message : String(err);
+      if (
+        message.includes("fetch") ||
+        message.includes("connect") ||
+        message.includes("ECONNREFUSED")
+      ) {
+        setError(
+          "Search service is unavailable at this time. Meilisearch may be down or experiencing issues.",
+        );
+      } else {
+        setError("Search failed. Please try again.");
       }
-      setLoading(true);
-      setError(null);
-      try {
-        const { search } = await import("@/lib/search");
-        const result = await search(q, {
-          source: source ?? undefined,
-          limit: 20,
-        });
-        setResults(result);
-      } catch (err) {
-        setResults(null);
-        const message = err instanceof Error ? err.message : String(err);
-        if (message.includes("fetch") || message.includes("connect") || message.includes("ECONNREFUSED")) {
-          setError("Search service is unavailable at this time. Meilisearch may be down or experiencing issues.");
-        } else {
-          setError("Search failed. Please try again.");
-        }
-      } finally {
-        setLoading(false);
-      }
-    },
-    [],
-  );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -93,13 +96,13 @@ export function SearchDialog({ meiliUrl, meiliSearchKey }: SearchDialogProps) {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="flex h-8 w-48 items-center justify-between rounded-md border border-input bg-background px-3 text-sm text-muted-foreground transition-colors hover:bg-muted"
+        className="border-input bg-background text-muted-foreground hover:bg-muted flex h-8 w-48 items-center justify-between rounded-md border px-3 text-sm transition-colors"
       >
         <span className="flex items-center gap-2">
           <Search className="size-3.5" />
           <span className="hidden sm:inline">Search</span>
         </span>
-        <kbd className="pointer-events-none hidden select-none rounded border border-border bg-muted px-1.5 font-mono text-[0.65rem] font-medium text-muted-foreground sm:inline">
+        <kbd className="border-border bg-muted text-muted-foreground pointer-events-none hidden rounded border px-1.5 font-mono text-[0.65rem] font-medium select-none sm:inline">
           <span className="text-xs">⌘</span>K
         </kbd>
       </button>
@@ -116,36 +119,36 @@ export function SearchDialog({ meiliUrl, meiliSearchKey }: SearchDialogProps) {
 
       {/* Dialog */}
       <div className="fixed inset-x-0 top-[15vh] z-50 mx-auto w-full max-w-xl px-4">
-        <div className="overflow-hidden rounded-xl border border-border bg-background shadow-2xl">
+        <div className="border-border bg-background overflow-hidden rounded-xl border shadow-2xl">
           {/* Search input */}
-          <div className="flex items-center border-b border-border px-4">
-            <Search className="size-4 shrink-0 text-muted-foreground" />
+          <div className="border-border flex items-center border-b px-4">
+            <Search className="text-muted-foreground size-4 shrink-0" />
             <input
               ref={inputRef}
               type="text"
               placeholder="Search U.S. Code and eCFR..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="flex-1 bg-transparent px-3 py-3 text-sm outline-none placeholder:text-muted-foreground"
+              className="placeholder:text-muted-foreground flex-1 bg-transparent px-3 py-3 text-sm outline-none"
             />
             {query && (
               <button
                 onClick={() => setQuery("")}
-                className="rounded p-0.5 text-muted-foreground hover:text-foreground"
+                className="text-muted-foreground hover:text-foreground rounded p-0.5"
               >
                 <X className="size-3.5" />
               </button>
             )}
             <button
               onClick={() => setOpen(false)}
-              className="ml-2 rounded border border-border px-1.5 py-0.5 text-[0.65rem] text-muted-foreground hover:text-foreground"
+              className="border-border text-muted-foreground hover:text-foreground ml-2 rounded border px-1.5 py-0.5 text-[0.65rem]"
             >
               ESC
             </button>
           </div>
 
           {/* Source filter tabs */}
-          <div className="flex gap-1 border-b border-border px-4 py-2">
+          <div className="border-border flex gap-1 border-b px-4 py-2">
             <FilterTab
               label="All"
               active={sourceFilter === null}
@@ -168,19 +171,17 @@ export function SearchDialog({ meiliUrl, meiliSearchKey }: SearchDialogProps) {
           {/* Results */}
           <div className="max-h-[50vh] overflow-y-auto">
             {loading && (
-              <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+              <div className="text-muted-foreground px-4 py-8 text-center text-sm">
                 Searching...
               </div>
             )}
 
             {!loading && error && (
-              <div className="px-4 py-8 text-center text-sm text-destructive">
-                {error}
-              </div>
+              <div className="text-destructive px-4 py-8 text-center text-sm">{error}</div>
             )}
 
             {!loading && !error && query && results && results.hits.length === 0 && (
-              <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+              <div className="text-muted-foreground px-4 py-8 text-center text-sm">
                 No results for "{query}"
               </div>
             )}
@@ -191,22 +192,22 @@ export function SearchDialog({ meiliUrl, meiliSearchKey }: SearchDialogProps) {
                   <li key={hit.id}>
                     <a
                       href={hit.url}
-                      className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted"
+                      className="hover:bg-muted flex items-center gap-3 px-4 py-2.5 transition-colors"
                       onClick={() => setOpen(false)}
                     >
                       <div className="min-w-0 flex-1">
                         <div className="flex items-baseline gap-2">
-                          <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-[0.6rem] font-medium uppercase text-muted-foreground">
+                          <span className="bg-muted text-muted-foreground shrink-0 rounded px-1.5 py-0.5 font-mono text-[0.6rem] font-medium uppercase">
                             {hit.source}
                           </span>
-                          <span className="truncate text-sm font-medium text-foreground">
+                          <span className="text-foreground truncate text-sm font-medium">
                             {hit.identifier}
                           </span>
                         </div>
-                        <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                        <p className="text-muted-foreground mt-0.5 truncate text-xs">
                           {hit.heading}
                         </p>
-                        <div className="mt-0.5 flex items-center gap-1 text-[0.65rem] text-muted-foreground/60">
+                        <div className="text-muted-foreground/60 mt-0.5 flex items-center gap-1 text-[0.65rem]">
                           {hit.hierarchy.map((h, i) => (
                             <span key={i} className="flex items-center gap-1">
                               {i > 0 && <span>›</span>}
@@ -215,7 +216,7 @@ export function SearchDialog({ meiliUrl, meiliSearchKey }: SearchDialogProps) {
                           ))}
                         </div>
                       </div>
-                      <ArrowRight className="size-3.5 shrink-0 text-muted-foreground/40" />
+                      <ArrowRight className="text-muted-foreground/40 size-3.5 shrink-0" />
                     </a>
                   </li>
                 ))}
@@ -223,9 +224,8 @@ export function SearchDialog({ meiliUrl, meiliSearchKey }: SearchDialogProps) {
             )}
 
             {!loading && !query && (
-              <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-                Type to search across {" "}
-                <span className="font-medium text-foreground">287,000+</span>{" "}
+              <div className="text-muted-foreground px-4 py-8 text-center text-sm">
+                Type to search across <span className="text-foreground font-medium">287,000+</span>{" "}
                 sections of U.S. law and regulations
               </div>
             )}
@@ -233,7 +233,7 @@ export function SearchDialog({ meiliUrl, meiliSearchKey }: SearchDialogProps) {
 
           {/* Footer */}
           {results && results.hits.length > 0 && (
-            <div className="border-t border-border px-4 py-2 text-[0.65rem] text-muted-foreground">
+            <div className="border-border text-muted-foreground border-t px-4 py-2 text-[0.65rem]">
               {results.estimatedTotalHits.toLocaleString()} results in {results.processingTimeMs}ms
             </div>
           )}
@@ -265,9 +265,7 @@ function FilterTab({
       }`}
     >
       {label}
-      {count !== undefined && (
-        <span className="ml-1 opacity-60">({count.toLocaleString()})</span>
-      )}
+      {count !== undefined && <span className="ml-1 opacity-60">({count.toLocaleString()})</span>}
     </button>
   );
 }

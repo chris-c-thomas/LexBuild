@@ -53,4 +53,4 @@ if [ -d "$REPO_ROOT/output-title/ecfr" ]; then
   echo "Linked eCFR titles"
 fi
 
-echo "Content linked. Run 'pnpm dev' to start the dev server."
+echo "All content linked."

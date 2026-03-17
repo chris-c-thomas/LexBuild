@@ -6,14 +6,14 @@ const sources = Object.values(SOURCES);
 ---
 
 <BaseLayout title="Home" description="U.S. legal text as structured Markdown for AI/RAG ingestion.">
-  <div class="flex flex-col items-center gap-12 py-12">
+  <div class="flex flex-col items-center gap-16 py-16">
     <div class="max-w-2xl text-center">
-      <h1 class="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+      <h1 class="text-4xl font-bold tracking-tight text-slate-blue-800 dark:text-slate-blue-200 sm:text-5xl">
         LexBuild
       </h1>
-      <p class="mt-4 text-lg text-muted-foreground">
+      <p class="mt-4 text-lg leading-relaxed text-muted-foreground">
         Browse the full U.S. Code and Code of Federal Regulations as structured Markdown
-        &mdash; optimized for AI and RAG pipelines.
+        &mdash; optimized for <span class="font-medium text-foreground">AI and RAG pipelines</span>.
       </p>
     </div>
 
@@ -21,21 +21,25 @@ const sources = Object.values(SOURCES);
       {sources.map((source) => (
         <a
           href={source.basePath}
-          class="group rounded-xl border border-border bg-card p-6 transition-all hover:border-slate-blue-400 hover:shadow-md"
+          class="group rounded-lg border border-border bg-card p-6 shadow-sm transition-[border-color,box-shadow] hover:border-slate-blue-400 hover:shadow-md dark:hover:border-slate-blue-600"
         >
           <div class="flex items-center gap-3">
-            <span class="text-sm font-semibold uppercase tracking-wider text-slate-blue-600 dark:text-slate-blue-400">
+            <span class="text-xs font-bold tracking-wider text-slate-blue-600 dark:text-slate-blue-400">
               {source.shortName}
             </span>
+            <span class="h-px flex-1 bg-slate-blue-200 dark:bg-slate-blue-800" />
           </div>
-          <h2 class="mt-2 text-xl font-semibold text-foreground group-hover:text-slate-blue-700 dark:group-hover:text-slate-blue-300 transition-colors">
+          <h2 class="mt-3 text-xl font-semibold text-foreground group-hover:text-slate-blue-700 dark:group-hover:text-slate-blue-300 transition-colors">
             {source.name}
           </h2>
-          <p class="mt-2 text-sm text-muted-foreground">
+          <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
             {source.description}
           </p>
-          <div class="mt-4 text-xs text-muted-foreground">
-            {source.titleCount} titles
+          <div class="mt-4 flex items-center justify-between">
+            <span class="text-xs font-medium text-slate-blue-700 dark:text-slate-blue-400">
+              {source.titleCount} titles
+            </span>
+            <span class="text-sm text-slate-blue-400 opacity-0 transition-opacity group-hover:opacity-100 dark:text-slate-blue-300">&rarr;</span>
           </div>
         </a>
       ))}

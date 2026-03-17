@@ -1,6 +1,9 @@
 ---
 import "@/styles/global.css";
 import ThemeToggle from "@/components/ui/ThemeToggle";
+import { Sidebar } from "@/components/sidebar/Sidebar";
+import { MobileNav } from "@/components/sidebar/MobileNav";
+import { SearchDialog } from "@/components/search/SearchDialog";
 import type { SourceId } from "@/lib/types";
 
 interface Props {
@@ -9,9 +12,17 @@ interface Props {
   source?: SourceId;
 }
 
-const { title, description = "U.S. legal code as structured Markdown — LexBuild", source } = Astro.props;
+const {
+  title,
+  description = "U.S. legal code as structured Markdown — LexBuild",
+  source,
+} = Astro.props;
 const siteUrl = import.meta.env.SITE_URL ?? "https://lexbuild.dev";
 const canonicalUrl = new URL(Astro.url.pathname, siteUrl).href;
+const currentPath = Astro.url.pathname;
+const enableSearch = (import.meta.env.ENABLE_SEARCH ?? "false") === "true";
+const meiliUrl = import.meta.env.MEILI_URL ?? "http://127.0.0.1:7700";
+const meiliSearchKey = import.meta.env.MEILI_SEARCH_KEY ?? "";
 ---
 
 <!doctype html>
@@ -27,49 +38,117 @@ const canonicalUrl = new URL(Astro.url.pathname, siteUrl).href;
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonicalUrl} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="theme-color" content="#ffffff" id="theme-color" />
     <!-- Prevent flash of wrong theme -->
     <script is:inline>
       (function () {
-        const theme = localStorage.getItem("theme");
-        if (theme === "dark" || (!theme && matchMedia("(prefers-color-scheme: dark)").matches)) {
-          document.documentElement.classList.add("dark");
+        var d = document.documentElement;
+        var theme = localStorage.getItem("theme");
+        var isDark = theme === "dark" || (!theme && matchMedia("(prefers-color-scheme: dark)").matches);
+        if (isDark) {
+          d.classList.add("dark");
+          d.style.colorScheme = "dark";
+          document.getElementById("theme-color").setAttribute("content", "#1b1b1f");
+        } else {
+          d.style.colorScheme = "light";
         }
       })();
     </script>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-2S71DGYMWR"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+
+      gtag("config", "G-2S71DGYMWR");
+    </script>
   </head>
   <body class="min-h-screen bg-background text-foreground antialiased">
-    <header class="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div class="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+    <header
+      class="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+    >
+      <div class="mx-auto flex h-14 items-center justify-between px-4 sm:px-6 lg:px-8">
         <div class="flex items-center gap-6">
-          <a href="/" class="text-lg font-bold text-foreground">
-            LexBuild
-          </a>
-          <nav class="hidden items-center gap-4 text-sm font-medium sm:flex">
+          <MobileNav client:load source={source} currentPath={currentPath} />
+          <a href="/" class="text-2xl font-bold text-slate-blue-800 dark:text-slate-blue-200"> LexBuild </a>
+          <nav class="hidden items-center gap-4 text-md font-medium lg:flex">
+            <a
+              href="https://www.npmjs.com/package/@lexbuild/cli"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-1.5 text-muted-foreground transition-colors hover:text-slate-blue-700 dark:hover:text-slate-blue-300"
+            >
+              CLI
+            </a>
             <a
               href="/usc"
-              class:list={["transition-colors hover:text-foreground", source === "usc" ? "text-foreground" : "text-muted-foreground"]}
+              class:list={[
+                "inline-flex items-center gap-1.5 transition-colors hover:text-slate-blue-700 dark:hover:text-slate-blue-300",
+                source === "usc" ? "text-foreground" : "text-muted-foreground",
+              ]}
             >
               U.S. Code
             </a>
             <a
               href="/ecfr"
-              class:list={["transition-colors hover:text-foreground", source === "ecfr" ? "text-foreground" : "text-muted-foreground"]}
+              class:list={[
+                "inline-flex items-center gap-1.5 transition-colors hover:text-slate-blue-700 dark:hover:text-slate-blue-300",
+                source === "ecfr" ? "text-foreground" : "text-muted-foreground",
+              ]}
             >
               eCFR
+            </a>
+            <a
+              href="https://github.com/chris-c-thomas/LexBuild/tree/main/docs"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-1.5 text-muted-foreground transition-colors hover:text-slate-blue-700 dark:hover:text-slate-blue-300"
+            >
+              Docs
             </a>
           </nav>
         </div>
         <div class="flex items-center gap-2">
+          {
+            enableSearch && (
+              <SearchDialog client:idle meiliUrl={meiliUrl} meiliSearchKey={meiliSearchKey} />
+            )
+          }
+          <a
+            href="https://github.com/chris-c-thomas/LexBuild"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground"
+            aria-label="GitHub repository"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12Z"/>
+            </svg>
+          </a>
           <ThemeToggle client:load />
         </div>
       </div>
     </header>
-    <main class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-      <slot />
-    </main>
+    {
+      source ? (
+        <div class="flex">
+          <Sidebar client:load sourceId={source} currentPath={currentPath} />
+          <main class="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8">
+            <slot />
+          </main>
+        </div>
+      ) : (
+        <main class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+          <slot />
+        </main>
+      )
+    }
     <footer class="border-t border-border py-6 text-center text-sm text-muted-foreground">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        LexBuild &mdash; U.S. legal text as structured Markdown for AI/RAG
+        <span class="font-medium text-slate-blue-700 dark:text-slate-blue-400">LexBuild</span> &mdash; U.S. legal text as structured Markdown for AI/RAG
       </div>
     </footer>
   </body>

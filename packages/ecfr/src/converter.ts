@@ -9,7 +9,6 @@
  */
 
 import { createReadStream } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
 import { join, dirname, basename, relative } from "node:path";
 import {
   XMLParser,
@@ -17,6 +16,8 @@ import {
   createLinkResolver,
   FORMAT_VERSION,
   GENERATOR,
+  writeFile,
+  mkdir,
 } from "@lexbuild/core";
 import type {
   LevelNode,

@@ -6,7 +6,6 @@
  */
 
 import { createReadStream } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { basename } from "node:path";
 import {
@@ -20,6 +19,8 @@ import {
   FORMAT_VERSION,
   GENERATOR,
   BIG_LEVELS,
+  writeFile,
+  mkdir,
 } from "@lexbuild/core";
 import type {
   LevelNode,

@@ -29,10 +29,10 @@ if (source === "ecfr" && frontmatter.agency) {
 }
 
 if ((isSection || !isTitle) && frontmatter.chapter_name) {
-  fields.push({
-    label: "Chapter",
-    value: `${frontmatter.chapter_number} — ${toTitleCase(frontmatter.chapter_name)}`,
-  });
+  const chapterLabel = frontmatter.chapter_number !== undefined
+    ? `${frontmatter.chapter_number} — ${toTitleCase(frontmatter.chapter_name)}`
+    : toTitleCase(frontmatter.chapter_name);
+  fields.push({ label: "Chapter", value: chapterLabel });
 }
 
 if (isTitle) {

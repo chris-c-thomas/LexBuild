@@ -42,7 +42,10 @@ export function MobileNav({ source, currentPath }: MobileNavProps) {
             <select
               value={source ?? ""}
               onChange={(e) => {
-                window.location.href = `/${e.target.value}`;
+                const val = e.target.value;
+                if (val === "usc" || val === "ecfr") {
+                  window.location.href = `/${val}`;
+                }
               }}
               className="border-sidebar-border bg-sidebar-accent text-sidebar-accent-foreground focus-visible:ring-ring appearance-none rounded-md border py-1 pr-7 pl-2.5 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
               aria-label="Select source"

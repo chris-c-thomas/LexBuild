@@ -246,13 +246,11 @@ async function generateUscNav(contentDir: string, outDir: string): Promise<void>
   // Sort by title number
   titles.sort((a, b) => a.number - b.number);
 
-  await writeFile(
-    join(outDir, "titles.json"),
-    JSON.stringify(titles, null, 2) + "\n",
-    "utf-8",
-  );
+  await writeFile(join(outDir, "titles.json"), JSON.stringify(titles, null, 2) + "\n", "utf-8");
 
-  console.log(`  USC: ${titles.length} titles, ${titles.reduce((s, t) => s + t.sectionCount, 0)} sections`);
+  console.log(
+    `  USC: ${titles.length} titles, ${titles.reduce((s, t) => s + t.sectionCount, 0)} sections`,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -367,11 +365,7 @@ async function generateEcfrNav(contentDir: string, outDir: string): Promise<void
 
   titles.sort((a, b) => a.number - b.number);
 
-  await writeFile(
-    join(outDir, "titles.json"),
-    JSON.stringify(titles, null, 2) + "\n",
-    "utf-8",
-  );
+  await writeFile(join(outDir, "titles.json"), JSON.stringify(titles, null, 2) + "\n", "utf-8");
 
   const totalSections = titles.reduce((s, t) => s + t.sectionCount, 0);
   console.log(`  eCFR: ${titles.length} titles, ${totalSections} sections`);

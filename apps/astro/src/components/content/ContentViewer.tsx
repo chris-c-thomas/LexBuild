@@ -17,7 +17,7 @@ export default function ContentViewer({
   return (
     <Tabs defaultValue="source" className="flex flex-col gap-0">
       {/* Toolbar */}
-      <div className="flex items-center justify-between rounded-t-lg border border-border bg-muted/50 px-4 py-2">
+      <div className="border-border bg-muted/50 flex items-center justify-between rounded-t-lg border px-4 py-2">
         <TabsList>
           <TabsTrigger value="source">
             <FileText className="size-3.5" />
@@ -36,7 +36,7 @@ export default function ContentViewer({
 
       {/* Content */}
       <TabsContent value="source" className="mt-0">
-        <div className="overflow-hidden rounded-b-lg border border-t-0 border-border bg-muted/30 p-4">
+        <div className="border-border bg-muted/30 overflow-hidden rounded-b-lg border border-t-0 p-4">
           <div
             className="shiki-wrap text-sm"
             dangerouslySetInnerHTML={{ __html: highlightedSource }}
@@ -44,9 +44,9 @@ export default function ContentViewer({
         </div>
       </TabsContent>
       <TabsContent value="rendered" className="mt-0">
-        <div className="rounded-b-lg border border-t-0 border-border bg-background p-6 lg:p-8">
+        <div className="border-border bg-background rounded-b-lg border border-t-0 p-6 lg:p-8">
           <article
-            className="prose prose-zinc dark:prose-invert max-w-none prose-headings:text-slate-blue-800 dark:prose-headings:text-slate-blue-300 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-p:leading-7 prose-li:leading-7 prose-blockquote:border-slate-blue-300 dark:prose-blockquote:border-slate-blue-700 prose-hr:border-border prose-strong:text-foreground"
+            className="prose prose-zinc dark:prose-invert prose-headings:text-slate-blue-800 dark:prose-headings:text-slate-blue-300 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-p:leading-7 prose-li:leading-7 prose-blockquote:border-slate-blue-300 dark:prose-blockquote:border-slate-blue-700 prose-hr:border-border prose-strong:text-foreground max-w-none"
             dangerouslySetInnerHTML={{ __html: renderedHtml }}
           />
         </div>

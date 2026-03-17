@@ -17,7 +17,12 @@
 
 import { readFile, writeFile, stat } from "node:fs/promises";
 import { resolve, join, relative } from "node:path";
-import { createHighlighter, type BundledLanguage, type BundledTheme, type HighlighterGeneric } from "shiki";
+import {
+  createHighlighter,
+  type BundledLanguage,
+  type BundledTheme,
+  type HighlighterGeneric,
+} from "shiki";
 import { readdir } from "node:fs/promises";
 import matter from "gray-matter";
 
@@ -50,7 +55,12 @@ async function findMdFiles(dir: string): Promise<string[]> {
       const full = join(current, entry.name);
       if (entry.isDirectory() || entry.isSymbolicLink()) {
         await walk(full);
-      } else if (entry.isFile() && entry.name.endsWith(".md") && !entry.name.startsWith("_") && entry.name !== "README.md") {
+      } else if (
+        entry.isFile() &&
+        entry.name.endsWith(".md") &&
+        !entry.name.startsWith("_") &&
+        entry.name !== "README.md"
+      ) {
         results.push(full);
       }
     }

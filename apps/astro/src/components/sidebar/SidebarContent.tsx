@@ -118,13 +118,13 @@ export function SidebarContent({ sourceId, currentPath }: SidebarContentProps) {
           {Array.from({ length: 8 }).map((_, i) => (
             <div
               key={i}
-              className="h-6 animate-pulse rounded bg-sidebar-accent/50"
+              className="bg-sidebar-accent/50 h-6 animate-pulse rounded"
               style={{ width: `${60 + Math.random() * 30}%` }}
             />
           ))}
         </div>
       ) : titles.length === 0 ? (
-        <p className="p-2 text-sm text-muted-foreground">No titles found.</p>
+        <p className="text-muted-foreground p-2 text-sm">No titles found.</p>
       ) : (
         <nav aria-label={`${sourceId.toUpperCase()} navigation`}>
           <ul className="space-y-0.5">
@@ -145,27 +145,25 @@ export function SidebarContent({ sourceId, currentPath }: SidebarContentProps) {
                     aria-expanded={isExpanded}
                   >
                     <ChevronRight
-                      className={`size-3.5 shrink-0 text-sidebar-foreground/40 transition-transform ${
+                      className={`text-sidebar-foreground/40 size-3.5 shrink-0 transition-transform ${
                         isExpanded ? "rotate-90" : ""
                       }`}
                     />
-                    <span className="shrink-0 font-mono text-xs font-semibold text-slate-blue-700 dark:text-slate-blue-600">
+                    <span className="text-slate-blue-700 dark:text-slate-blue-600 shrink-0 font-mono text-xs font-semibold">
                       {title.number}
                     </span>
-                    <span className="min-w-0 truncate font-medium">
-                      {toTitleCase(title.name)}
-                    </span>
+                    <span className="min-w-0 truncate font-medium">{toTitleCase(title.name)}</span>
                   </button>
 
                   {/* Chapters (expanded) */}
                   {isExpanded && (
-                    <div className="ml-3 mt-0.5 border-l border-sidebar-border pl-2">
+                    <div className="border-sidebar-border mt-0.5 ml-3 border-l pl-2">
                       {loadingTitle === title.directory ? (
                         <div className="space-y-1.5 py-1">
                           {Array.from({ length: 3 }).map((_, i) => (
                             <div
                               key={i}
-                              className="h-5 animate-pulse rounded bg-sidebar-accent/50"
+                              className="bg-sidebar-accent/50 h-5 animate-pulse rounded"
                               style={{ width: `${50 + Math.random() * 40}%` }}
                             />
                           ))}
@@ -220,7 +218,7 @@ function ChapterList({
   currentPath,
 }: ChapterListProps) {
   if (chapters.length === 0) {
-    return <p className="py-1 text-xs text-muted-foreground">No chapters</p>;
+    return <p className="text-muted-foreground py-1 text-xs">No chapters</p>;
   }
 
   return (
@@ -243,18 +241,18 @@ function ChapterList({
               aria-expanded={isExpanded}
             >
               <ChevronRight
-                className={`size-3 shrink-0 text-sidebar-foreground/40 transition-transform ${
+                className={`text-sidebar-foreground/40 size-3 shrink-0 transition-transform ${
                   isExpanded ? "rotate-90" : ""
                 }`}
               />
-              <span className="shrink-0 font-mono text-[0.65rem] font-semibold text-slate-blue-700 dark:text-slate-blue-600">
+              <span className="text-slate-blue-700 dark:text-slate-blue-600 shrink-0 font-mono text-[0.65rem] font-semibold">
                 Ch. {chapter.number}
               </span>
               <span className="min-w-0 truncate">{toTitleCase(chapter.name)}</span>
             </button>
 
             {isExpanded && (
-              <div className="ml-3 mt-0.5 border-l border-sidebar-border/60 pl-2">
+              <div className="border-sidebar-border/60 mt-0.5 ml-3 border-l pl-2">
                 {hasParts ? (
                   <PartList
                     parts={chapter.parts!}
@@ -272,7 +270,7 @@ function ChapterList({
                     currentPath={currentPath}
                   />
                 ) : (
-                  <p className="py-1 text-xs text-muted-foreground">Empty</p>
+                  <p className="text-muted-foreground py-1 text-xs">Empty</p>
                 )}
               </div>
             )}
@@ -324,18 +322,18 @@ function PartList({
               aria-expanded={isExpanded}
             >
               <ChevronRight
-                className={`size-2.5 shrink-0 text-sidebar-foreground/40 transition-transform ${
+                className={`text-sidebar-foreground/40 size-2.5 shrink-0 transition-transform ${
                   isExpanded ? "rotate-90" : ""
                 }`}
               />
-              <span className="shrink-0 font-mono text-[0.6rem] font-semibold text-slate-blue-700 dark:text-slate-blue-600">
+              <span className="text-slate-blue-700 dark:text-slate-blue-600 shrink-0 font-mono text-[0.6rem] font-semibold">
                 Pt. {part.number}
               </span>
               <span className="min-w-0 truncate">{toTitleCase(part.name)}</span>
             </button>
 
             {isExpanded && (
-              <div className="ml-3 mt-0.5 border-l border-sidebar-border/40 pl-2">
+              <div className="border-sidebar-border/40 mt-0.5 ml-3 border-l pl-2">
                 <SectionList
                   sections={part.sections}
                   basePath={basePath}

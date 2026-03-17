@@ -135,7 +135,9 @@ function trackFileAndGC(): void {
   filesProcessed++;
   if (filesProcessed % GC_INTERVAL === 0) {
     const mem = (process.memoryUsage.rss() / 1024 / 1024).toFixed(0);
-    console.log(`  [GC] ${filesProcessed} files processed, ${mem}MB RSS — forcing garbage collection`);
+    console.log(
+      `  [GC] ${filesProcessed} files processed, ${mem}MB RSS — forcing garbage collection`,
+    );
     if (global.gc) {
       global.gc();
       const memAfter = (process.memoryUsage.rss() / 1024 / 1024).toFixed(0);
@@ -307,16 +309,32 @@ async function configureIndex(client: Meilisearch): Promise<void> {
   console.log("Configuring index settings...");
 
   await wait(await index.updateSearchableAttributes(["identifier", "heading", "body"]));
-  await wait(await index.updateFilterableAttributes(["source", "title_number", "granularity", "status"]));
+  await wait(
+    await index.updateFilterableAttributes(["source", "title_number", "granularity", "status"]),
+  );
   await wait(await index.updateSortableAttributes(["title_number", "identifier"]));
   await wait(
     await index.updateDisplayedAttributes([
-      "id", "source", "title_number", "title_name", "identifier",
-      "heading", "status", "hierarchy", "url",
+      "id",
+      "source",
+      "title_number",
+      "title_name",
+      "identifier",
+      "heading",
+      "status",
+      "hierarchy",
+      "url",
     ]),
   );
   await wait(
-    await index.updateRankingRules(["words", "typo", "proximity", "attribute", "sort", "exactness"]),
+    await index.updateRankingRules([
+      "words",
+      "typo",
+      "proximity",
+      "attribute",
+      "sort",
+      "exactness",
+    ]),
   );
 
   console.log("  Index settings configured.");

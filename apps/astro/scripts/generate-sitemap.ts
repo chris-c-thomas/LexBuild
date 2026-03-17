@@ -129,9 +129,7 @@ async function collectEcfrUrls(contentDir: string): Promise<string[]> {
         urls.push(`/ecfr/${titleDir}/${chapterDir}/${partDir}`);
 
         // Section pages from part _meta.json
-        const partMeta = await readJson<EcfrPartMeta>(
-          join(chapterPath, partDir, "_meta.json"),
-        );
+        const partMeta = await readJson<EcfrPartMeta>(join(chapterPath, partDir, "_meta.json"));
         if (!partMeta) continue;
 
         for (const section of partMeta.sections) {

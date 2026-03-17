@@ -16,10 +16,7 @@ import { getSource } from "./sources";
  *   3 segments → part      (title-NN/chapter-X/part-N)
  *   4 segments → section   (title-NN/chapter-X/part-N/section-N.N)
  */
-export function resolveRoute(
-  sourceId: SourceId,
-  slug: string[] | undefined,
-): ResolvedRoute | null {
+export function resolveRoute(sourceId: SourceId, slug: string[] | undefined): ResolvedRoute | null {
   if (!slug || slug.length === 0) return null;
 
   const source = getSource(sourceId);

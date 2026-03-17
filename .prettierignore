@@ -3,6 +3,7 @@ node_modules
 pnpm-lock.yaml
 *.md
 downloads
+reference
 xml
 fixtures/xml
 apps/astro/public/nav

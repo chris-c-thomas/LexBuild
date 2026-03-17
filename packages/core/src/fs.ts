@@ -26,12 +26,9 @@ const MAX_DELAY_MS = 5000;
  * Check whether an error is a retriable file descriptor exhaustion error.
  */
 function isRetriable(err: unknown): boolean {
-  return (
-    err instanceof Error &&
-    "code" in err &&
-    typeof (err as NodeJS.ErrnoException).code === "string" &&
-    RETRIABLE_CODES.has((err as NodeJS.ErrnoException).code!)
-  );
+  if (!(err instanceof Error) || !("code" in err)) return false;
+  const code = (err as NodeJS.ErrnoException).code;
+  return typeof code === "string" && RETRIABLE_CODES.has(code);
 }
 
 /**

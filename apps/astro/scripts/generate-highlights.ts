@@ -138,8 +138,10 @@ async function main(): Promise<void> {
   });
   console.log(`  Shiki ready`);
 
-  // Process files — recreate Shiki every BATCH_SIZE files to prevent memory buildup
-  const BATCH_SIZE = 50_000;
+  // Process files — recreate Shiki every BATCH_SIZE files to prevent memory buildup.
+  // Shiki's internal grammar/token caches grow with each codeToHtml call and are only
+  // released on dispose(). 5k keeps peak heap well under 2GB for 300k+ files.
+  const BATCH_SIZE = 5_000;
   const startTime = performance.now();
   let processed = 0;
   let errors = 0;
@@ -148,6 +150,8 @@ async function main(): Promise<void> {
     // Create a fresh highlighter for each batch to release Shiki's internal caches
     if (batchStart > 0) {
       highlighter.dispose();
+      // Hint V8 to collect the disposed highlighter's caches immediately
+      global.gc?.();
       highlighter = await createHighlighter({
         themes: [THEMES.light, THEMES.dark],
         langs: ["markdown"],
@@ -173,7 +177,8 @@ async function main(): Promise<void> {
         // Progress every 1000 files
         if (processed % 1000 === 0) {
           const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
-          console.log(`  ${processed}/${toProcess.length} (${elapsed}s)`);
+          const mem = (process.memoryUsage.rss() / 1024 / 1024).toFixed(0);
+          console.log(`  ${processed}/${toProcess.length} (${elapsed}s, ${mem}MB)`);
         }
       } catch (err) {
         errors++;

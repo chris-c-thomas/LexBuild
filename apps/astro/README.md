@@ -21,7 +21,7 @@ The web application for [LexBuild](https://github.com/chris-c-thomas/LexBuild) â
 ## Prerequisites
 
 - **Node.js** >= 22
-- **pnpm** >= 9
+- **pnpm** >= 10
 - **Converted content** â€” run the CLI to generate Markdown files before starting the app:
 
 ```bash

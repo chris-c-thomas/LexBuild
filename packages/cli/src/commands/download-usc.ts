@@ -6,7 +6,7 @@
 
 import { Command } from "commander";
 import { relative, resolve } from "node:path";
-import { downloadTitles } from "@lexbuild/usc";
+import { downloadTitles, detectLatestReleasePoint, FALLBACK_RELEASE_POINT } from "@lexbuild/usc";
 import {
   createSpinner,
   summaryBlock,
@@ -66,12 +66,19 @@ Source: https://uscode.house.gov/download/download.shtml`,
     const outputDir = resolve(options.output);
     const titleCount = titles ? titles.length : 54;
 
-    // Show detecting spinner if no explicit release point
-    if (!options.releasePoint) {
+    // Resolve release point: use explicit flag, auto-detect, or fall back
+    let releasePoint = options.releasePoint;
+    if (!releasePoint) {
       const detectSpinner = createSpinner("Detecting latest OLRC release point...");
       detectSpinner.start();
-      // Detection happens inside downloadTitles() — stop spinner before download starts
-      detectSpinner.stop();
+      const detected = await detectLatestReleasePoint();
+      if (detected) {
+        releasePoint = detected.releasePoint;
+        detectSpinner.succeed(`Release point: ${detected.releasePoint}`);
+      } else {
+        releasePoint = FALLBACK_RELEASE_POINT;
+        detectSpinner.warn(`Could not detect release point, using fallback: ${releasePoint}`);
+      }
     }
 
     const label =
@@ -86,7 +93,7 @@ Source: https://uscode.house.gov/download/download.shtml`,
       const result = await downloadTitles({
         outputDir,
         titles,
-        releasePoint: options.releasePoint,
+        releasePoint,
       });
 
       const elapsed = performance.now() - startTime;

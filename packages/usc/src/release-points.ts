@@ -72,6 +72,6 @@ export function parseReleasePointFromHtml(html: string): ReleasePointInfo | null
  * `<h3 class="releasepointinformation">Public Law 119-73 (01/23/2026) , except 119-60</h3>`
  */
 function parseDescription(html: string): string {
-  const h3Match = /<h3[^>]*class="releasepointinformation"[^>]*>(.*?)<\/h3>/i.exec(html);
+  const h3Match = /<h3\s+class="releasepointinformation">([\s\S]*?)<\/h3>/i.exec(html);
   return h3Match?.[1]?.trim() ?? "";
 }

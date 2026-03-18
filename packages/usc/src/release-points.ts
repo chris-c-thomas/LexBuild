@@ -68,10 +68,18 @@ export function parseReleasePointFromHtml(html: string): ReleasePointInfo | null
 /**
  * Parse the human-readable description from the release point heading.
  *
+ * Uses indexOf-based extraction (not regex) to avoid polynomial backtracking
+ * on untrusted HTML input.
+ *
  * The heading looks like:
  * `<h3 class="releasepointinformation">Public Law 119-73 (01/23/2026) , except 119-60</h3>`
  */
 function parseDescription(html: string): string {
-  const h3Match = /<h3\s+class="releasepointinformation">([\s\S]*?)<\/h3>/i.exec(html);
-  return h3Match?.[1]?.trim() ?? "";
+  const marker = 'class="releasepointinformation">';
+  const startIdx = html.indexOf(marker);
+  if (startIdx === -1) return "";
+  const contentStart = startIdx + marker.length;
+  const endIdx = html.indexOf("</h3>", contentStart);
+  if (endIdx === -1) return "";
+  return html.slice(contentStart, endIdx).trim();
 }

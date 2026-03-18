@@ -1,29 +1,41 @@
 # @lexbuild/ecfr
 
 [![npm](https://img.shields.io/npm/v/%40lexbuild%2Fecfr?style=for-the-badge)](https://www.npmjs.com/package/@lexbuild/ecfr)
-[![license](https://img.shields.io/github/license/chris-c-thomas/LexBuild?style=for-the-badge)](https://github.com/chris-c-thomas/LexBuild)
+[![license](https://img.shields.io/github/license/chris-c-thomas/LexBuild?style=for-the-badge)](https://github.com/chris-c-thomas/LexBuild/blob/main/LICENSE)
 
-This package is part of the [LexBuild](https://github.com/chris-c-thomas/LexBuild) monorepo, a tool that converts U.S. legal XML into structured Markdown optimized for AI, RAG pipelines, and semantic search. See the monorepo for full documentation, architecture details, and contribution guidelines.
+Converts [Electronic Code of Federal Regulations](https://www.ecfr.gov/) (eCFR) XML into structured Markdown optimized for AI, RAG pipelines, and semantic search. Supports two download sources: the ecfr.gov API (daily-updated, default) and govinfo.gov bulk data (fallback).
 
-It converts [eCFR](https://www.ecfr.gov/) (Electronic Code of Federal Regulations) bulk XML from [govinfo.gov](https://www.govinfo.gov/bulkdata/ECFR) into structured Markdown and is built on [`@lexbuild/core`](https://www.npmjs.com/package/@lexbuild/core) for shared parsing and rendering infrastructure. It also provides a downloader for fetching the XML directly from govinfo. End users typically interact with this package through [`@lexbuild/cli`](https://www.npmjs.com/package/@lexbuild/cli).
+> **Tip:** For command-line usage, install [`@lexbuild/cli`](https://www.npmjs.com/package/@lexbuild/cli) instead. This package is the programmatic API.
 
 ## Install
 
 ```bash
 npm install @lexbuild/ecfr
+# or
+pnpm add @lexbuild/ecfr
 ```
 
-## Usage
+**Peer dependency:** [`@lexbuild/core`](https://www.npmjs.com/package/@lexbuild/core) (installed automatically via workspace protocol in the monorepo).
 
-### Convert a Title
+## Quick Start
+
+### Download and Convert
 
 ```ts
-import { convertEcfrTitle } from "@lexbuild/ecfr";
+import { downloadEcfrTitlesFromApi, convertEcfrTitle } from "@lexbuild/ecfr";
 
+// Download Title 17 from the eCFR API (daily-updated)
+const download = await downloadEcfrTitlesFromApi({
+  output: "./downloads/ecfr/xml",
+  titles: [17],
+});
+console.log(`As of: ${download.asOfDate}`);
+
+// Convert to section-level Markdown
 const result = await convertEcfrTitle({
   input: "./downloads/ecfr/xml/ECFR-title17.xml",
   output: "./output",
-  granularity: "section", // or "part", "chapter", or "title"
+  granularity: "section",
   linkStyle: "plaintext",
   includeSourceCredits: true,
   includeNotes: true,
@@ -33,29 +45,43 @@ const result = await convertEcfrTitle({
   dryRun: false,
 });
 
-console.log(`Wrote ${result.sectionsWritten} sections`);
-console.log(`Parts: ${result.partCount}`);
-console.log(`Estimated tokens: ${result.totalTokenEstimate}`);
+console.log(`${result.sectionsWritten} sections, ${result.totalTokenEstimate} est. tokens`);
 ```
 
-### Download Titles from govinfo
+### Point-in-Time Downloads
+
+```ts
+import { downloadEcfrTitlesFromApi } from "@lexbuild/ecfr";
+
+// Download the CFR as it existed on a specific date
+const result = await downloadEcfrTitlesFromApi({
+  output: "./downloads/ecfr/xml",
+  titles: [17],
+  date: "2025-01-01",
+});
+```
+
+### Title Metadata
+
+```ts
+import { fetchEcfrTitlesMeta } from "@lexbuild/ecfr";
+
+const meta = await fetchEcfrTitlesMeta();
+console.log(`Data current as of: ${meta.date}`);
+for (const title of meta.titles) {
+  console.log(`Title ${title.number}: ${title.name} (amended ${title.latestAmendedOn})`);
+}
+```
+
+### Govinfo Bulk Data (Fallback)
 
 ```ts
 import { downloadEcfrTitles } from "@lexbuild/ecfr";
 
-// Download specific titles
 const result = await downloadEcfrTitles({
   output: "./downloads/ecfr/xml",
-  titles: [1, 17, 26],
+  titles: [1, 17],
 });
-
-// Download all 50 titles
-const all = await downloadEcfrTitles({
-  output: "./downloads/ecfr/xml",
-});
-
-console.log(`Downloaded ${result.titlesDownloaded} files`);
-console.log(`Total size: ${result.totalBytes} bytes`);
 ```
 
 ## API Reference
@@ -64,50 +90,57 @@ console.log(`Total size: ${result.totalBytes} bytes`);
 
 | Export | Description |
 |--------|-------------|
-| `convertEcfrTitle(options)` | Convert an eCFR XML file to section-level Markdown |
-| `downloadEcfrTitles(options)` | Download eCFR XML from govinfo |
-| `buildEcfrDownloadUrl(titleNumber)` | Build URL for a single title XML file |
+| `convertEcfrTitle(options)` | Convert an eCFR XML file to Markdown at any granularity |
+| `downloadEcfrTitlesFromApi(options)` | Download from ecfr.gov API (daily-updated, point-in-time) |
+| `downloadEcfrTitles(options)` | Download from govinfo.gov bulk data (fallback) |
+| `fetchEcfrTitlesMeta()` | Fetch title metadata and currency dates from the eCFR API |
+| `buildEcfrApiDownloadUrl(titleNumber, date)` | Build ecfr.gov API download URL |
+| `buildEcfrDownloadUrl(titleNumber)` | Build govinfo bulk download URL |
 
 ### Types
 
 | Export | Description |
 |--------|-------------|
-| `EcfrConvertOptions` | Options for `convertEcfrTitle()` |
-| `EcfrConvertResult` | Result of a conversion (sections, parts, tokens, files) |
-| `EcfrDownloadOptions` | Options for `downloadEcfrTitles()` |
-| `EcfrDownloadResult` | Result of a download (files, bytes) |
-| `EcfrDownloadedFile` | Info about a downloaded file (title, path, size) |
-| `EcfrDownloadError` | Info about a failed download |
+| `EcfrConvertOptions` | Options for `convertEcfrTitle()` — input, output, granularity, link style, note filters |
+| `EcfrConvertResult` | Conversion result — sections written, parts, files, token estimate |
+| `EcfrApiDownloadOptions` | Options for `downloadEcfrTitlesFromApi()` — output, titles, optional date |
+| `EcfrApiDownloadResult` | API download result — files, bytes, as-of date |
+| `EcfrApiDownloadedFile` | Single API-downloaded file metadata |
+| `EcfrDownloadOptions` | Options for `downloadEcfrTitles()` (govinfo) |
+| `EcfrDownloadResult` | Govinfo download result |
+| `EcfrDownloadedFile` | Single govinfo-downloaded file metadata |
+| `EcfrTitleMeta` | Per-title metadata from the eCFR API |
+| `EcfrTitlesResponse` | Full response from the titles metadata endpoint |
 
 ### Classes
 
 | Export | Description |
 |--------|-------------|
-| `EcfrASTBuilder` | SAX→AST builder for eCFR GPO/SGML XML |
+| `EcfrASTBuilder` | SAX-to-AST builder for eCFR GPO/SGML XML. Handles both ecfr.gov API and govinfo bulk XML formats transparently. |
 
 ### Constants
 
 | Export | Description |
 |--------|-------------|
-| `ECFR_TITLE_COUNT` | Total number of eCFR titles (`50`) |
-| `ECFR_TITLE_NUMBERS` | Array of valid title numbers (1–50) |
-| `ECFR_TYPE_TO_LEVEL` | Map from DIV TYPE attributes to LexBuild level types |
-| `ECFR_EMPHASIS_MAP` | Map from E element T attribute to inline types |
+| `ECFR_TITLE_COUNT` | Total number of CFR titles (`50`) |
+| `ECFR_TITLE_NUMBERS` | Array of valid title numbers `[1, 2, ..., 50]` |
+| `ECFR_TYPE_TO_LEVEL` | Map from DIV `TYPE` attributes to LexBuild level types |
+| `ECFR_EMPHASIS_MAP` | Map from `E` element `T` attribute to inline formatting types |
 
 ## Output
 
-Each title produces Markdown files with YAML frontmatter. The output structure depends on the granularity setting:
+Each title produces Markdown files with YAML frontmatter. The structure depends on granularity:
 
-| Granularity | Output | Metadata |
+| Granularity | Output Path | Sidecar Files |
 |---|---|---|
-| `section` (default) | `ecfr/title-NN/chapter-X/part-N/section-N.N.md` | `_meta.json` per part + title, `README.md` per title |
-| `part` | `ecfr/title-NN/chapter-X/part-N.md` | — |
-| `chapter` | `ecfr/title-NN/chapter-X/chapter-X.md` | — |
-| `title` | `ecfr/title-NN.md` | — |
+| `section` (default) | `ecfr/title-17/chapter-IV/part-240/section-240.10b-5.md` | `_meta.json` per part + title, `README.md` per title |
+| `part` | `ecfr/title-17/chapter-IV/part-240.md` | — |
+| `chapter` | `ecfr/title-17/chapter-IV/chapter-IV.md` | — |
+| `title` | `ecfr/title-17.md` | — |
 
 ### Frontmatter
 
-eCFR sections include standard LexBuild frontmatter fields plus source-specific metadata:
+eCFR sections include source-specific metadata alongside standard LexBuild fields:
 
 ```yaml
 ---
@@ -116,20 +149,46 @@ source: "ecfr"
 legal_status: "authoritative_unofficial"
 title: "17 CFR § 240.10b-5 - Employment of manipulative and deceptive devices"
 title_number: 17
-title_name: "Commodity and Securities Exchanges"
 section_number: "240.10b-5"
-section_name: "Employment of manipulative and deceptive devices"
-part_number: "240"
-part_name: "GENERAL RULES AND REGULATIONS, SECURITIES EXCHANGE ACT OF 1934"
 positive_law: false
-currency: "2025-03-13"
-last_updated: "2025-03-13"
-format_version: "1.1.0"
-generator: "lexbuild@1.8.0"
 authority: "15 U.S.C. 78a et seq., ..."
 cfr_part: "240"
 ---
 ```
+
+## Data Sources
+
+| Source | URL | Update Frequency | Point-in-Time |
+|--------|-----|-----------------|---------------|
+| **eCFR API** (default) | `ecfr.gov/api/versioner/v1/` | Daily | Yes |
+| **govinfo bulk** (fallback) | `govinfo.gov/bulkdata/ECFR/` | Irregular | No |
+
+Both sources produce the same GPO/SGML-derived XML element vocabulary. The builder handles format differences (wrapper elements, attribute variations) transparently — the converter works identically regardless of source.
+
+Title 35 (Panama Canal) is reserved and has no data from either source.
+
+## Compatibility
+
+- **Node.js** >= 22
+- **ESM only** — no CommonJS build
+- **TypeScript** — ships `.d.ts` type declarations
+
+## Monorepo Context
+
+Part of the [LexBuild](https://github.com/chris-c-thomas/LexBuild) monorepo. Depends on `@lexbuild/core` for XML parsing, AST types, and Markdown rendering.
+
+```bash
+pnpm turbo build --filter=@lexbuild/ecfr
+pnpm turbo test --filter=@lexbuild/ecfr
+```
+
+## Related Packages
+
+| Package | Description |
+|---------|-------------|
+| [`@lexbuild/cli`](https://www.npmjs.com/package/@lexbuild/cli) | CLI tool — the easiest way to use LexBuild |
+| [`@lexbuild/core`](https://www.npmjs.com/package/@lexbuild/core) | Shared parsing, AST, and rendering infrastructure |
+| [`@lexbuild/usc`](https://www.npmjs.com/package/@lexbuild/usc) | U.S. Code (USLM XML) converter |
 
 ## License
 

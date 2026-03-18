@@ -1,29 +1,41 @@
 # @lexbuild/usc
 
 [![npm](https://img.shields.io/npm/v/%40lexbuild%2Fusc?style=for-the-badge)](https://www.npmjs.com/package/@lexbuild/usc)
-[![license](https://img.shields.io/github/license/chris-c-thomas/LexBuild?style=for-the-badge)](https://github.com/chris-c-thomas/LexBuild)
+[![license](https://img.shields.io/github/license/chris-c-thomas/LexBuild?style=for-the-badge)](https://github.com/chris-c-thomas/LexBuild/blob/main/LICENSE)
 
-This package is part of the [LexBuild](https://github.com/chris-c-thomas/LexBuild) monorepo, a tool that converts U.S. legal XML into structured Markdown optimized for AI, RAG pipelines, and semantic search. See the monorepo for full documentation, architecture details, and contribution guidelines.
+Converts official [USLM XML](https://uscode.house.gov/download/resources/USLM-User-Guide.pdf) from the [Office of the Law Revision Counsel](https://uscode.house.gov/) (OLRC) into structured Markdown optimized for AI, RAG pipelines, and semantic search. Includes a downloader that auto-detects the latest OLRC release point.
 
-It converts official [USLM XML](https://uscode.house.gov/download/resources/USLM-User-Guide.pdf) from the [Office of the Law Revision Counsel](https://uscode.house.gov/) (OLRC) into structured Markdown and is built on [`@lexbuild/core`](https://www.npmjs.com/package/@lexbuild/core) for shared parsing and rendering infrastructure. It also provides a downloader for fetching the XML directly from OLRC. End users typically interact with this package through [`@lexbuild/cli`](https://www.npmjs.com/package/@lexbuild/cli).
+> **Tip:** For command-line usage, install [`@lexbuild/cli`](https://www.npmjs.com/package/@lexbuild/cli) instead. This package is the programmatic API.
 
 ## Install
 
 ```bash
 npm install @lexbuild/usc
+# or
+pnpm add @lexbuild/usc
 ```
 
-## Usage
+**Peer dependency:** [`@lexbuild/core`](https://www.npmjs.com/package/@lexbuild/core) (installed automatically via workspace protocol in the monorepo).
 
-### Convert a Title
+## Quick Start
+
+### Download and Convert
 
 ```ts
-import { convertTitle } from "@lexbuild/usc";
+import { downloadTitles, convertTitle } from "@lexbuild/usc";
 
+// Download Title 1 (auto-detects latest OLRC release point)
+const download = await downloadTitles({
+  outputDir: "./downloads/usc/xml",
+  titles: [1],
+});
+console.log(`Release point: ${download.releasePoint}`);
+
+// Convert to section-level Markdown
 const result = await convertTitle({
   input: "./downloads/usc/xml/usc01.xml",
   output: "./output",
-  granularity: "section", // or "chapter" or "title"
+  granularity: "section",
   linkStyle: "plaintext",
   includeSourceCredits: true,
   includeNotes: true,
@@ -33,29 +45,28 @@ const result = await convertTitle({
   dryRun: false,
 });
 
-console.log(`Wrote ${result.sectionsWritten} sections`);
-console.log(`Chapters: ${result.chapterCount}`);
-console.log(`Estimated tokens: ${result.totalTokenEstimate}`);
+console.log(`${result.sectionsWritten} sections, ${result.totalTokenEstimate} est. tokens`);
 ```
 
-### Download Titles from OLRC
+### Release Point Detection
 
 ```ts
-import { downloadTitles } from "@lexbuild/usc";
+import { detectLatestReleasePoint } from "@lexbuild/usc";
 
-// Download specific titles
+const info = await detectLatestReleasePoint();
+if (info) {
+  console.log(`Latest: ${info.releasePoint}`); // e.g., "119-80"
+  console.log(`Description: ${info.description}`); // e.g., "Public Law 119-80 (03/15/2026)"
+}
+```
+
+### Pin a Specific Release Point
+
+```ts
 const result = await downloadTitles({
   outputDir: "./downloads/usc/xml",
-  titles: [1, 5, 26],
+  releasePoint: "119-73not60", // Override auto-detection
 });
-
-// Download all 54 titles (uses a single bulk zip)
-const all = await downloadTitles({
-  outputDir: "./downloads/usc/xml",
-});
-
-console.log(`Downloaded ${result.files.length} files`);
-console.log(`Release point: ${result.releasePoint}`);
 ```
 
 ## API Reference
@@ -64,40 +75,69 @@ console.log(`Release point: ${result.releasePoint}`);
 
 | Export | Description |
 |--------|-------------|
-| `convertTitle(options)` | Convert a USC XML file to section-level Markdown |
-| `downloadTitles(options)` | Download USC XML from OLRC |
-| `buildDownloadUrl(titleNumber, releasePoint)` | Build URL for a single title zip |
-| `buildAllTitlesUrl(releasePoint)` | Build URL for the bulk zip |
-| `releasePointToPath(releasePoint)` | Convert release point to URL path segment |
-| `isAllTitles(titles)` | Check if a title list covers all 54 titles |
+| `convertTitle(options)` | Convert a USC XML file to Markdown at any granularity |
+| `downloadTitles(options)` | Download USC XML from OLRC (auto-detects latest release point) |
+| `detectLatestReleasePoint()` | Scrape the OLRC download page for the current release point |
+| `buildDownloadUrl(titleNumber, releasePoint)` | Build download URL for a single title zip |
+| `buildAllTitlesUrl(releasePoint)` | Build download URL for the bulk all-titles zip |
+| `releasePointToPath(releasePoint)` | Convert `"119-73not60"` → `"119/73not60"` |
+| `isAllTitles(titles)` | Check if a title list covers all 54 USC titles |
 
 ### Types
 
 | Export | Description |
 |--------|-------------|
-| `ConvertOptions` | Options for `convertTitle()` |
-| `ConvertResult` | Result of a conversion (sections, chapters, tokens, files) |
-| `DownloadOptions` | Options for `downloadTitles()` |
-| `DownloadResult` | Result of a download (files, errors, release point) |
-| `DownloadedFile` | Info about a downloaded file (title, path, size) |
-| `DownloadError` | Info about a failed download |
+| `ConvertOptions` | Options for `convertTitle()` — input, output, granularity, link style, note filters |
+| `ConvertResult` | Conversion result — sections written, chapters, files, token estimate, memory |
+| `DownloadOptions` | Options for `downloadTitles()` — output dir, titles, optional release point |
+| `DownloadResult` | Download result — release point used, files, errors |
+| `DownloadedFile` | Single downloaded file metadata (title number, path, size) |
+| `DownloadError` | Failed download metadata (title number, error message) |
+| `ReleasePointInfo` | Detected release point with human-readable description |
 
 ### Constants
 
 | Export | Description |
 |--------|-------------|
-| `CURRENT_RELEASE_POINT` | Current OLRC release point (e.g., `"119-73not60"`) |
-| `USC_TITLE_NUMBERS` | Array of valid title numbers (1-54) |
+| `FALLBACK_RELEASE_POINT` | Hardcoded fallback used when auto-detection fails |
+| `USC_TITLE_NUMBERS` | Array of valid title numbers `[1, 2, ..., 54]` |
 
 ## Output
 
-Each title produces Markdown files with YAML frontmatter. The output structure depends on the granularity setting:
+Each title produces Markdown files with YAML frontmatter. The structure depends on granularity:
 
-| Granularity | Output | Metadata |
+| Granularity | Output Path | Sidecar Files |
 |---|---|---|
-| `section` (default) | `title-NN/chapter-NN/section-N.md` | `_meta.json` per chapter + title, `README.md` per title |
-| `chapter` | `title-NN/chapter-NN/chapter-NN.md` | `_meta.json` per title, `README.md` per title |
-| `title` | `title-NN.md` | Enriched frontmatter only (no sidecar files) |
+| `section` (default) | `usc/title-01/chapter-01/section-1.md` | `_meta.json` per chapter + title, `README.md` per title |
+| `chapter` | `usc/title-01/chapter-01/chapter-01.md` | `_meta.json` per title, `README.md` per title |
+| `title` | `usc/title-01.md` | Enriched frontmatter only |
+
+## Data Source
+
+XML is downloaded from the OLRC at [uscode.house.gov](https://uscode.house.gov/download/download.shtml). Release points are published multiple times per month as new public laws are enacted. The downloader auto-detects the latest release point from the OLRC download page; use `--release-point` (CLI) or `releasePoint` (API) to pin a specific version.
+
+## Compatibility
+
+- **Node.js** >= 22
+- **ESM only** — no CommonJS build
+- **TypeScript** — ships `.d.ts` type declarations
+
+## Monorepo Context
+
+Part of the [LexBuild](https://github.com/chris-c-thomas/LexBuild) monorepo. Depends on `@lexbuild/core` for XML parsing, AST types, and Markdown rendering.
+
+```bash
+pnpm turbo build --filter=@lexbuild/usc
+pnpm turbo test --filter=@lexbuild/usc
+```
+
+## Related Packages
+
+| Package | Description |
+|---------|-------------|
+| [`@lexbuild/cli`](https://www.npmjs.com/package/@lexbuild/cli) | CLI tool — the easiest way to use LexBuild |
+| [`@lexbuild/core`](https://www.npmjs.com/package/@lexbuild/core) | Shared parsing, AST, and rendering infrastructure |
+| [`@lexbuild/ecfr`](https://www.npmjs.com/package/@lexbuild/ecfr) | eCFR (Code of Federal Regulations) converter |
 
 ## License
 

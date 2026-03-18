@@ -16,9 +16,7 @@ LexBuild is an open-source toolchain for U.S. legal texts. It transforms officia
 - [Quick Start](#quick-start)
 - [Commands](#commands)
 - [Output](#output)
-- [Web App](#web-app)
 - [Monorepo](#monorepo)
-- [Packages](#packages)
 - [Development](#development)
 - [Contributing](#contributing)
 - [License](#license)
@@ -327,25 +325,13 @@ Each directory includes a `_meta.json` sidecar file for programmatic access with
 
 ### Performance
 
-The full U.S. Code — all 54 titles, 60,000+ sections, ~85 million estimated tokens — converts in about 20–30 seconds on modern hardware. SAX streaming keeps memory bounded for even the largest titles (100MB+ XML).
+| Corpus | Titles | Sections | Est. Tokens | Conversion Time |
+|--------|--------|----------|-------------|-----------------|
+| U.S. Code | 54 | ~60,000 | ~85M | ~20–30s |
+| eCFR | 49 (excl. reserved) | ~227,000 | ~350M | ~60–90s |
+| **Combined** | **103** | **~287,000** | **~435M** | **~2 min** |
 
----
-
-## Web App
-
-[lexbuild.dev](https://lexbuild.dev) — a server-rendered legal content browser built with Astro 6, React 19, Tailwind CSS 4, and shadcn/ui.
-
-- **260,000+ section pages** across U.S. Code and eCFR
-- **Four granularity levels** — title, chapter, part (eCFR), section
-- **Syntax-highlighted source** and rendered HTML preview
-- **Sidebar navigation** with virtualized section lists
-- **Full-text search** via Meilisearch
-- **Dark mode** with system preference detection
-- **Zero client JS by default** — interactive React islands only where needed
-
-The web app consumes LexBuild's output (`.md` files and `_meta.json` sidecars) and has no code dependency on the conversion packages.
-
-See [`apps/astro/README.md`](apps/astro/README.md) for setup and development instructions.
+SAX streaming keeps memory bounded for even the largest titles (100MB+ XML). Conversion is CPU-bound — no network I/O during the convert step.
 
 ---
 
@@ -397,6 +383,26 @@ All internal dependencies use pnpm's `workspace:*` protocol. [Changesets](https:
 | [`@lexbuild/ecfr`](packages/ecfr/) | [![npm](https://img.shields.io/npm/v/%40lexbuild%2Fecfr)](https://www.npmjs.com/package/@lexbuild/ecfr) | eCFR converter and downloader (ecfr.gov API + govinfo) |
 
 Each package has its own README with full API documentation.
+
+### Apps
+
+#### LexBuild 
+
+([LexBuild.dev](https://lexbuild.dev))
+
+A server-rendered legal content browser built with Astro 6, React 19, Tailwind CSS 4, and shadcn/ui.
+
+- **260,000+ section pages** across U.S. Code and eCFR
+- **Four granularity levels** — title, chapter, part (eCFR), section
+- **Syntax-highlighted source** and rendered HTML preview
+- **Sidebar navigation** with virtualized section lists
+- **Full-text search** via Meilisearch
+- **Dark mode** with system preference detection
+- **Zero client JS by default** — interactive React islands only where needed
+
+The web app consumes LexBuild's output (`.md` files and `_meta.json` sidecars) and has no code dependency on the conversion packages.
+
+See [`apps/astro/README.md`](apps/astro/README.md) for setup and development instructions.
 
 ---
 
@@ -460,7 +466,7 @@ pnpm dev
 
 ## Contributing
 
-Contributions are welcome. Please see [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions, code conventions, testing guidelines, and the PR checklist.
+Contributions are welcome. Please see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 

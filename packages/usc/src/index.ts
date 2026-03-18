@@ -10,6 +10,7 @@ export {
   releasePointToPath,
   isAllTitles,
   CURRENT_RELEASE_POINT,
+  FALLBACK_RELEASE_POINT,
   USC_TITLE_NUMBERS,
 } from "./downloader.js";
 export type {
@@ -18,3 +19,7 @@ export type {
   DownloadedFile,
   DownloadError,
 } from "./downloader.js";
+
+// Release point detection
+export { detectLatestReleasePoint, parseReleasePointFromHtml } from "./release-points.js";
+export type { ReleasePointInfo } from "./release-points.js";

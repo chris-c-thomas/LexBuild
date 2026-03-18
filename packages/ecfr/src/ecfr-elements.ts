@@ -101,7 +101,13 @@ export const ECFR_IGNORE_ELEMENTS = new Set([
 ]);
 
 /** Elements that are transparent wrappers — pass through without creating frames */
-export const ECFR_PASSTHROUGH_ELEMENTS = new Set(["DLPSTEXTCLASS", "TEXT", "BODY", "ECFRBRWS"]);
+export const ECFR_PASSTHROUGH_ELEMENTS = new Set([
+  "DLPSTEXTCLASS",
+  "TEXT",
+  "BODY",
+  "ECFRBRWS",
+  "ECFR", // Root element in eCFR API XML (replaces DLPSTEXTCLASS)
+]);
 
 /** Self-contained elements to skip (no subtree concerns) */
 export const ECFR_SKIP_ELEMENTS = new Set([
@@ -113,6 +119,7 @@ export const ECFR_SKIP_ELEMENTS = new Set([
   "PG", // Page number
   "STARS", // Visual separator
   "AMDDATE", // Amendment date
+  "VOLUME", // Volume metadata in eCFR API XML
 ]);
 
 /** Cross-reference elements */

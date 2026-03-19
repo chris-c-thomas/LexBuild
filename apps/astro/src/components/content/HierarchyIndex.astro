@@ -53,10 +53,15 @@ const granularityLabel =
     </div>
     {
       downloadAvailable && downloadFilename && (
-        <Button variant="outline" size="sm" id="download-btn" data-filename={downloadFilename}>
-          <Download data-icon="inline-start" />
-          Download {granularityLabel}
-        </Button>
+        <>
+          <Button variant="outline" size="sm" id="download-btn">
+            <Download data-icon="inline-start" />
+            Download {granularityLabel}
+          </Button>
+          <template id="download-content" data-filename={downloadFilename}>
+            {downloadContent}
+          </template>
+        </>
       )
     }
   </div>
@@ -102,16 +107,18 @@ const granularityLabel =
   }
 </div>
 
-{downloadAvailable && (
-  <script define:vars={{ downloadContent, downloadFilename }}>
-    document.getElementById("download-btn")?.addEventListener("click", () => {
-      const blob = new Blob([downloadContent], { type: "text/markdown;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = downloadFilename;
-      a.click();
-      URL.revokeObjectURL(url);
+<script>
+  document.getElementById("download-btn")?.addEventListener("click", () => {
+    const tmpl = document.getElementById("download-content") as HTMLTemplateElement | null;
+    if (!tmpl) return;
+    const blob = new Blob([tmpl.content.textContent || ""], {
+      type: "text/markdown;charset=utf-8",
     });
-  </script>
-)}
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = tmpl.getAttribute("data-filename") || "download.md";
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+</script>

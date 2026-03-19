@@ -4,11 +4,7 @@
 
 import { Command } from "commander";
 import { relative, resolve } from "node:path";
-import {
-  downloadEcfrTitles,
-  downloadEcfrTitlesFromApi,
-  fetchEcfrTitlesMeta,
-} from "@lexbuild/ecfr";
+import { downloadEcfrTitles, downloadEcfrTitlesFromApi, fetchEcfrTitlesMeta } from "@lexbuild/ecfr";
 import type { EcfrTitlesResponse } from "@lexbuild/ecfr";
 import {
   createSpinner,
@@ -121,9 +117,7 @@ Sources:
       dateLabel = ` as of ${primaryDate}`;
 
       // Check for titles with individual processing
-      const processingTitles = meta.titles.filter(
-        (t) => t.processingInProgress && !t.reserved,
-      );
+      const processingTitles = meta.titles.filter((t) => t.processingInProgress && !t.reserved);
       if (meta.importInProgress && processingTitles.length > 0) {
         const titleWord = processingTitles.length === 1 ? "title uses" : "titles use";
         statusNote = ` (import in progress, ${processingTitles.length} ${titleWord} earlier dates)`;
@@ -250,9 +244,7 @@ async function downloadFromApi(
 
   // Include date column only if some titles used different dates
   const hasMultipleDates = uniqueDates.size > 1;
-  const headings = hasMultipleDates
-    ? ["Title", "Size", "File", "Date"]
-    : ["Title", "Size", "File"];
+  const headings = hasMultipleDates ? ["Title", "Size", "File", "Date"] : ["Title", "Size", "File"];
 
   if (fileRows.length > 0) {
     console.log(dataTable(headings, fileRows));
@@ -265,12 +257,8 @@ async function downloadFromApi(
 
     if (processing.length > 0) {
       const nums = processing.map((f) => `Title ${f.titleNumber}`).join(", ");
-      console.log(
-        `  ${error(`Unavailable (processing on server): ${nums}`)}`,
-      );
-      console.log(
-        `    The eCFR API cannot serve these titles while an import is in progress.`,
-      );
+      console.log(`  ${error(`Unavailable (processing on server): ${nums}`)}`);
+      console.log(`    The eCFR API cannot serve these titles while an import is in progress.`);
       console.log(
         `    Re-run this command later to download them. Existing local files (if any) are preserved.`,
       );

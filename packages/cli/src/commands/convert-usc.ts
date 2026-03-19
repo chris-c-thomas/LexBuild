@@ -390,17 +390,17 @@ Examples:
 
     console.log(dataTable(tableHeaders, tableRows));
 
-    // Footer — show the primary unit for the chosen granularity
-    const titleWord = totalTitles === 1 ? "title" : "titles";
+    // Footer — show the primary unit that was converted
     let countLabel: string;
     if (granularity === "title") {
-      countLabel = `${totalTitles} ${titleWord}`;
+      const titleWord = totalTitles === 1 ? "title" : "titles";
+      countLabel = `${formatNumber(totalTitles)} ${titleWord}`;
     } else if (granularity === "chapter") {
       const chapterWord = totalChapters === 1 ? "chapter" : "chapters";
-      countLabel = `${totalTitles} ${titleWord} (${formatNumber(totalChapters)} ${chapterWord})`;
+      countLabel = `${formatNumber(totalChapters)} ${chapterWord}`;
     } else {
       const sectionWord = totalSections === 1 ? "section" : "sections";
-      countLabel = `${totalTitles} ${titleWord} (${formatNumber(totalSections)} ${sectionWord})`;
+      countLabel = `${formatNumber(totalSections)} ${sectionWord}`;
     }
     console.log(`\n  ${success(`Converted ${countLabel} in ${formatDuration(totalElapsed)}`)}`);
     console.log("");

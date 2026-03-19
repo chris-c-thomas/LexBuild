@@ -8,7 +8,7 @@ const sources = Object.values(SOURCES);
 <BaseLayout title="LexBuild" description="U.S. legal text as structured Markdown">
   <section class="bg-surface border-b border-border-base bg-grid-pattern">
     <div class="max-w-[1200px] mx-auto px-6 text-center py-12 sm:py-16">
-      <div class="inline-flex items-center justify-center w-14 h-14 mb-5 text-slate-blue-600">
+      <div class="inline-flex items-center justify-center w-14 h-14 mb-5 text-slate-blue-600 dark:text-slate-blue-400">
         <svg
           class="w-11 h-11"
           viewBox="0 0 48 48"
@@ -28,11 +28,11 @@ const sources = Object.values(SOURCES);
         </svg>
       </div>
       <h1
-        class="font-display text-[clamp(2.5rem,5vw,3.5rem)] font-semibold tracking-tight leading-tight mb-2 text-slate-blue-950"
+        class="font-display text-[clamp(2.5rem,5vw,3.5rem)] font-semibold tracking-tight leading-tight mb-2 text-slate-blue-950 dark:text-slate-blue-100"
       >
         LexBuild
       </h1>
-      <p class="font-display text-xl text-slate-blue-700 mb-4 tracking-tight">
+      <p class="font-display text-xl text-slate-blue-700 dark:text-slate-blue-300 mb-4 tracking-tight">
         U.S. Legal Text as Structured Markdown
       </p>
       <p class="text-ink-muted max-w-[796px] mx-auto mb-7 text-[15px] leading-relaxed">
@@ -40,12 +40,12 @@ const sources = Object.values(SOURCES);
         texts. Convert official source XML into structured Markdown built for LLMs, agentic workflows, RAG pipelines, semantic search, and personal knowledge bases.
       </p>
       <div
-        class="flex items-center justify-center gap-2 text-[14px] text-slate-blue-600 font-medium mb-8"
+        class="flex items-center justify-center gap-2 text-[14px] text-slate-blue-600 dark:text-slate-blue-400 font-medium mb-8"
       >
         <span class="whitespace-nowrap">290k+ Sections</span>
-        <div class="w-px h-3.5 bg-slate-blue-500"></div>
+        <div class="w-px h-3.5 bg-slate-blue-500 dark:bg-slate-blue-600"></div>
         <span class="whitespace-nowrap">Update Daily</span>
-        <div class="w-px h-3.5 bg-slate-blue-500"></div>
+        <div class="w-px h-3.5 bg-slate-blue-500 dark:bg-slate-blue-600"></div>
 
         <span class="whitespace-nowrap">Open Source</span>
       </div>
@@ -69,7 +69,7 @@ const sources = Object.values(SOURCES);
           href="https://github.com/chris-c-thomas/LexBuild"
           target="_blank"
           rel="noopener"
-          class="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-md bg-white text-slate-blue-700 border border-slate-blue-200 hover:border-slate-blue-400 hover:bg-slate-blue-50 transition-all duration-150 cursor-pointer"
+          class="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-md bg-white text-slate-blue-700 border border-slate-blue-200 hover:border-slate-blue-400 hover:bg-slate-blue-50 dark:bg-slate-blue-900 dark:text-slate-blue-200 dark:border-slate-blue-700 dark:hover:border-slate-blue-500 dark:hover:bg-slate-blue-800 transition-all duration-150 cursor-pointer"
         >
           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
             <path
@@ -82,16 +82,16 @@ const sources = Object.values(SOURCES);
     </div>
   </section>
 
-  <section id="quickstart" class="border-b border-slate-blue-200 py-14">
+  <section id="quickstart" class="border-b border-border-base py-14">
     <div class="max-w-4xl mx-auto px-6">
       <div class="mb-6">
         <h2 class="font-display text-xl font-semibold tracking-tight mb-1">CLI Quick Start</h2>
-        <p class="text-slate-blue-700 text-[15px]">No complex configuration required. Advanced CLI options are available.</p>
+        <p class="text-ink-muted text-[15px]">No complex configuration required. Advanced CLI options are available.</p>
       </div>
-      <div class="bg-slate-blue-50 border border-slate-blue-100 rounded-xl p-5 sm:p-6">
+      <div class="bg-slate-blue-50 border border-slate-blue-100 dark:bg-card dark:border-border rounded-xl p-5 sm:p-6">
         <div class="flex flex-col gap-1.5 mb-3">
           <span
-            class="font-mono text-[11px] font-medium uppercase tracking-wider px-2 py-0.5 rounded border text-slate-blue-700 border-slate-blue-300 bg-slate-blue-100 self-start"
+            class="font-mono text-[11px] font-medium uppercase tracking-wider px-2 py-0.5 rounded border text-slate-blue-700 border-slate-blue-300 bg-slate-blue-100 dark:text-slate-blue-300 dark:border-slate-blue-600 dark:bg-slate-blue-900 self-start"
             >USC</span
           >
           <span class="font-normal text-[15px]"
@@ -99,13 +99,13 @@ const sources = Object.values(SOURCES);
               href="https://uscode.house.gov/download/download.shtml"
               target="_blank"
               rel="noopener"
-              class="text-slate-blue-600 hover:text-slate-blue-800 font-medium"
+              class="text-slate-blue-600 hover:text-slate-blue-800 dark:text-slate-blue-400 dark:hover:text-slate-blue-200 font-medium"
               >XML
             </a> provided by the <a
               href="https://uscode.house.gov/"
               target="_blank"
               rel="noopener"
-              class="text-slate-blue-600 hover:text-slate-blue-800 font-medium">OLRC</a
+              class="text-slate-blue-600 hover:text-slate-blue-800 dark:text-slate-blue-400 dark:hover:text-slate-blue-200 font-medium">OLRC</a
             > and convert into per-section Markdown</span
           >
         </div>
@@ -137,7 +137,7 @@ const sources = Object.values(SOURCES);
       <div class="mt-5 flex justify-center">
         <a
           href="https://github.com/chris-c-thomas/LexBuild/"
-          class="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-md bg-white text-slate-blue-700 border border-slate-blue-200 hover:border-slate-blue-400 hover:bg-slate-blue-50 transition-all duration-150 cursor-pointer"
+          class="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-md bg-white text-slate-blue-700 border border-slate-blue-200 hover:border-slate-blue-400 hover:bg-slate-blue-50 dark:bg-slate-blue-900 dark:text-slate-blue-200 dark:border-slate-blue-700 dark:hover:border-slate-blue-500 dark:hover:bg-slate-blue-800 transition-all duration-150 cursor-pointer"
         >
           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="4 17 10 11 4 5"></polyline>
@@ -149,11 +149,11 @@ const sources = Object.values(SOURCES);
     </div>
   </section>
 
-  <section id="sources" class="bg-slate-blue-50 py-14 border-b border-slate-blue-200">
+  <section id="sources" class="bg-surface py-14 border-b border-border-base">
     <div class="max-w-4xl mx-auto px-6">
       <div class="mb-6">
         <h2 class="font-display text-xl font-semibold tracking-tight mb-1">Browse Sources</h2>
-        <p class="text-slate-blue-700 text-[15px]">
+        <p class="text-ink-muted text-[15px]">
           Explore the full text of U.S. federal law and regulations.
         </p>
       </div>
@@ -323,59 +323,59 @@ Amendment by Pub. L. 101–650 effective 6 months after Dec. 1, 1990, see sectio
     </div>
   </section>
 
-  <section id="packages" class="py-14 border-b border-slate-blue-200">
+  <section id="packages" class="py-14 border-b border-border-base">
     <div class="max-w-4xl mx-auto px-6">
       <div class="mb-6">
         <h2 class="font-display text-xl font-semibold tracking-tight mb-1">Packages</h2>
-        <p class="text-slate-blue-700 text-[15px]">
+        <p class="text-ink-muted text-[15px]">
           A monorepo of composable packages. Source-specific parsers are separate from the shared core.
         </p>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <div class="flex flex-col border border-slate-blue-100 rounded-xl p-5 bg-white hover:border-slate-blue-300 transition-colors">
-          <div class="font-mono text-[13px] font-medium text-slate-blue-700 mb-1.5">@lexbuild/core</div>
+        <div class="flex flex-col border border-slate-blue-200 rounded-sm p-5 bg-white hover:border-slate-blue-400 dark:bg-card dark:border-border dark:hover:border-slate-blue-600 transition-colors">
+          <div class="font-mono text-[13px] font-medium text-slate-blue-700 dark:text-slate-blue-300 mb-1.5">@lexbuild/core</div>
           <div class="text-[13px] font-semibold mb-1">Core Engine</div>
-          <p class="text-[13px] text-slate-blue-700 leading-normal">Streaming SAX parser, typed AST, Markdown renderer, YAML frontmatter generation, and cross-reference link resolution.</p>
-          <div class="font-mono text-[11px] mt-auto pt-2.5 text-green-700">Published</div>
+          <p class="text-[13px] text-slate-blue-700 dark:text-slate-blue-400 leading-normal">Streaming SAX parser, typed AST, Markdown renderer, YAML frontmatter generation, and cross-reference link resolution.</p>
+          <div class="font-mono font-semibold text-[12px] mt-auto pt-2.5 text-summer-green-600 dark:text-summer-green-500">Published</div>
         </div>
-        <div class="flex flex-col border border-slate-blue-100 rounded-xl p-5 bg-white hover:border-slate-blue-300 transition-colors">
-          <div class="font-mono text-[13px] font-medium text-slate-blue-700 mb-1.5">@lexbuild/cli</div>
+        <div class="flex flex-col border border-slate-blue-200 rounded-sm p-5 bg-white hover:border-slate-blue-400 dark:bg-card dark:border-border dark:hover:border-slate-blue-600 transition-colors">
+          <div class="font-mono text-[13px] font-medium text-slate-blue-700 dark:text-slate-blue-300 mb-1.5">@lexbuild/cli</div>
           <div class="text-[13px] font-semibold mb-1">CLI Tool</div>
-          <p class="text-[13px] text-slate-blue-700 leading-normal">Downloads source XML and orchestrates Markdown conversion. Controls granularity, output paths, and batch processing.</p>
-          <div class="font-mono text-[11px] mt-auto pt-2.5 text-green-700">Published</div>
+          <p class="text-[13px] text-slate-blue-700 dark:text-slate-blue-400 leading-normal">Downloads source XML and orchestrates Markdown conversion. Controls granularity, output paths, and batch processing.</p>
+          <div class="font-mono font-semibold text-[12px] mt-auto pt-2.5 text-summer-green-600 dark:text-summer-green-500">Published</div>
         </div>
-        <div class="flex flex-col border border-slate-blue-100 rounded-xl p-5 bg-white hover:border-slate-blue-300 transition-colors">
-          <div class="font-mono text-[13px] font-medium text-slate-blue-700 mb-1.5">@lexbuild/usc</div>
+        <div class="flex flex-col border border-slate-blue-200 rounded-sm p-5 bg-white hover:border-slate-blue-400 dark:bg-card dark:border-border dark:hover:border-slate-blue-600 transition-colors">
+          <div class="font-mono text-[13px] font-medium text-slate-blue-700 dark:text-slate-blue-300 mb-1.5">@lexbuild/usc</div>
           <div class="text-[13px] font-semibold mb-1">U.S. Code Parser</div>
-          <p class="text-[13px] text-slate-blue-700 leading-normal">USLM 1.0 schema parser. Handles positive-law and prima facie titles from the Office of the Law Revision Counsel.</p>
-          <div class="font-mono text-[11px] mt-auto pt-2.5 text-green-700">Published</div>
+          <p class="text-[13px] text-slate-blue-700 dark:text-slate-blue-400 leading-normal">USLM 1.0 schema parser. Handles positive-law and prima facie titles from the Office of the Law Revision Counsel.</p>
+          <div class="font-mono font-semibold text-[12px] mt-auto pt-2.5 text-summer-green-600 dark:text-summer-green-500">Published</div>
         </div>
-        <div class="flex flex-col border border-slate-blue-100 rounded-xl p-5 bg-white hover:border-slate-blue-300 transition-colors">
-          <div class="font-mono text-[13px] font-medium text-slate-blue-700 mb-1.5">@lexbuild/ecfr</div>
+        <div class="flex flex-col border border-slate-blue-200 rounded-sm p-5 bg-white hover:border-slate-blue-400 dark:bg-card dark:border-border dark:hover:border-slate-blue-600 transition-colors">
+          <div class="font-mono text-[13px] font-medium text-slate-blue-700 dark:text-slate-blue-300 mb-1.5">@lexbuild/ecfr</div>
           <div class="text-[13px] font-semibold mb-1">eCFR Parser</div>
-          <p class="text-[13px] text-slate-blue-700 leading-normal">Parses eCFR XML from the ecfr.gov versioner API with govinfo bulk fallback. Handles DIV-based hierarchy and GPO/SGML    
+          <p class="text-[13px] text-slate-blue-700 dark:text-slate-blue-400 leading-normal">Parses eCFR XML from the ecfr.gov versioner API with govinfo bulk fallback. Handles DIV-based hierarchy and GPO/SGML    
   schema.</p>
-          <div class="font-mono text-[11px] mt-auto pt-2.5 text-green-700">Published</div>
+          <div class="font-mono font-semibold text-[12px] mt-auto pt-2.5 text-summer-green-600 dark:text-summer-green-500">Published</div>
         </div>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
-        <div class="border border-dashed border-slate-blue-200 rounded-xl p-5 bg-slate-blue-50 hover:border-slate-blue-300 transition-colors">
-          <div class="font-mono text-[13px] font-medium text-slate-blue-700 mb-1.5">@lexbuild/cfr</div>
+        <div class="border border-dashed border-slate-blue-300 rounded-sm p-5 bg-slate-blue-50 hover:border-slate-blue-500 dark:bg-muted dark:border-slate-blue-700 dark:hover:border-slate-blue-500 transition-colors">
+          <div class="font-mono text-[13px] font-medium text-slate-blue-700 dark:text-slate-blue-300 mb-1.5">@lexbuild/cfr</div>
           <div class="text-[13px] font-semibold mb-1">Annual CFR</div>
-          <p class="text-[13px] text-slate-blue-700 leading-normal">Official annual edition from govinfo.</p>
-          <div class="font-mono text-[11px] mt-2.5 text-slate-blue-400">Planned</div>
+          <p class="text-[13px] text-slate-blue-700 dark:text-slate-blue-400 leading-normal">Official annual edition from govinfo.</p>
+          <div class="font-mono font-semibold text-[12px] mt-2.5 text-slate-blue-400">Planned</div>
         </div>
-        <div class="border border-dashed border-slate-blue-200 rounded-xl p-5 bg-slate-blue-50 hover:border-slate-blue-300 transition-colors">
-          <div class="font-mono text-[13px] font-medium text-slate-blue-700 mb-1.5">@lexbuild/fr</div>
+        <div class="border border-dashed border-slate-blue-300 rounded-sm p-5 bg-slate-blue-50 hover:border-slate-blue-500 dark:bg-muted dark:border-slate-blue-700 dark:hover:border-slate-blue-500 transition-colors">
+          <div class="font-mono text-[13px] font-medium text-slate-blue-700 dark:text-slate-blue-300 mb-1.5">@lexbuild/fr</div>
           <div class="text-[13px] font-semibold mb-1">Federal Register</div>
-          <p class="text-[13px] text-slate-blue-700 leading-normal">Daily Federal Register publications.</p>
-          <div class="font-mono text-[11px] mt-2.5 text-slate-blue-400">Planned</div>
+          <p class="text-[13px] text-slate-blue-700 dark:text-slate-blue-400 leading-normal">Daily Federal Register publications.</p>
+          <div class="font-mono font-semibold text-[12px] mt-2.5 text-slate-blue-400">Planned</div>
         </div>
-        <div class="border border-dashed border-slate-blue-200 rounded-xl p-5 bg-slate-blue-50 hover:border-slate-blue-300 transition-colors sm:col-span-2">
-          <div class="font-mono text-[13px] font-medium text-slate-blue-700 mb-1.5">@lexbuild/&lt;state&gt;</div>
+        <div class="border border-dashed border-slate-blue-300 rounded-sm p-5 bg-slate-blue-50 hover:border-slate-blue-500 dark:bg-muted dark:border-slate-blue-700 dark:hover:border-slate-blue-500 transition-colors sm:col-span-2">
+          <div class="font-mono text-[13px] font-medium text-slate-blue-700 dark:text-slate-blue-300 mb-1.5">@lexbuild/&lt;state&gt;</div>
           <div class="text-[13px] font-semibold mb-1">State Statutes</div>
-          <p class="text-[13px] text-slate-blue-700 leading-normal">State-level statutory code parsers. Same pipeline pattern, broader coverage.</p>
-          <div class="font-mono text-[11px] mt-2.5 text-slate-blue-400">Planned</div>
+          <p class="text-[13px] text-slate-blue-700 dark:text-slate-blue-400 leading-normal">State-level statutory code parsers. Same pipeline pattern, broader coverage.</p>
+          <div class="font-mono font-semibold text-[12px] mt-2.5 text-slate-blue-400">Planned</div>
         </div>
       </div>
       <div class="mt-5 flex justify-center">
@@ -383,7 +383,7 @@ Amendment by Pub. L. 101–650 effective 6 months after Dec. 1, 1990, see sectio
           href="https://www.npmjs.com/org/lexbuild"
           target="_blank"
           rel="noopener"
-          class="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-md bg-white text-slate-blue-700 border border-slate-blue-200 hover:border-slate-blue-400 hover:bg-slate-blue-50 transition-all duration-150 cursor-pointer"
+          class="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-md bg-white text-slate-blue-700 border border-slate-blue-200 hover:border-slate-blue-400 hover:bg-slate-blue-50 dark:bg-slate-blue-900 dark:text-slate-blue-200 dark:border-slate-blue-700 dark:hover:border-slate-blue-500 dark:hover:bg-slate-blue-800 transition-all duration-150 cursor-pointer"
         >
           <svg class="w-8 h-8" viewBox="0 0 24 24" fill="currentColor">
             <path d="M0 7.334v8h6.666v1.332H12v-1.332h12v-8H0zm6.666 6.664H5.334v-4H3.999v4H1.335V8.667h5.331v5.331zm4 0h-2.666V8.667h2.666v5.331zm12 0h-2.666v-4h-1.334v4h-1.334v-4h-1.334v4h-2.666V8.667h9.334v5.331zM11.332 8.667h2.665v4h-2.665v-4z"></path>

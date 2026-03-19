@@ -62,7 +62,7 @@ if (route.granularity === "title") {
   pageDescription = `Title ${titleSummary.number}, ${titleName} — U.S. Code.`;
   indexDescription = `${titleSummary.chapterCount} chapters, ${titleSummary.sectionCount.toLocaleString()} sections, ${titleSummary.tokenEstimate.toLocaleString()} tokens`;
   downloadPath = route.contentPath;
-  downloadFilename = `${titleDir}.md`;
+  downloadFilename = `usc-${titleDir}.md`;
 
   indexChildren = titleNav.chapters.map((ch) => ({
     label: `Chapter ${ch.number}`,
@@ -87,7 +87,7 @@ if (route.granularity === "title") {
   pageDescription = `Chapter ${chapter.number}, ${chapterName}. Title ${titleSummary.number}, ${titleName} — U.S. Code.`;
   indexDescription = `${chapter.sections?.length ?? 0} sections`;
   downloadPath = route.contentPath;
-  downloadFilename = `${chapterDir}.md`;
+  downloadFilename = `usc-${titleDir}-${chapterDir}.md`;
 
   indexChildren = (chapter.sections ?? []).map((s) => ({
     label: `Section ${s.number}`,
@@ -154,7 +154,7 @@ const isIndexPage = route.granularity === "title" || route.granularity === "chap
           renderedHtml={renderedHtml}
           frontmatter={frontmatter}
           granularity={route.granularity}
-          downloadFilename={`${slug?.split("/").pop() ?? "content"}.md`}
+          downloadFilename={`usc-${slug?.replace(/\//g, "-") ?? "content"}.md`}
         />
       </div>
     ) : null

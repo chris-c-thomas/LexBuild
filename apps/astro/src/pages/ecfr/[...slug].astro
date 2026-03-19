@@ -61,7 +61,7 @@ if (route.granularity === "title") {
   pageDescription = `Title ${titleSummary.number}, ${titleName} — Code of Federal Regulations.`;
   indexDescription = `${titleSummary.chapterCount} chapters, ${titleSummary.partCount ?? 0} parts, ${titleSummary.sectionCount.toLocaleString()} sections`;
   downloadPath = route.contentPath;
-  downloadFilename = `${titleDir}.md`;
+  downloadFilename = `ecfr-${titleDir}.md`;
 
   indexChildren = titleNav.chapters.map((ch) => {
     const partCount = ch.parts?.length ?? 0;
@@ -94,7 +94,7 @@ if (route.granularity === "title") {
   pageDescription = `Chapter ${chapterNumber}, ${chapterName}. Title ${titleSummary.number}, ${titleName} — Code of Federal Regulations.`;
   indexDescription = `${chapter.parts?.length ?? 0} parts`;
   downloadPath = route.contentPath;
-  downloadFilename = `${chapterDir}.md`;
+  downloadFilename = `ecfr-${titleDir}-${chapterDir}.md`;
 
   indexChildren = (chapter.parts ?? []).map((p) => ({
     label: `Part ${p.number}`,
@@ -126,7 +126,7 @@ if (route.granularity === "title") {
   pageDescription = `Part ${part.number}, ${partName}. Chapter ${chapterNumber}, Title ${titleSummary.number}, ${titleName} — Code of Federal Regulations.`;
   indexDescription = `${part.sections.length} sections`;
   downloadPath = route.contentPath;
-  downloadFilename = `${partDir}.md`;
+  downloadFilename = `ecfr-${titleDir}-${chapterDir}-${partDir}.md`;
 
   indexChildren = part.sections.map((s) => ({
     label: `Section ${s.number}`,
@@ -193,7 +193,7 @@ const isIndexPage = route.granularity !== "section";
           renderedHtml={renderedHtml}
           frontmatter={frontmatter}
           granularity={route.granularity}
-          downloadFilename={`${slug?.split("/").pop() ?? "content"}.md`}
+          downloadFilename={`ecfr-${slug?.replace(/\//g, "-") ?? "content"}.md`}
         />
       </div>
     ) : null

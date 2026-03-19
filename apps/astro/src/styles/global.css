@@ -1,12 +1,20 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "@fontsource/ibm-plex-serif/300.css";
+@import "@fontsource/ibm-plex-serif/400.css";
+@import "@fontsource/ibm-plex-serif/500.css";
+@import "@fontsource/ibm-plex-serif/600.css";
+@import "@fontsource/ibm-plex-serif/700.css";
 @import "@fontsource/google-sans/400.css";
 @import "@fontsource/google-sans/500.css";
+@import "@fontsource/google-sans/600.css";
 @import "@fontsource/google-sans/700.css";
+@import "@fontsource/jetbrains-mono/300.css";
 @import "@fontsource/jetbrains-mono/400.css";
 @import "@fontsource/jetbrains-mono/500.css";
 @import "@fontsource/jetbrains-mono/600.css";
+@import "@fontsource/jetbrains-mono/700.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -86,6 +94,7 @@
 }
 
 @theme inline {
+  --font-display: "IBM Plex Serif", serif;
   --font-sans: "Google Sans", system-ui, sans-serif;
   --font-mono:
     "JetBrains Mono", ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, monospace;
@@ -156,6 +165,21 @@
   --color-putty-800: #794725;
   --color-putty-900: #643c21;
   --color-putty-950: #402212;
+
+  /* Semantic Tokens mapped to Tailwind utility namespaces */
+  --color-surface: var(--color-slate-blue-50);
+  --color-surface-alt: var(--color-summer-green-50);
+  --color-ink: var(--color-slate-blue-950);
+  --color-ink-secondary: var(--color-slate-blue-800);
+  --color-ink-muted: var(--color-slate-blue-700);
+  --color-ink-faint: var(--color-slate-blue-400);
+  --color-border-base: var(--color-slate-blue-200);
+  --color-border-light: var(--color-slate-blue-100);
+  --color-accent: var(--color-slate-blue-700);
+  --color-accent-hover: var(--color-slate-blue-800);
+  --color-code-bg: var(--color-slate-blue-950);
+  --color-code-surface: #243445;
+
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -207,5 +231,14 @@
   kbd,
   samp {
     @apply font-mono;
+  }
+}
+
+@layer utilities {
+  .bg-grid-pattern {
+    background-image:
+      linear-gradient(rgba(71, 108, 133, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(71, 108, 133, 0.04) 1px, transparent 1px);
+    background-size: 48px 48px;
   }
 }

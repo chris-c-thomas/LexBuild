@@ -56,6 +56,9 @@ importers:
       '@fontsource/google-sans':
         specifier: ^5.2.1
         version: 5.2.1
+      '@fontsource/ibm-plex-serif':
+        specifier: ^5.2.7
+        version: 5.2.7
       '@fontsource/jetbrains-mono':
         specifier: ^5.2.8
         version: 5.2.8
@@ -735,6 +738,9 @@ packages:
 
   '@fontsource/google-sans@5.2.1':
     resolution: {integrity: sha512-FteXH18YS0288Bcrjefwyyp7hLwxd8yQBEcmjU/P0BED9c8n8kxwgna3gtMtYyFQx/wIkpyrzj8RaYQyl/4quw==}
+
+  '@fontsource/ibm-plex-serif@5.2.7':
+    resolution: {integrity: sha512-04owmc2OQQ/DAMjXjEMJc+7V4dBVmR01aIFOg4cuqS8pQ4HbvtlYs/u6+O0vCt21EMx5M/azIbgx43iKyisEOA==}
 
   '@fontsource/jetbrains-mono@5.2.8':
     resolution: {integrity: sha512-6w8/SG4kqvIMu7xd7wt6x3idn1Qux3p9N62s6G3rfldOUYHpWcc2FKrqf+Vo44jRvqWj2oAtTHrZXEP23oSKwQ==}
@@ -5727,6 +5733,8 @@ snapshots:
   '@floating-ui/utils@0.2.11': {}
 
   '@fontsource/google-sans@5.2.1': {}
+
+  '@fontsource/ibm-plex-serif@5.2.7': {}
 
   '@fontsource/jetbrains-mono@5.2.8': {}
 

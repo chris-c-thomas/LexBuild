@@ -177,10 +177,10 @@ Official USLM reference documents from OLRC (not committed — download locally 
 - [USLM User Guide (PDF)](https://uscode.house.gov/download/resources/USLM-User-Guide.pdf) — v0.1.4, Oct 2013. Covers abstract/concrete model, identification, referencing, metadata, versioning, and presentation models.
 - [USLM Schema & CSS](https://uscode.house.gov/download/resources/schemaandcss.zip) — USLM-1.0.xsd, USLM-1.0.15.xsd, usctitle.css, Dublin Core schemas, XHTML schema
 
-GPO XML reference guides (committed in `reference/usgpo-xml-reference-files/`):
+GPO XML reference guides (previously in `reference/usgpo-xml-reference-files/` — removed, to be refined and re-added):
 
-- `ECFR-XML-User-Guide.md` — eCFR bulk XML structure (DIV hierarchy, element catalog, SGML-to-XML conversion details). Confirms `NODE` attribute is "for internal use and may be changed at any time."
-- `CFR-XML_User-Guide.md` — **Annual CFR** XML format. Uses a different schema from eCFR: `CFRDOC` root, `TITLE > CHAPTER > PART > SECTION` elements (not DIV-based), `GPOTABLE` for tables (not HTML tables), `SECTNO`/`SUBJECT` for section numbers/headings. A future `@lexbuild/cfr` package would need its own builder for this format.
+- **eCFR XML User Guide** — eCFR bulk XML structure (DIV hierarchy, element catalog, SGML-to-XML conversion details). Confirms `NODE` attribute is "for internal use and may be changed at any time."
+- **CFR XML User Guide** — **Annual CFR** XML format. Uses a different schema from eCFR: `CFRDOC` root, `TITLE > CHAPTER > PART > SECTION` elements (not DIV-based), `GPOTABLE` for tables (not HTML tables), `SECTNO`/`SUBJECT` for section numbers/headings. A future `@lexbuild/cfr` package would need its own builder for this format.
 
 ## USLM XML Schema — Key Facts
 

@@ -19,5 +19,16 @@ module.exports = {
       max_memory_restart: "512M",
       log_date_format: "YYYY-MM-DD HH:mm:ss",
     },
+    {
+      name: "meilisearch",
+      script: "/usr/local/bin/meilisearch",
+      args: "--db-path /var/lib/meilisearch/data --env production --http-addr 127.0.0.1:7700",
+      env: {
+        MEILI_MASTER_KEY: process.env.MEILI_MASTER_KEY || "",
+      },
+      instances: 1,
+      max_memory_restart: "1G",
+      log_date_format: "YYYY-MM-DD HH:mm:ss",
+    },
   ],
 };

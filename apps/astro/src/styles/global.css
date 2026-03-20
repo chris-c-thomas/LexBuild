@@ -231,6 +231,15 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* Shiki dual-theme: activate --shiki-dark CSS vars in dark mode.
+   Shiki outputs: <span style="color:#1F2328;--shiki-dark:#e6edf3">
+   Light color is applied by default; dark color is stored as a CSS var.
+   These rules swap to the dark values when .dark is active. */
+.dark .shiki,
+.dark .shiki span {
+  color: var(--shiki-dark) !important;
+}
+
 /* Shiki word-wrap overrides — inline styles on <pre> set white-space:pre */
 .shiki-wrap pre.shiki {
   white-space: pre-wrap !important;

@@ -456,6 +456,7 @@ Where `{N}` is the title number (1-50, not zero-padded). Example: `ECFR-title17.
 - **CLI `-o` flag appends source subdirectories**: `convert-usc -o /some/path` writes to `/some/path/usc/...`, not `/some/path/...` directly. Same for eCFR. The deploy script handles this by converting to monorepo output dirs then copying to the final content structure.
 - **Volta PATH must be in `.zshenv`, not `.zshrc`**: SSH heredoc commands (`ssh host << 'EOF'`) run non-interactive shells that don't source `.zshrc`. Volta's PATH (`$VOLTA_HOME/bin`) must be in `~/.zshenv` on the VPS for deploy scripts to find `pnpm`/`node`/`pm2`.
 - **PM2 reload requires `--update-env`**: Without it, `pm2 reload` keeps cached env vars from the original `pm2 start`. Always use `pm2 reload lexbuild-astro --update-env` to pick up changes from `ecosystem.config.cjs` or shell environment.
+- **Meilisearch `max_memory_restart` in `ecosystem.config.cjs`**: Must be sized to the VPS RAM. Set to `"3G"` for the current 8 GB Lightsail. If PM2 kills Meilisearch during indexing (`↺` restart counter increments, `ECONNREFUSED` errors), this limit is too low.
 
 ## When Adding New Source Types
 

@@ -15,6 +15,8 @@ lexbuild/
 │   └── cli/         # @lexbuild/cli — CLI binary (the published npm package users install)
 ├── apps/
 │   └── astro/       # LexBuild web app — Astro 6, SSR, browse U.S. Code + eCFR as Markdown
+├── scripts/
+│   └── deploy.sh    # Production deploy script (code, content, or full remote pipeline)
 ├── downloads/
 │   ├── usc/
 │   │   └── xml/     # Full USC XML files (usc01.xml ... usc54.xml) — gitignored
@@ -117,11 +119,19 @@ npx tsx scripts/index-search.ts                    # Index into Meilisearch (~28
 brew install meilisearch                           # Install via Homebrew
 brew services start meilisearch                    # Start as background service (port 7700, no master key)
 curl -s http://127.0.0.1:7700/health               # Verify running
+
+# Deploy to production VPS (from monorepo root, runs via SSH)
+./scripts/deploy.sh                # Code only (git pull, build, pm2 reload)
+./scripts/deploy.sh --content      # Code + rsync local output/ to VPS
+./scripts/deploy.sh --content-only # Rsync only, no code deploy
+./scripts/deploy.sh --remote       # Full pipeline on VPS (download + convert + highlights + build)
 ```
+
+See `.claude/guides/lexbuild-ops.md` for the full operations guide.
 
 ### Astro App Notes
 
-The Astro app (`apps/astro/`) is deployed to a self-managed VPS (AWS Lightsail) behind Cloudflare's edge cache. It has **no code dependency** on `@lexbuild/core`, `@lexbuild/usc`, or `@lexbuild/cli`.
+The Astro app (`apps/astro/`) is deployed to a self-managed VPS (AWS Lightsail) behind Cloudflare's edge cache. It has **no code dependency** on `@lexbuild/core`, `@lexbuild/usc`, or `@lexbuild/cli`. Deploy via `./scripts/deploy.sh` from the monorepo root.
 
 Key points:
 - **Excluded from `pnpm turbo build`** — no `build` script in its `package.json` (only `build:astro`). This prevents CI failures since the app requires content files that aren't in git.
@@ -426,6 +436,8 @@ Where `{N}` is the title number (1-50, not zero-padded). Example: `ECFR-title17.
 
 13. **Resilient file I/O**: `@lexbuild/core` exports `writeFile` and `mkdir` wrappers (`packages/core/src/fs.ts`) that retry on `ENFILE`/`EMFILE` errors with exponential backoff. Both USC and eCFR converters use these instead of `node:fs/promises` directly, preventing file descriptor exhaustion when writing ~60k+ files while external processes (Spotlight, editor file watchers) react to the new files.
 
+14. **Secrets management**: `~/.lexbuild-secrets` on the VPS is the single source of truth. `ecosystem.config.cjs` reads secrets from `process.env` (populated via `~/.zshenv` → `~/.lexbuild-secrets`). `.env.production` is **generated** by `scripts/deploy.sh` on every deploy — never manually maintained. See `.claude/guides/lexbuild-ops.md` for details.
+
 ## Common Pitfalls
 
 - **XHTML namespace tables**: `<table>` elements in USC XML are in the XHTML namespace, not the USLM namespace. The SAX parser must handle namespace-aware element names.
@@ -439,6 +451,7 @@ Where `{N}` is the title number (1-50, not zero-padded). Example: `ECFR-title17.
 - **Element versioning**: Elements can have `@startPeriod`/`@endPeriod`/`@status` for point-in-time variants. Multiple versions of the same element may coexist in the document.
 - **Quoted content sections**: `<section>` elements inside `<quotedContent>` (quoted bills in statutory notes) must not be emitted as standalone files. Track `quotedContentDepth` to suppress emission.
 - **Duplicate section numbers**: Some titles have multiple sections with the same number within a chapter (e.g., Title 5). Output files are disambiguated with `-2` suffixes.
+- **CLI `-o` flag appends source subdirectories**: `convert-usc -o /some/path` writes to `/some/path/usc/...`, not `/some/path/...` directly. Same for eCFR. The deploy script handles this by converting to monorepo output dirs then copying to the final content structure.
 
 ## When Adding New Source Types
 

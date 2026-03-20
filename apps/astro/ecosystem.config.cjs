@@ -27,7 +27,7 @@ module.exports = {
         MEILI_MASTER_KEY: process.env.MEILI_MASTER_KEY || "",
       },
       instances: 1,
-      max_memory_restart: "1G",
+      max_memory_restart: "3G",
       log_date_format: "YYYY-MM-DD HH:mm:ss",
     },
   ],

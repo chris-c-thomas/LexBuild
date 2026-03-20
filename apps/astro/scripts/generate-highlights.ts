@@ -12,18 +12,17 @@
  *   content-dir   Path to content directory (default: ./content)
  *   --limit N     Process only the first N files (for testing)
  *
- * Performance: ~60k files in ~2-5 minutes (Shiki is fast for Markdown).
+ * Memory management:
+ *   Processes 300k+ files by forking child processes in batches. Each child
+ *   handles a chunk of files with its own Shiki instance, then exits — fully
+ *   releasing all memory. This avoids Shiki's internal grammar cache leak.
  */
 
 import { readFile, writeFile, stat } from "node:fs/promises";
 import { resolve, join, relative } from "node:path";
-import {
-  createHighlighter,
-  type BundledLanguage,
-  type BundledTheme,
-  type HighlighterGeneric,
-} from "shiki";
 import { readdir } from "node:fs/promises";
+import { fork } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import matter from "gray-matter";
 
 // ---------------------------------------------------------------------------
@@ -34,6 +33,10 @@ const THEMES = {
   light: "github-light-default" as const,
   dark: "github-dark-default" as const,
 };
+
+/** Files per child process. Each child gets its own Shiki instance and exits
+ *  when done, fully releasing memory. 10k keeps each child under ~2GB. */
+const CHUNK_SIZE = 10_000;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -81,7 +84,50 @@ async function isUpToDate(mdPath: string, htmlPath: string): Promise<boolean> {
 }
 
 // ---------------------------------------------------------------------------
-// Main
+// Child process worker — highlight a chunk of files
+// ---------------------------------------------------------------------------
+
+async function runWorker(): Promise<void> {
+  const files: string[] = JSON.parse(process.env.HIGHLIGHT_FILES!);
+  const contentDir = process.env.HIGHLIGHT_CONTENT_DIR!;
+
+  const { createHighlighter } = await import("shiki");
+  const highlighter = await createHighlighter({
+    themes: [THEMES.light, THEMES.dark],
+    langs: ["markdown"],
+  });
+
+  let processed = 0;
+  let errors = 0;
+
+  for (const mdPath of files) {
+    try {
+      const raw = await readFile(mdPath, "utf-8");
+      const { content: body } = matter(raw);
+
+      const html = highlighter.codeToHtml(body, {
+        lang: "markdown",
+        themes: { light: THEMES.light, dark: THEMES.dark },
+      });
+
+      const htmlPath = mdPath.replace(/\.md$/, ".highlighted.html");
+      await writeFile(htmlPath, html, "utf-8");
+      processed++;
+    } catch (err) {
+      errors++;
+      const rel = relative(contentDir, mdPath);
+      console.warn(`  Error: ${rel}: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  highlighter.dispose();
+
+  // Send result back to parent
+  process.send!({ processed, errors });
+}
+
+// ---------------------------------------------------------------------------
+// Main — orchestrate child processes
 // ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
@@ -130,71 +176,68 @@ async function main(): Promise<void> {
     return;
   }
 
-  // Initialize Shiki
-  console.log(`\nInitializing Shiki...`);
-  let highlighter: HighlighterGeneric<BundledLanguage, BundledTheme> = await createHighlighter({
-    themes: [THEMES.light, THEMES.dark],
-    langs: ["markdown"],
-  });
-  console.log(`  Shiki ready`);
+  // Split into chunks and process each in a child process
+  const totalChunks = Math.ceil(toProcess.length / CHUNK_SIZE);
+  console.log(`\nProcessing ${toProcess.length} files in ${totalChunks} chunks of ${CHUNK_SIZE}...`);
 
-  // Process files — recreate Shiki every BATCH_SIZE files to prevent memory buildup.
-  // Shiki's internal grammar/token caches grow with each codeToHtml call and are only
-  // released on dispose(). 5k keeps peak heap well under 2GB for 300k+ files.
-  const BATCH_SIZE = 5_000;
   const startTime = performance.now();
-  let processed = 0;
-  let errors = 0;
+  let totalProcessed = 0;
+  let totalErrors = 0;
+  const scriptPath = fileURLToPath(import.meta.url);
 
-  for (let batchStart = 0; batchStart < toProcess.length; batchStart += BATCH_SIZE) {
-    // Create a fresh highlighter for each batch to release Shiki's internal caches
-    if (batchStart > 0) {
-      highlighter.dispose();
-      // Hint V8 to collect the disposed highlighter's caches immediately
-      global.gc?.();
-      highlighter = await createHighlighter({
-        themes: [THEMES.light, THEMES.dark],
-        langs: ["markdown"],
+  for (let c = 0; c < totalChunks; c++) {
+    const chunkStart = c * CHUNK_SIZE;
+    const chunkFiles = toProcess.slice(chunkStart, chunkStart + CHUNK_SIZE);
+    const chunkLabel = `Chunk ${c + 1}/${totalChunks} (${chunkFiles.length} files)`;
+    console.log(`  ${chunkLabel}...`);
+
+    const result = await new Promise<{ processed: number; errors: number }>((res, rej) => {
+      const child = fork(scriptPath, ["--worker"], {
+        env: {
+          ...process.env,
+          HIGHLIGHT_FILES: JSON.stringify(chunkFiles),
+          HIGHLIGHT_CONTENT_DIR: resolvedDir,
+        },
+        stdio: ["pipe", "inherit", "inherit", "ipc"],
       });
-    }
 
-    const batchEnd = Math.min(batchStart + BATCH_SIZE, toProcess.length);
-    for (let i = batchStart; i < batchEnd; i++) {
-      const mdPath = toProcess[i]!;
-      try {
-        const raw = await readFile(mdPath, "utf-8");
-        const { content: body } = matter(raw);
-
-        const html = highlighter.codeToHtml(body, {
-          lang: "markdown",
-          themes: { light: THEMES.light, dark: THEMES.dark },
-        });
-
-        const htmlPath = mdPath.replace(/\.md$/, ".highlighted.html");
-        await writeFile(htmlPath, html, "utf-8");
-        processed++;
-
-        // Progress every 1000 files
-        if (processed % 1000 === 0) {
-          const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
-          const mem = (process.memoryUsage.rss() / 1024 / 1024).toFixed(0);
-          console.log(`  ${processed}/${toProcess.length} (${elapsed}s, ${mem}MB)`);
+      child.on("message", (msg) => res(msg as { processed: number; errors: number }));
+      child.on("error", rej);
+      child.on("exit", (code) => {
+        if (code !== 0 && code !== null) {
+          rej(new Error(`Worker exited with code ${code}`));
         }
-      } catch (err) {
-        errors++;
-        const rel = relative(resolvedDir, mdPath);
-        console.warn(`  Error: ${rel}: ${err instanceof Error ? err.message : String(err)}`);
-      }
-    }
+      });
+    });
+
+    totalProcessed += result.processed;
+    totalErrors += result.errors;
+
+    const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
+    const mem = (process.memoryUsage.rss() / 1024 / 1024).toFixed(0);
+    console.log(
+      `  ${chunkLabel} done — ${totalProcessed}/${toProcess.length} total (${elapsed}s, parent ${mem}MB)`,
+    );
   }
 
-  highlighter.dispose();
-
   const totalTime = ((performance.now() - startTime) / 1000).toFixed(1);
-  console.log(`\nDone: ${processed} files highlighted, ${errors} errors, ${totalTime}s`);
+  console.log(`\nDone: ${totalProcessed} files highlighted, ${totalErrors} errors, ${totalTime}s`);
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+// ---------------------------------------------------------------------------
+// Entry point — detect worker vs orchestrator mode
+// ---------------------------------------------------------------------------
+
+if (process.argv.includes("--worker")) {
+  runWorker()
+    .then(() => process.exit(0))
+    .catch((err) => {
+      console.error(err);
+      process.exit(1);
+    });
+} else {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}

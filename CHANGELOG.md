@@ -5,6 +5,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
 
+## [1.10.1]
+
+### Added
+
+- Dark slate blue theme for dark mode — replaces default shadcn grey with blue-tinted palette (`#0e1821` background, `#182838` cards, `#243a4e` borders)
+- Runtime-aware semantic CSS tokens (`bg-surface`, `text-ink-muted`, `border-border-base`, `bg-code-surface`) that auto-adapt to dark mode via `:root`/`.dark` vars
+- Per-title date resolution for eCFR API downloads — each title uses its individual `up_to_date_as_of` date from the `/titles` metadata endpoint
+- Retry logic with exponential backoff for transient eCFR API errors (503, 504) and network-level failures (DNS, TLS, connection reset)
+- Import-in-progress detection — falls back to previous day when the eCFR API is mid-import, with clear user messaging for unavailable titles
+- Hierarchical download filenames with source prefix (e.g., `usc-title-29-chapter-19-section-1001.md`)
+- Layers icon as temporary favicon with `prefers-color-scheme` support
+- LexBuild logo (layers icon) in header and footer
+- Footer with tagline, year, and nav links (CLI, Docs, GitHub)
+- Package cards on home page link to their npm pages with external-link icons
+- Prettier plugin for `.astro` files (`prettier-plugin-astro`)
+- Microsoft Clarity analytics
+
+### Changed
+
+- Redesign landing page with hero section, CLI quick start, browse sources, sample output, and packages sections
+- Consistent card styling across all pages — plain HTML cards with `border-slate-blue-200 rounded-sm` instead of shadcn Card components
+- Page headings use `font-display` (IBM Plex Serif) with `tracking-tight` throughout
+- Switch font stack from Google Sans / JetBrains Mono to IBM Plex Serif / IBM Plex Sans / IBM Plex Mono
+- Reorder header nav: U.S. Code, eCFR, CLI, Docs (content-first, external links last)
+- Convert summary footer shows primary converted unit only (`Converted 60,215 sections`) instead of title count with parenthetical
+- Clean up CSS variable architecture — remove 8 unused tokens, fix `--color-accent` collision with shadcn, add clear section comments documenting the two-tier color system
+- Download mechanism uses `<script type="text/plain">` + Blob URL instead of `data:` URI (avoids ~2MB browser limit)
+- Generate-highlights script uses forked child processes (10k files per child) instead of in-process batching to prevent OOM at 300k+ files
+
+### Fixed
+
+- eCFR API downloads failing with 404 when import is in progress (global date unavailable)
+- eCFR Title 17 and other titles returning 503 during server-side processing — now reported clearly with retry guidance
+- `fetchEcfrTitlesMeta()` errors not caught before spinner starts
+- `FrontmatterPanel` labels broken by removed `--brand-slate-blue` CSS var — replaced with `var(--primary)`
+- `font-regular` (invalid Tailwind utility) → `font-normal`
+- `stat.value ? " " : ""` treating `0` as falsy in HierarchyIndex stats
+- ThemeToggle dark `theme-color` meta mismatch (`#1b1b1f` → `#0e1821`)
+- Search dialog placeholder showing literal `\u2026` instead of ellipsis
+- Unused `@fontsource/google-sans` still imported after font switch — removed
+- `flatted` transitive dependency vulnerability (CVE-2026-33228) via `pnpm.overrides`
+- Lockfile out of sync with overrides configuration
+
+### Documentation
+
+- Update CLAUDE.md files with dark mode architecture, two-tier color system, card patterns, download mechanism, font stack, and eCFR API import-in-progress behavior
+
 ## [1.9.4]
 
 ### Added

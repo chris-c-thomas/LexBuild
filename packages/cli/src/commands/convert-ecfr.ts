@@ -384,19 +384,20 @@ Examples:
 
     console.log(dataTable(tableHeaders, tableRows));
 
-    const titleWord = totalTitles === 1 ? "title" : "titles";
+    // Footer — show the primary unit that was converted
     let countLabel: string;
     if (granularity === "title") {
-      countLabel = `${totalTitles} ${titleWord}`;
+      const titleWord = totalTitles === 1 ? "title" : "titles";
+      countLabel = `${formatNumber(totalTitles)} ${titleWord}`;
     } else if (granularity === "chapter") {
       const chapterWord = totalSections === 1 ? "chapter" : "chapters";
-      countLabel = `${totalTitles} ${titleWord} (${formatNumber(totalSections)} ${chapterWord})`;
+      countLabel = `${formatNumber(totalSections)} ${chapterWord}`;
     } else if (granularity === "part") {
       const partWord = totalParts === 1 ? "part" : "parts";
-      countLabel = `${totalTitles} ${titleWord} (${formatNumber(totalParts)} ${partWord})`;
+      countLabel = `${formatNumber(totalParts)} ${partWord}`;
     } else {
       const sectionWord = totalSections === 1 ? "section" : "sections";
-      countLabel = `${totalTitles} ${titleWord} (${formatNumber(totalSections)} ${sectionWord})`;
+      countLabel = `${formatNumber(totalSections)} ${sectionWord}`;
     }
     console.log(`\n  ${success(`Converted ${countLabel} in ${formatDuration(totalElapsed)}`)}`);
     console.log("");

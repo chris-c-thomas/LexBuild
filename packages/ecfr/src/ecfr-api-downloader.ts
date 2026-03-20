@@ -228,7 +228,7 @@ export async function downloadEcfrTitlesFromApi(
   for (const titleNum of titles) {
     if (RESERVED_TITLES.has(titleNum)) continue;
 
-    const titleDate = titleDateMap.get(titleNum)!;
+    const titleDate = titleDateMap.get(titleNum) ?? meta.date;
     const filePath = join(output, `ECFR-title${titleNum}.xml`);
 
     const result = await downloadWithRetry(titleNum, titleDate, filePath);

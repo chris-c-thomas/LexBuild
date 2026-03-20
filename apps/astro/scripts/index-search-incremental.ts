@@ -187,7 +187,7 @@ class BatchIndexer {
 
     const index = this.client.index(this.indexName);
     const task = await index.addDocuments(this.batch);
-    await this.client.tasks.waitForTask(task.taskUid, { timeout: 60_000 });
+    await this.client.tasks.waitForTask(task.taskUid, { timeout: 300_000 });
 
     this.totalSent += this.batch.length;
     this.batchesSent++;
@@ -373,7 +373,7 @@ async function pruneOrphans(client: Meilisearch, expectedIds: Set<string>): Prom
     for (let i = 0; i < orphanIds.length; i += 1000) {
       const batch = orphanIds.slice(i, i + 1000);
       const task = await index.deleteDocuments(batch);
-      await client.tasks.waitForTask(task.taskUid, { timeout: 60_000 });
+      await client.tasks.waitForTask(task.taskUid, { timeout: 300_000 });
     }
     console.log(`  Deleted ${orphanIds.length} orphaned documents.`);
   } else {

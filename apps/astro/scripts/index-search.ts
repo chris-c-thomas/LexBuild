@@ -174,7 +174,7 @@ class BatchIndexer {
 
     const index = this.client.index(this.indexName);
     const task = await index.addDocuments(this.batch);
-    await this.client.tasks.waitForTask(task.taskUid, { timeout: 60_000 });
+    await this.client.tasks.waitForTask(task.taskUid, { timeout: 300_000 });
 
     this.totalSent += this.batch.length;
     this.batchesSent++;

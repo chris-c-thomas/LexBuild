@@ -119,7 +119,8 @@ npx tsx scripts/index-search.ts                    # Index into Meilisearch (~28
 
 # Meilisearch local setup (macOS)
 brew install meilisearch                           # Install via Homebrew
-brew services start meilisearch                    # Start as background service (port 7700, no master key)
+brew services start meilisearch                    # Option A: background service (port 7700, no master key)
+meilisearch --db-path ~/.meilisearch/data.ms --env development  # Option B: foreground, custom data path
 curl -s http://127.0.0.1:7700/health               # Verify running
 
 # Deploy to production VPS (from monorepo root, runs via SSH)
@@ -127,6 +128,7 @@ curl -s http://127.0.0.1:7700/health               # Verify running
 ./scripts/deploy.sh --content      # Code + rsync local output/ to VPS
 ./scripts/deploy.sh --content-only # Rsync only, no code deploy
 ./scripts/deploy.sh --remote       # Full pipeline on VPS (download + convert + highlights + build)
+./scripts/deploy.sh --search-dump  # Index locally, dump, upload + import on VPS
 ```
 
 See `.claude/guides/lexbuild-ops.md` for the full operations guide.

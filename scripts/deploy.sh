@@ -6,23 +6,31 @@
 #   ./scripts/deploy.sh --content      # Deploy code + rsync content from local output/
 #   ./scripts/deploy.sh --content-only # Rsync content only, no code deploy
 #   ./scripts/deploy.sh --remote       # Full pipeline on VPS (code + download + convert + build)
+#   ./scripts/deploy.sh --search-dump  # Index locally, dump, upload to VPS, import
 #
 # Requires:
 #   - SSH access to the VPS (key-based auth)
 #   - ~/.lexbuild-secrets on VPS with MEILI_MASTER_KEY, MEILI_SEARCH_KEY, ENABLE_SEARCH
 #   - For --content/--content-only: local output/ directories populated by the CLI converter
 #   - For --remote: sufficient VPS resources (recommend 4 vCPU / 8+ GB RAM)
+#   - For --search-dump: local Meilisearch running, local content in output/ directories
 #
 # What it does:
 #   Code deploy:    git pull → pnpm install → generate .env.production → astro build → pm2 reload
 #   Content deploy: rsync local output directories + nav JSON to VPS
 #   Remote deploy:  code deploy + build CLI → download XML → convert all granularities →
 #                   copy to content dirs → pipeline scripts → astro build → pm2 reload
+#   Search dump:    index content into local Meilisearch → create dump → scp to VPS →
+#                   stop remote Meilisearch → import dump → restart
 #
 # Notes:
 #   --remote runs the entire pipeline on the VPS via SSH. This can take 30+ minutes
 #   (download + convert + highlights). If your SSH connection is unreliable, consider
 #   SSHing into the VPS manually and running the commands in a tmux session instead.
+#
+#   --search-dump is useful when your local machine has more RAM than the VPS.
+#   Indexing 281k+ docs is CPU/memory intensive — offload it to a beefy local machine,
+#   then transfer the result. Requires Meilisearch running locally on port 7700.
 
 set -euo pipefail
 
@@ -33,6 +41,7 @@ set -euo pipefail
 #   NAV_DEST="/srv/lexbuild/nav"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 if [ -f "$SCRIPT_DIR/.deploy.env" ]; then
   source "$SCRIPT_DIR/.deploy.env"
 fi
@@ -48,7 +57,7 @@ NAV_DEST="${NAV_DEST:-/srv/lexbuild/nav}"
 
 # --- Parse arguments ---
 
-MODE="code" # code | content | content-only | remote
+MODE="code" # code | content | content-only | remote | search-dump
 
 case "${1:-}" in
   --content)
@@ -60,6 +69,9 @@ case "${1:-}" in
   --remote)
     MODE="remote"
     ;;
+  --search-dump)
+    MODE="search-dump"
+    ;;
   --help|-h)
     sed -n '2,/^$/{ s/^# //; s/^#$//; p }' "$0"
     exit 0
@@ -68,7 +80,7 @@ case "${1:-}" in
     ;; # default: code only
   *)
     echo "Unknown option: $1"
-    echo "Usage: ./scripts/deploy.sh [--content | --content-only | --remote | --help]"
+    echo "Usage: ./scripts/deploy.sh [--content | --content-only | --remote | --search-dump | --help]"
     exit 1
     ;;
 esac
@@ -267,6 +279,128 @@ EOF
 REMOTE
 }
 
+# --- Search dump: index locally, transfer dump to VPS (used by: search-dump) ---
+
+deploy_search_dump() {
+  LOCAL_MEILI_URL="http://127.0.0.1:7700"
+  DUMP_DIR="$REPO_ROOT/.search-dumps"
+
+  echo "==> Indexing locally and transferring dump to VPS..."
+
+  # --- Verify local Meilisearch is running ---
+
+  echo "--- Checking local Meilisearch..."
+  if ! curl -sf "$LOCAL_MEILI_URL/health" > /dev/null 2>&1; then
+    echo "Error: Local Meilisearch is not running at $LOCAL_MEILI_URL"
+    echo ""
+    echo "Start it with:"
+    echo "  meilisearch --db-path ~/.meilisearch/data.ms --env development"
+    exit 1
+  fi
+  echo "--- Local Meilisearch is healthy"
+
+  # --- Index locally ---
+
+  echo "--- Indexing content into local Meilisearch..."
+  cd "$REPO_ROOT/apps/astro"
+  pnpm dlx tsx scripts/index-search.ts "$REPO_ROOT/output"
+  cd "$REPO_ROOT"
+
+  # --- Create dump ---
+
+  echo "--- Creating Meilisearch dump..."
+  DUMP_RESPONSE=$(curl -sf -X POST "$LOCAL_MEILI_URL/dumps")
+  DUMP_TASK_UID=$(echo "$DUMP_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['taskUid'])")
+
+  echo "--- Waiting for dump task $DUMP_TASK_UID to complete..."
+  while true; do
+    TASK_STATUS=$(curl -sf "$LOCAL_MEILI_URL/tasks/$DUMP_TASK_UID" | python3 -c "import sys,json; print(json.load(sys.stdin)['status'])")
+    case "$TASK_STATUS" in
+      succeeded)
+        DUMP_FILE=$(curl -sf "$LOCAL_MEILI_URL/tasks/$DUMP_TASK_UID" | python3 -c "import sys,json; d=json.load(sys.stdin)['details']; print(d.get('dumpUid',''))")
+        echo "--- Dump created: $DUMP_FILE"
+        break
+        ;;
+      failed)
+        echo "Error: Dump task failed."
+        curl -sf "$LOCAL_MEILI_URL/tasks/$DUMP_TASK_UID" | python3 -m json.tool
+        exit 1
+        ;;
+      *)
+        sleep 2
+        ;;
+    esac
+  done
+
+  # --- Find the dump file ---
+  # Meilisearch stores dumps in {db-path}/dumps/
+  # Common locations: ~/.meilisearch/data.ms/dumps/ or /opt/homebrew/var/meilisearch/data.ms/dumps/
+
+  DUMP_PATH=""
+  for SEARCH_DIR in \
+    "$HOME/.meilisearch/data.ms/dumps" \
+    "/opt/homebrew/var/meilisearch/data.ms/dumps" \
+    "$HOME/data.ms/dumps"; do
+    if [ -d "$SEARCH_DIR" ]; then
+      LATEST=$(ls -t "$SEARCH_DIR"/*.dump 2>/dev/null | head -1)
+      if [ -n "$LATEST" ]; then
+        DUMP_PATH="$LATEST"
+        break
+      fi
+    fi
+  done
+
+  if [ -z "$DUMP_PATH" ]; then
+    echo "Error: Could not find dump file."
+    echo "Check your Meilisearch --db-path for a dumps/ directory."
+    exit 1
+  fi
+
+  echo "--- Found dump: $DUMP_PATH ($(du -h "$DUMP_PATH" | cut -f1))"
+
+  # --- Transfer to VPS ---
+
+  echo "--- Uploading dump to VPS..."
+  scp "$DUMP_PATH" "${VPS_HOST}:/tmp/lexbuild-search.dump"
+
+  # --- Import on VPS ---
+
+  echo "--- Importing dump on VPS (stops Meilisearch temporarily)..."
+  ssh "$VPS_HOST" << 'REMOTE'
+    set -euo pipefail
+    source ~/.lexbuild-secrets
+
+    echo "--- Stopping Meilisearch"
+    pm2 stop meilisearch
+
+    echo "--- Importing dump (this may take a few minutes)..."
+    /usr/local/bin/meilisearch \
+      --import-dump /tmp/lexbuild-search.dump \
+      --db-path /var/lib/meilisearch/data \
+      --env production \
+      --http-addr 127.0.0.1:7700 \
+      --master-key "$MEILI_MASTER_KEY"
+    # Meilisearch imports then exits
+
+    echo "--- Starting Meilisearch via PM2"
+    pm2 start meilisearch
+    sleep 3
+
+    # Verify
+    if curl -sf http://127.0.0.1:7700/health > /dev/null 2>&1; then
+      DOC_COUNT=$(curl -sf http://127.0.0.1:7700/indexes/lexbuild/stats \
+        -H "Authorization: Bearer ${MEILI_MASTER_KEY}" \
+        | python3 -c "import sys,json; print(json.load(sys.stdin).get('numberOfDocuments', 'unknown'))")
+      echo "--- Meilisearch healthy. Index has $DOC_COUNT documents."
+    else
+      echo "WARNING: Meilisearch health check failed. Check: pm2 logs meilisearch"
+    fi
+
+    rm -f /tmp/lexbuild-search.dump
+    echo "==> Search dump import complete"
+REMOTE
+}
+
 # --- Main ---
 
 case "$MODE" in
@@ -282,6 +416,9 @@ case "$MODE" in
     ;;
   remote)
     deploy_remote
+    ;;
+  search-dump)
+    deploy_search_dump
     ;;
 esac
 

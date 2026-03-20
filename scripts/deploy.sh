@@ -6,7 +6,8 @@
 #   ./scripts/deploy.sh --content      # Deploy code + rsync content from local output/
 #   ./scripts/deploy.sh --content-only # Rsync content only, no code deploy
 #   ./scripts/deploy.sh --remote       # Full pipeline on VPS (code + download + convert + build)
-#   ./scripts/deploy.sh --search-dump  # Index locally, dump, upload to VPS, import
+#   ./scripts/deploy.sh --search-dump  # Reindex locally, dump, upload to VPS, import
+#   ./scripts/deploy.sh --search-push  # Dump existing local index, upload to VPS, import
 #
 # Requires:
 #   - SSH access to the VPS (key-based auth)
@@ -57,7 +58,7 @@ NAV_DEST="${NAV_DEST:-/srv/lexbuild/nav}"
 
 # --- Parse arguments ---
 
-MODE="code" # code | content | content-only | remote | search-dump
+MODE="code" # code | content | content-only | remote | search-dump | search-push
 
 case "${1:-}" in
   --content)
@@ -72,6 +73,9 @@ case "${1:-}" in
   --search-dump)
     MODE="search-dump"
     ;;
+  --search-push)
+    MODE="search-push"
+    ;;
   --help|-h)
     sed -n '2,/^$/{ s/^# //; s/^#$//; p }' "$0"
     exit 0
@@ -80,7 +84,7 @@ case "${1:-}" in
     ;; # default: code only
   *)
     echo "Unknown option: $1"
-    echo "Usage: ./scripts/deploy.sh [--content | --content-only | --remote | --search-dump | --help]"
+    echo "Usage: ./scripts/deploy.sh [--content | --content-only | --remote | --search-dump | --search-push | --help]"
     exit 1
     ;;
 esac
@@ -281,14 +285,10 @@ REMOTE
 
 # --- Search dump: index locally, transfer dump to VPS (used by: search-dump) ---
 
-deploy_search_dump() {
+# --- Shared: verify local Meilisearch, create dump, transfer, import on VPS ---
+
+check_local_meilisearch() {
   LOCAL_MEILI_URL="http://127.0.0.1:7700"
-  DUMP_DIR="$REPO_ROOT/.search-dumps"
-
-  echo "==> Indexing locally and transferring dump to VPS..."
-
-  # --- Verify local Meilisearch is running ---
-
   echo "--- Checking local Meilisearch..."
   if ! curl -sf "$LOCAL_MEILI_URL/health" > /dev/null 2>&1; then
     echo "Error: Local Meilisearch is not running at $LOCAL_MEILI_URL"
@@ -298,13 +298,10 @@ deploy_search_dump() {
     exit 1
   fi
   echo "--- Local Meilisearch is healthy"
+}
 
-  # --- Index locally ---
-
-  echo "--- Indexing content into local Meilisearch..."
-  cd "$REPO_ROOT/apps/astro"
-  pnpm dlx tsx scripts/index-search.ts "$REPO_ROOT/output"
-  cd "$REPO_ROOT"
+dump_and_push() {
+  LOCAL_MEILI_URL="http://127.0.0.1:7700"
 
   # --- Create dump ---
 
@@ -334,7 +331,6 @@ deploy_search_dump() {
 
   # --- Find the dump file ---
   # Meilisearch stores dumps in {db-path}/dumps/
-  # Common locations: ~/.meilisearch/data.ms/dumps/ or /opt/homebrew/var/meilisearch/data.ms/dumps/
 
   DUMP_PATH=""
   for SEARCH_DIR in \
@@ -401,6 +397,57 @@ deploy_search_dump() {
 REMOTE
 }
 
+# --- Search dump: reindex locally, then dump + push (used by: search-dump) ---
+
+deploy_search_dump() {
+  echo "==> Reindexing locally and transferring dump to VPS..."
+
+  check_local_meilisearch
+
+  # The indexer expects {contentDir}/usc/sections/ and {contentDir}/ecfr/sections/
+  # but local CLI output is at output/usc/ and output/ecfr/ (no sections/ level).
+  # Create a temp content directory with symlinks to match the expected structure.
+
+  TEMP_CONTENT="$REPO_ROOT/.search-dump-content"
+  rm -rf "$TEMP_CONTENT"
+  mkdir -p "$TEMP_CONTENT/usc" "$TEMP_CONTENT/ecfr"
+
+  if [ -d "$REPO_ROOT/output/usc" ]; then
+    ln -s "$REPO_ROOT/output/usc" "$TEMP_CONTENT/usc/sections"
+  else
+    echo "Error: output/usc not found. Run the converter first."
+    rm -rf "$TEMP_CONTENT"
+    exit 1
+  fi
+
+  if [ -d "$REPO_ROOT/output/ecfr" ]; then
+    ln -s "$REPO_ROOT/output/ecfr" "$TEMP_CONTENT/ecfr/sections"
+  else
+    echo "Error: output/ecfr not found. Run the converter first."
+    rm -rf "$TEMP_CONTENT"
+    exit 1
+  fi
+
+  echo "--- Indexing content into local Meilisearch..."
+  cd "$REPO_ROOT/apps/astro"
+  pnpm dlx tsx scripts/index-search.ts "$TEMP_CONTENT"
+  cd "$REPO_ROOT"
+
+  rm -rf "$TEMP_CONTENT"
+
+  dump_and_push
+}
+
+# --- Search push: dump existing local index + push (used by: search-push) ---
+
+deploy_search_push() {
+  echo "==> Dumping existing local index and transferring to VPS..."
+  echo "    Skipping reindex — pushing whatever is currently in local Meilisearch."
+
+  check_local_meilisearch
+  dump_and_push
+}
+
 # --- Main ---
 
 case "$MODE" in
@@ -419,6 +466,9 @@ case "$MODE" in
     ;;
   search-dump)
     deploy_search_dump
+    ;;
+  search-push)
+    deploy_search_push
     ;;
 esac
 

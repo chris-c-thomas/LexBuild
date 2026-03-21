@@ -22,7 +22,7 @@ export function MobileNav({ source, currentPath }: MobileNavProps) {
   // On source pages, always show that source's tree.
   // On the home page, let the user pick a source to browse inline.
   const [previewSource, setPreviewSource] = useState<SourceId | null>(null);
-  const activeSource = source ?? previewSource;
+  const activeSource = previewSource ?? source;
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -77,7 +77,7 @@ export function MobileNav({ source, currentPath }: MobileNavProps) {
         {/* Sidebar tree */}
         {activeSource && <SidebarContent sourceId={activeSource} currentPath={currentPath} />}
 
-        {/* Footer: secondary links + theme toggle */}
+        {/* Footer: secondary links */}
         <div className="mt-auto">
           <nav className="border-sidebar-border flex items-center gap-4 border-t px-4 py-2.5">
             <a

@@ -238,15 +238,16 @@ async function main(): Promise<void> {
   const distClientDir = resolve("./dist/client");
   try {
     await access(distClientDir);
-    const sitemapFiles = ["sitemap.xml", ...allFilenames];
-    for (const file of sitemapFiles) {
-      await copyFile(join(outputDir, file), join(distClientDir, file));
-    }
-    console.log(`Copied ${sitemapFiles.length} sitemap files to ${distClientDir}`);
   } catch {
     // dist/client/ doesn't exist (pre-build run) — sitemaps will be
     // picked up automatically when the Astro build copies public/.
+    return;
   }
+  const sitemapFiles = ["sitemap.xml", ...allFilenames];
+  for (const file of sitemapFiles) {
+    await copyFile(join(outputDir, file), join(distClientDir, file));
+  }
+  console.log(`Copied ${sitemapFiles.length} sitemap files to ${distClientDir}`);
 }
 
 main().catch((err) => {

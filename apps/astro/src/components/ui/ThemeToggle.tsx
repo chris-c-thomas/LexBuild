@@ -31,10 +31,13 @@ const LABELS: Record<Theme, string> = {
 
 /** Three-way theme toggle: system, light, dark. */
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>(getStoredTheme);
+  // Start with "system" to match SSR output; sync from localStorage after mount
+  const [theme, setTheme] = useState<Theme>("system");
 
-  // Listen for OS preference changes when in system mode
   useEffect(() => {
+    setTheme(getStoredTheme());
+
+    // Listen for OS preference changes when in system mode
     const mq = matchMedia("(prefers-color-scheme: dark)");
     const handler = () => {
       if (getStoredTheme() === "system") applyTheme("system");

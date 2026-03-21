@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { SidebarContent } from "./SidebarContent";
 import type { SourceId } from "@/lib/types";
 
@@ -12,21 +12,20 @@ const MIN_WIDTH = 200;
 const MAX_WIDTH = 500;
 const DEFAULT_WIDTH = 288; // w-72
 
+function getStoredWidth(): number {
+  if (typeof window === "undefined") return DEFAULT_WIDTH;
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (stored) {
+    const parsed = parseInt(stored, 10);
+    if (parsed >= MIN_WIDTH && parsed <= MAX_WIDTH) return parsed;
+  }
+  return DEFAULT_WIDTH;
+}
+
 export function Sidebar({ sourceId, currentPath }: SidebarProps) {
-  const [width, setWidth] = useState(DEFAULT_WIDTH);
+  const [width, setWidth] = useState(getStoredWidth);
   const isDragging = useRef(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-
-  // Restore persisted width on mount
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      const parsed = parseInt(stored, 10);
-      if (parsed >= MIN_WIDTH && parsed <= MAX_WIDTH) {
-        setWidth(parsed);
-      }
-    }
-  }, []);
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     e.preventDefault();
@@ -58,7 +57,7 @@ export function Sidebar({ sourceId, currentPath }: SidebarProps) {
       className="relative hidden shrink-0 lg:sticky lg:top-14 lg:block lg:h-[calc(100vh-3.5rem)]"
     >
       {/* Scrollable content area */}
-      <div className="border-sidebar-border bg-sidebar h-full overflow-y-auto border-r">
+      <div className="border-sidebar-border bg-sidebar h-full overflow-y-auto border-r" style={{ scrollbarGutter: "stable" }}>
         <SidebarContent sourceId={sourceId} currentPath={currentPath} />
       </div>
 

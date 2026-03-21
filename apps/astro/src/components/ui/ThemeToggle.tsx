@@ -50,13 +50,13 @@ export default function ThemeToggle() {
 
   return (
     <div
-      className="relative inline-flex h-8 w-[76px] items-center rounded-full border border-slate-blue-200 bg-slate-blue-50 p-0.5 dark:border-slate-blue-700 dark:bg-slate-blue-900"
+      className="relative inline-flex h-8 w-[76px] items-center rounded-full border border-border bg-muted p-0.5"
       role="radiogroup"
       aria-label="Theme"
     >
       {/* Sliding indicator */}
       <span
-        className="absolute h-6 w-6 rounded-full bg-white shadow-sm transition-transform duration-200 dark:bg-slate-blue-700"
+        className="bg-background absolute h-6 w-6 rounded-full shadow-sm transition-transform duration-200"
         style={{
           transform: `translateX(${THEMES.indexOf(theme) * 24}px)`,
         }}
@@ -76,8 +76,8 @@ export default function ThemeToggle() {
             onClick={() => selectTheme(t)}
             className={`relative z-10 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full transition-colors ${
               isActive
-                ? "text-slate-blue-700 dark:text-slate-blue-200"
-                : "text-slate-blue-500 hover:text-slate-blue-700 dark:text-slate-blue-500 dark:hover:text-slate-blue-300"
+                ? "text-foreground"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <Icon className="h-3.5 w-3.5" />

@@ -294,7 +294,7 @@ check_local_meilisearch() {
     echo "Error: Local Meilisearch is not running at $LOCAL_MEILI_URL"
     echo ""
     echo "Start it with:"
-    echo "  meilisearch --db-path ~/.meilisearch/data.ms --env development"
+    echo "  meilisearch --db-path ~/.meilisearch/data.ms --dump-dir ~/.meilisearch/dumps --env development"
     exit 1
   fi
   echo "--- Local Meilisearch is healthy"
@@ -330,10 +330,12 @@ dump_and_push() {
   done
 
   # --- Find the dump file ---
-  # Meilisearch stores dumps in {db-path}/dumps/
+  # With --dump-dir ~/.meilisearch/dumps, dumps go there.
+  # Fallback paths cover older setups where dumps landed in ~/dumps/ or {db-path}/dumps/.
 
   DUMP_PATH=""
   for SEARCH_DIR in \
+    "$HOME/.meilisearch/dumps" \
     "$HOME/dumps" \
     "$HOME/.meilisearch/data.ms/dumps" \
     "/opt/homebrew/var/meilisearch/data.ms/dumps" \

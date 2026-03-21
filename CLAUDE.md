@@ -119,8 +119,7 @@ npx tsx scripts/index-search.ts                    # Index into Meilisearch (~28
 
 # Meilisearch local setup (macOS)
 brew install meilisearch                           # Install via Homebrew
-brew services start meilisearch                    # Option A: background service (port 7700, no master key)
-meilisearch --db-path ~/.meilisearch/data.ms --env development  # Option B: foreground, custom data path
+meilisearch --db-path ~/.meilisearch/data.ms --dump-dir ~/.meilisearch/dumps --env development
 curl -s http://127.0.0.1:7700/health               # Verify running
 
 # Deploy to production VPS (from monorepo root, runs via SSH)
@@ -464,7 +463,7 @@ Where `{N}` is the title number (1-50, not zero-padded). Example: `ECFR-title17.
 - **Meilisearch dump import regenerates API keys**: Importing a dump created with a different master key regenerates all keys. After `--search-dump` or `--search-push`, retrieve the new key (`setup-secrets.sh --search`) and update `~/.lexbuild-secrets`, `.env.production`, AND `/etc/caddy/environment`.
 - **Caddy `EnvironmentFile` override required for search**: `{$MEILI_SEARCH_KEY}` in the Caddyfile requires `EnvironmentFile=/etc/caddy/environment` in a systemd override (`sudo systemctl edit caddy`). Without it, Caddy passes an empty auth header.
 - **Meilisearch `--import-dump` doesn't exit**: It imports then keeps running as a foreground server. The deploy script backgrounds it, polls health, then kills it before restarting via PM2.
-- **Local Meilisearch dumps go to `~/dumps/`**: When started via `brew services`, not inside the `--db-path`. The deploy script searches multiple candidate locations.
+- **Local Meilisearch dumps**: Use `--dump-dir ~/.meilisearch/dumps` to consolidate dumps alongside data. Without it, dumps default to `dumps/` relative to CWD. The deploy script searches multiple candidate locations as a fallback.
 
 ## When Adding New Source Types
 

@@ -119,7 +119,7 @@ export function SidebarContent({ sourceId, currentPath }: SidebarContentProps) {
             <div
               key={i}
               className="bg-sidebar-accent/50 h-6 animate-pulse rounded"
-              style={{ width: `${60 + Math.random() * 30}%` }}
+              style={{ width: `${[75, 62, 85, 70, 88, 65, 80, 72][i]}%` }}
             />
           ))}
         </div>
@@ -164,7 +164,7 @@ export function SidebarContent({ sourceId, currentPath }: SidebarContentProps) {
                             <div
                               key={i}
                               className="bg-sidebar-accent/50 h-5 animate-pulse rounded"
-                              style={{ width: `${50 + Math.random() * 40}%` }}
+                              style={{ width: `${[68, 82, 55][i]}%` }}
                             />
                           ))}
                         </div>

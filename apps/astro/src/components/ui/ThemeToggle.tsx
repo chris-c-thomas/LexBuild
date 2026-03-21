@@ -14,8 +14,7 @@ function getStoredTheme(): Theme {
 
 function applyTheme(theme: Theme) {
   const isDark =
-    theme === "dark" ||
-    (theme === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
+    theme === "dark" || (theme === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
 
   document.documentElement.classList.toggle("dark", isDark);
   document.documentElement.style.colorScheme = isDark ? "dark" : "light";
@@ -31,10 +30,13 @@ const LABELS: Record<Theme, string> = {
 
 /** Three-way theme toggle: system, light, dark. */
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>(getStoredTheme);
+  // Start with "system" to match SSR output; sync from localStorage after mount
+  const [theme, setTheme] = useState<Theme>("system");
 
-  // Listen for OS preference changes when in system mode
   useEffect(() => {
+    setTheme(getStoredTheme());
+
+    // Listen for OS preference changes when in system mode
     const mq = matchMedia("(prefers-color-scheme: dark)");
     const handler = () => {
       if (getStoredTheme() === "system") applyTheme("system");
@@ -50,13 +52,13 @@ export default function ThemeToggle() {
 
   return (
     <div
-      className="relative inline-flex h-8 w-[76px] items-center rounded-full border border-slate-blue-200 bg-slate-blue-50 p-0.5 dark:border-slate-blue-700 dark:bg-slate-blue-900"
+      className="border-border bg-muted relative inline-flex h-8 w-[76px] items-center rounded-full border p-0.5"
       role="radiogroup"
       aria-label="Theme"
     >
       {/* Sliding indicator */}
       <span
-        className="absolute h-6 w-6 rounded-full bg-white shadow-sm transition-transform duration-200 dark:bg-slate-blue-700"
+        className="bg-background absolute h-6 w-6 rounded-full shadow-sm transition-transform duration-200"
         style={{
           transform: `translateX(${THEMES.indexOf(theme) * 24}px)`,
         }}
@@ -75,9 +77,7 @@ export default function ThemeToggle() {
             title={LABELS[t]}
             onClick={() => selectTheme(t)}
             className={`relative z-10 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full transition-colors ${
-              isActive
-                ? "text-slate-blue-700 dark:text-slate-blue-200"
-                : "text-slate-blue-500 hover:text-slate-blue-700 dark:text-slate-blue-500 dark:hover:text-slate-blue-300"
+              isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <Icon className="h-3.5 w-3.5" />

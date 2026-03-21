@@ -8,6 +8,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 import { SidebarContent } from "./SidebarContent";
 import type { SourceId } from "@/lib/types";
 
@@ -93,6 +94,12 @@ export function MobileNav({ source, currentPath }: MobileNavProps) {
             </a>
           </nav>
         )}
+
+        {/* Theme toggle — visible in drawer on mobile since it's hidden from the navbar */}
+        <div className="border-sidebar-border mt-auto flex items-center justify-between border-t px-4 py-3 sm:hidden">
+          <span className="text-sidebar-foreground text-xs font-medium">Theme</span>
+          <ThemeToggle />
+        </div>
       </SheetContent>
     </Sheet>
   );

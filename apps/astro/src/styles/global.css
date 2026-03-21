@@ -291,7 +291,7 @@
     @apply bg-background text-foreground;
   }
   html {
-    @apply font-sans;
+    @apply overflow-x-hidden font-sans;
   }
   /* Offset anchored headings for sticky header (h-14 = 3.5rem + 0.5rem breathing room) */
   [id] {

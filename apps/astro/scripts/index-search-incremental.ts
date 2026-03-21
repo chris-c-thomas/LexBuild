@@ -490,7 +490,9 @@ async function main(): Promise<void> {
   } else {
     console.log("\nNo checkpoint found — scanning all files.");
     console.log("  Every .md file will be sent to Meilisearch as an upsert (add or update).");
-    console.log("  Documents already in the index with the same ID will be updated, not duplicated.");
+    console.log(
+      "  Documents already in the index with the same ID will be updated, not duplicated.",
+    );
   }
 
   const indexer = new BatchIndexer(client, INDEX_NAME, BATCH_SIZE);
@@ -502,13 +504,17 @@ async function main(): Promise<void> {
   console.log("\nScanning USC documents...");
   const usc = await indexUscIncremental(resolvedDir, indexer, checkpoint, expectedIds);
   await indexer.flush();
-  console.log(`  USC: ${usc.indexed} upserted, ${usc.skipped} skipped (unchanged since checkpoint)`);
+  console.log(
+    `  USC: ${usc.indexed} upserted, ${usc.skipped} skipped (unchanged since checkpoint)`,
+  );
 
   // Index eCFR
   console.log("\nScanning eCFR documents...");
   const ecfr = await indexEcfrIncremental(resolvedDir, indexer, checkpoint, expectedIds);
   await indexer.flush();
-  console.log(`  eCFR: ${ecfr.indexed} upserted, ${ecfr.skipped} skipped (unchanged since checkpoint)`);
+  console.log(
+    `  eCFR: ${ecfr.indexed} upserted, ${ecfr.skipped} skipped (unchanged since checkpoint)`,
+  );
 
   const totalIndexed = usc.indexed + ecfr.indexed;
   const totalSkipped = usc.skipped + ecfr.skipped;

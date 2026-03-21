@@ -42,7 +42,9 @@ export function MobileNav({ source, currentPath }: MobileNavProps) {
       >
         <SheetHeader className="border-sidebar-border flex shrink-0 flex-row items-center gap-2 border-b px-4 py-3">
           <Layers className="text-slate-blue-900 dark:text-slate-blue-200 size-5" />
-          <SheetTitle className="font-display text-slate-blue-900 dark:text-slate-blue-200 text-base font-semibold">LexBuild</SheetTitle>
+          <SheetTitle className="font-display text-slate-blue-900 dark:text-slate-blue-200 text-base font-semibold">
+            LexBuild
+          </SheetTitle>
           <SheetDescription className="sr-only">Site navigation</SheetDescription>
         </SheetHeader>
 

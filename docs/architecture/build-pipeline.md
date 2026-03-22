@@ -178,10 +178,10 @@ The Astro app has its own dedicated tasks in `turbo.json`:
 
 ```bash
 # Production build
-pnpm turbo build:astro --filter=astro
+pnpm turbo build:astro --filter=@lexbuild/astro
 
 # Development server
-pnpm turbo dev:astro --filter=astro
+pnpm turbo dev:astro --filter=@lexbuild/astro
 ```
 
 The `build:astro` task has `cache: false` because the app's output depends on content files that exist outside the source tree and are not tracked by Turborepo's input hashing.
@@ -224,5 +224,5 @@ Cache storage is local by default (`.turbo/` directories). Remote caching can be
 | `pnpm turbo dev` | Start watch mode for all packages |
 | `pnpm turbo build --filter=@lexbuild/core` | Build a single package |
 | `pnpm turbo test --filter=@lexbuild/usc` | Test a single package |
-| `pnpm turbo build:astro --filter=astro` | Build the Astro app |
-| `pnpm turbo dev:astro --filter=astro` | Start the Astro dev server |
+| `pnpm turbo build:astro --filter=@lexbuild/astro` | Build the Astro app |
+| `pnpm turbo dev:astro --filter=@lexbuild/astro` | Start the Astro dev server |

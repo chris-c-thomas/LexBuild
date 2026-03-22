@@ -114,7 +114,7 @@ npx tsx scripts/generate-nav.ts
 
 # Start dev server
 cd ../..
-pnpm turbo dev:astro --filter=astro
+pnpm turbo dev:astro --filter=@lexbuild/astro
 ```
 
 Dev server runs at `http://localhost:4321`.

@@ -70,20 +70,18 @@ When converting with `linkStyle: "relative"`, the resolver uses a three-tier pri
 
 2. **Section-level fallback** -- If the exact identifier is not registered (common for subsection-level references like `/us/usc/t1/s1/a/2`), the resolver strips the subsection path and tries the parent section identifier (`/us/usc/t1/s1`). If found, returns a relative path to the section file.
 
-3. **External URL fallback** -- If neither exact nor section-level lookup succeeds, the resolver generates a URL to the authoritative source website.
+3. **External URL fallback** -- If neither exact nor section-level lookup succeeds, the resolver generates a fallback URL for USC identifiers, or returns `null` for all other identifier types.
 
 ## Fallback URLs
 
-When a cross-reference cannot be resolved within the converted corpus, the resolver produces a URL to the official source:
+When a USC cross-reference cannot be resolved within the converted corpus, the resolver produces a URL to the OLRC website:
 
 | Identifier Scheme | Fallback URL Pattern |
 |-------------------|---------------------|
 | `/us/usc/t{N}/s{N}` | `https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title{N}-section{N}` |
 | `/us/usc/t{N}` | `https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title{N}` |
-| `/us/cfr/t{N}/s{N.N}` | `https://www.ecfr.gov/current/title-{N}/section-{N.N}` |
-| `/us/cfr/t{N}` | `https://www.ecfr.gov/current/title-{N}` |
 
-These fallback URLs point to the OLRC website for USC references and the eCFR website for CFR references.
+Unresolved CFR references (`/us/cfr/`) are currently rendered as plain text — no automatic ecfr.gov fallback URLs are generated. Statutes at Large (`/us/stat/`) and Public Law (`/us/pl/`) references are always rendered as plain text.
 
 ## Link Styles
 

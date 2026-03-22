@@ -64,11 +64,11 @@ The eCFR uses numbered DIV elements (DIV1 through DIV9) where the `TYPE` attribu
 | `NODE` | Internal GPO hierarchical position ID | `"17:1.0.1.1.1.0.1.1"` |
 | `TYPE` | Semantic level type (determines LevelType mapping) | `"TITLE"`, `"SECTION"` |
 
-**Important**: The `NODE` attribute is for internal GPO use and may be changed at any time. It is not a stable identifier. LexBuild constructs CFR identifiers from `NODE` and `N` values but does not expose `NODE` in output.
+**Important**: The `NODE` attribute is for internal GPO use and may be changed at any time. It is not a stable identifier. LexBuild uses `NODE` only to recover the title number for multi-volume govinfo files; CFR identifiers are constructed from the normalized `N` value together with the current title number, and `NODE` is never exposed in output.
 
 ### Multi-Volume Titles
 
-Large titles (e.g., Title 17) span multiple volumes. In govinfo bulk XML, each volume produces a separate `<DIV1>` element whose `N` attribute is the volume number, not the title number. The builder extracts the title number from the `NODE` attribute prefix (e.g., `NODE="17:1"` yields title number `17`). In ecfr.gov API XML, a single `<DIV1>` represents the entire title with `N` set to the title number directly.
+Large titles (e.g., Title 17) span multiple volumes. In govinfo bulk XML, each volume produces a separate `<DIV1>` element whose `N` attribute is the volume number, not the title number. The builder extracts the title number from the `NODE` attribute prefix (e.g., `NODE="17:1"` yields title number `17`) and then uses that title number, together with normalized `N` values on parts/sections/chapters, to construct CFR identifiers. In ecfr.gov API XML, a single `<DIV1>` represents the entire title with `N` set to the title number directly.
 
 ## Section Structure
 

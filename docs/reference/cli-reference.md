@@ -241,8 +241,8 @@ lexbuild convert-ecfr [input] [options]
 | `-i, --input-dir <dir>` | `./downloads/ecfr/xml` | Directory containing eCFR XML files |
 | `-g, --granularity <level>` | `section` | Output granularity: `section`, `part`, `chapter`, or `title` |
 | `--link-style <style>` | `plaintext` | Link style: `plaintext`, `relative`, or `canonical` |
-| `--include-source-credits` | `true` | Include source credit annotations |
-| `--no-include-source-credits` | -- | Exclude source credit annotations |
+| `--include-source-credits` | `true` | Accepted but currently a no-op for eCFR |
+| `--no-include-source-credits` | -- | Accepted but currently a no-op for eCFR |
 | `--include-notes` | `true` | Include all notes |
 | `--no-include-notes` | -- | Exclude all notes |
 | `--include-editorial-notes` | `false` | Include editorial notes only |
@@ -355,7 +355,7 @@ This means both converters can safely target the same output root without confli
 |-------------|-------------|
 | Section | `{output}/ecfr/title-{NN}/chapter-{X}/part-{N}/section-{N.N}.md` |
 | Part | `{output}/ecfr/title-{NN}/chapter-{X}/part-{N}.md` |
-| Chapter | `{output}/ecfr/title-{NN}/chapter-{X}/chapter-{X}.md` |
+| Chapter | `{output}/ecfr/title-{NN}/chapter-{X}.md` |
 | Title | `{output}/ecfr/title-{NN}.md` |
 
 Title directories use zero-padded two-digit numbers (`title-01`). USC chapter directories are zero-padded (`chapter-01`). eCFR chapter directories use Roman numerals (`chapter-I`, `chapter-IV`). Section numbers are not zero-padded and may contain alphanumeric characters (e.g., `section-240.10b-5.md`).

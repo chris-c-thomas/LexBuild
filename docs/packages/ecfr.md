@@ -216,7 +216,7 @@ interface EcfrConvertOptions {
 |------|--------|-------------|------------------|
 | Section (default) | `section` | `ecfr/title-NN/chapter-X/part-N/section-N.N.md` | `_meta.json` per part and title, `README.md` per title |
 | Part | `part` | `ecfr/title-NN/chapter-X/part-N.md` | None |
-| Chapter | `section`* | `ecfr/title-NN/chapter-X/chapter-X.md` | None |
+| Chapter | `section`* | `ecfr/title-NN/chapter-X.md` | None |
 | Title | `title` | `ecfr/title-NN.md` | None (enriched frontmatter only) |
 
 \* eCFR chapter granularity emits at section level, then groups sections by chapter ancestor into composite files during the write phase.

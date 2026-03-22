@@ -18,7 +18,7 @@ packages/core/src/
   markdown/
     renderer.ts                # AST -> Markdown conversion
     frontmatter.ts             # YAML frontmatter generation, FORMAT_VERSION 1.1.0
-    links.ts                   # Cross-reference link resolution (USC + CFR fallback URLs)
+    links.ts                   # Cross-reference link resolution (USC fallback URLs)
   fs.ts                        # Resilient file I/O (writeFile, mkdir with retry)
 ```
 
@@ -254,8 +254,7 @@ Returns a `LinkResolver` with three methods:
 1. Exact match in the registry -- return a relative path from the source file to the target
 2. Strip subsection path, try section-level lookup -- return relative path if found
 3. USC identifiers not found -- OLRC fallback URL (`uscode.house.gov/view.xhtml?req=granuleid:...`)
-4. CFR identifiers not found -- eCFR fallback URL (`ecfr.gov/current/title-N/section-N`)
-5. Non-USC/CFR identifiers (`/us/stat/`, `/us/pl/`) -- always rendered as plain text
+4. All other identifiers (`/us/cfr/`, `/us/stat/`, `/us/pl/`) -- rendered as plain text
 
 ### parseIdentifier()
 

@@ -100,10 +100,8 @@ output/ecfr/
 ```
 output/ecfr/
 ├── title-17/
-│   ├── chapter-I/
-│   │   └── chapter-I.md
-│   ├── chapter-II/
-│   │   └── chapter-II.md
+│   ├── chapter-I.md
+│   ├── chapter-II.md
 │   └── ...
 └── ...
 ```
@@ -148,8 +146,8 @@ Every file, regardless of source or granularity, includes these fields:
 | `title_number` | `number` | Numeric title designation |
 | `title_name` | `string` | Title heading text |
 | `positive_law` | `boolean` | Whether the title is enacted as positive law |
-| `currency` | `string` | Release point (USC: `"119-73"`) or date (eCFR: `"2025-03-15"`) |
-| `last_updated` | `string` | ISO date from XML generation timestamp |
+| `currency` | `string` | USC: release point identifier (e.g., `"119-73"`); eCFR: ISO date of the conversion run (e.g., `"2025-03-15"`) |
+| `last_updated` | `string` | ISO date of the conversion run |
 | `format_version` | `string` | Output format version (`"1.1.0"`) |
 | `generator` | `string` | Generator identifier (e.g., `"lexbuild@1.5.0"`) |
 
@@ -189,7 +187,7 @@ Optional fields that appear when applicable:
 
 ### eCFR Section-Level Frontmatter
 
-eCFR sections include additional regulatory metadata:
+eCFR sections include additional regulatory metadata. Note that `currency` and `last_updated` reflect the date the conversion was run, not the source data's last amendment date:
 
 ```yaml
 ---
@@ -205,8 +203,8 @@ chapter_name: "Securities and Exchange Commission"
 part_number: "240"
 part_name: "General Rules and Regulations, Securities Exchange Act of 1934"
 positive_law: false
-currency: "2025-03-15"
-last_updated: "2025-03-15"
+currency: "2025-03-21"
+last_updated: "2025-03-21"
 format_version: "1.1.0"
 generator: "lexbuild@1.5.0"
 authority: "15 U.S.C. 78a et seq."
@@ -459,7 +457,7 @@ USLM `<layout>` elements (column-oriented display, common in pay schedules) also
 
 ### Complex Tables
 
-Tables with colspan, rowspan, or other features that cannot be represented in Markdown pipe syntax are omitted from the rendered output. The underlying data is preserved in the AST for consumers that need it.
+Tables with colspan, rowspan, or other features that do not map cleanly to Markdown pipe syntax are rendered as best-effort pipe tables. Complex layout features (such as multi-column headers or cells spanning multiple rows) may be flattened or approximated. Consumers that require lossless table structure should refer to the source XML.
 
 ## Cross-Reference Links
 
@@ -485,7 +483,7 @@ The link resolver uses a two-pass approach: all section identifiers are register
 
 ### Canonical
 
-References link to the source website. USC references link to the OLRC (uscode.house.gov). CFR references link to eCFR (ecfr.gov):
+USC references link to the OLRC website (uscode.house.gov):
 
 ```markdown
 [section 101 of title 5](https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title5-section101)
@@ -495,23 +493,24 @@ References link to the source website. USC references link to the OLRC (uscode.h
 
 | Identifier Prefix | Resolved As |
 |-------------------|-------------|
-| `/us/usc/` | Relative link or OLRC fallback URL |
-| `/us/cfr/` | Relative link or ecfr.gov fallback URL |
+| `/us/usc/` | Relative link when resolved; otherwise OLRC fallback URL |
+| `/us/cfr/` | Relative link when resolved; otherwise plain text |
 | `/us/stat/` | Always plain text (Statutes at Large) |
 | `/us/pl/` | Always plain text (Public Law) |
 
 Fallback URLs for unresolved references:
 
 - **USC**: `https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title{N}-section{N}`
-- **CFR**: `https://www.ecfr.gov/current/title-{N}/section-{N}`
+
+Unresolved CFR references (`/us/cfr/`) are rendered as plain text. No automatic ecfr.gov fallback URLs are generated.
 
 ## Metadata Index (`_meta.json`)
 
-Sidecar JSON index files are generated at section and chapter/part granularity only. Title granularity uses enriched frontmatter instead. These files enable index-based retrieval without parsing individual Markdown files.
+Sidecar JSON index files are generated at section granularity for all sources. USC additionally generates chapter-level indexes. eCFR currently generates `_meta.json` only at section granularity and does not emit chapter/part/title-level sidecar files. Title granularity uses enriched frontmatter instead. These files enable index-based retrieval without parsing individual Markdown files.
 
 ### Title-Level Index
 
-Each title directory contains a `_meta.json` with aggregate metadata and a listing of all chapters (USC) or parts (eCFR).
+For USC output, each title directory contains a `_meta.json` with aggregate metadata and a listing of all chapters.
 
 **USC title-level `_meta.json`**:
 
@@ -673,7 +672,7 @@ Token counts use a character-divided-by-four heuristic:
 token_estimate = Math.ceil(contentLength / 4)
 ```
 
-The `contentLength` is the byte length of the rendered Markdown content (excluding the YAML frontmatter). This approximation is intentionally simple and errs on the side of overestimation. It is suitable for capacity planning and chunking decisions, not precise billing.
+The `contentLength` is the byte length of the rendered Markdown content (including the YAML frontmatter). This approximation is intentionally simple and errs on the side of overestimation. It is suitable for capacity planning and chunking decisions, not precise billing.
 
 Token estimates appear in three places:
 

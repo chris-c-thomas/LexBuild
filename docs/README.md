@@ -23,7 +23,7 @@ The project is organized as a TypeScript monorepo with four published npm packag
 
 ## Apps
 
-- [@lexbuild/astro](apps/astro)
+- [@lexbuild/astro](apps/astro.md)
 
 ## Development
 

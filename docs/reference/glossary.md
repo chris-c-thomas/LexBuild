@@ -97,7 +97,7 @@ Definitions for legal, technical, and LexBuild-specific terms used throughout th
 - `"official_prima_facie"` -- non-positive-law U.S. Code titles (presumed correct, Statutes at Large control)
 - `"authoritative_unofficial"` -- eCFR content (authoritative but not the official CFR)
 
-**Link resolver** -- The system that converts cross-reference identifier URIs (e.g., `/us/usc/t26/s7801`) to Markdown links or fallback URLs. Identifiers are registered during the collection phase so that both forward and backward cross-references resolve correctly. Unresolved USC references fall back to OLRC website URLs; unresolved CFR references fall back to ecfr.gov URLs.
+**Link resolver** -- The system that converts cross-reference identifier URIs (e.g., `/us/usc/t26/s7801`) to Markdown links or fallback URLs. Identifiers are registered during the collection phase so that both forward and backward cross-references resolve correctly. Unresolved USC references fall back to OLRC website URLs; unresolved CFR references are rendered as plain text.
 
 **Section-emit pattern** -- The default operating mode where the AST builder emits one completed section at a time. Each section's subtree is released from memory after emission, keeping peak memory proportional to the largest single section rather than the full title.
 

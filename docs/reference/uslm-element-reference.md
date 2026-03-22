@@ -176,7 +176,7 @@ Inline elements appear within content blocks and provide text formatting, refere
 | `<sup>` | `sup` | `<sup>text</sup>` | Superscript (HTML in Markdown) |
 | `<ref>` | `ref` | `[text](url)` or plain text | Cross-reference (see Reference Elements) |
 | `<date>` | `date` | Literal text | Date value; `@date` attribute has ISO format |
-| `<term>` | `term` | Literal text | Defined term within a `<def>` |
+| `<term>` | `term` | `**term**` | Defined term within a `<def>` (rendered bold) |
 | `<inline>` | `text` | Pass-through | Generic inline container |
 | `<shortTitle>` | `text` | Pass-through | Short title reference |
 | `<del>` | `text` | Pass-through | Deleted text (versioning) |
@@ -212,8 +212,7 @@ The `<ref>` element represents cross-references between legal provisions. It has
 1. Exact identifier match in the link resolver registry -- relative Markdown path
 2. Subsection stripped, section-level match -- relative path to section file
 3. USC identifier not found -- fallback to OLRC URL (`uscode.house.gov/view.xhtml?req=granuleid:...`)
-4. CFR identifier not found -- fallback to eCFR URL (`ecfr.gov/current/title-N/section-N`)
-5. Non-USC/CFR references (`/us/stat/`, `/us/pl/`) -- always rendered as plain text
+4. All other identifiers (including `/us/cfr/`, `/us/stat/`, `/us/pl/`) with no match -- rendered as plain text
 
 **Footnote references**: When `class="footnoteRef"` and `idref` is present, the reference renders as a Markdown footnote marker: `[^fn1]`.
 
@@ -299,9 +298,9 @@ USLM documents embed tables using the XHTML namespace. The SAX parser emits thes
 </xhtml:table>
 ```
 
-**AST**: `TableNode` with `variant: "xhtml"`. Standard HTML attributes (`colspan`, `rowspan`, `align`) are supported.
+**AST**: `TableNode` with `variant: "xhtml"`. Standard HTML attributes (`colspan`, `rowspan`, `align`) are parsed and stored but do not affect Markdown table layout.
 
-**Markdown**: Rendered as pipe-syntax Markdown tables when possible. Tables with `colspan` or `rowspan` that cannot be represented in pipe syntax are skipped with a comment. Pipe characters within cells are escaped.
+**Markdown**: Always rendered as pipe-syntax Markdown tables. Complex layouts that rely on `colspan` or `rowspan` may not be represented faithfully; cells are serialized row by row, and pipe characters within cells are escaped.
 
 **Important**: Always in the XHTML namespace (`http://www.w3.org/1999/xhtml`). Do not confuse with USLM layout elements.
 
@@ -364,7 +363,7 @@ TOC nodes are present in the AST but are **skipped during Markdown rendering**. 
 ```
 
 - **`<def>`**: A definition block. Treated as a content wrapper; does not produce a separate AST node.
-- **`<term>`**: A defined term. Maps to `InlineNode` with `inlineType: "term"`. Rendered as literal text (no special formatting).
+- **`<term>`**: A defined term. Maps to `InlineNode` with `inlineType: "term"`. Rendered as bold text (`**term**`).
 
 ## Universal Attributes
 

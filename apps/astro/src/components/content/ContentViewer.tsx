@@ -11,10 +11,7 @@ import { FileText, Eye } from "lucide-react";
  * rehype-sanitize for defense-in-depth). Both are server-generated from
  * trusted content files, not user input.
  */
-export default function ContentViewer({
-  highlightedSource,
-  renderedHtml,
-}: ContentViewerProps) {
+export default function ContentViewer({ highlightedSource, renderedHtml }: ContentViewerProps) {
   return (
     <Tabs defaultValue="source" className="flex flex-col gap-0">
       {/* Toolbar */}

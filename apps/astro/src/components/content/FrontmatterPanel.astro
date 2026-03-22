@@ -61,37 +61,66 @@ const hasToggle = !!rawYaml;
 
 <div class="frontmatter-wrapper" data-frontmatter-toggle>
   <!-- Toolbar header — matches ContentViewer toolbar style -->
-  {hasToggle ? (
-    <div class="fm-toolbar">
-      <div class="fm-tabs-list">
-        <button
-          class="fm-tabs-trigger active"
-          data-view="raw"
-          type="button"
-          aria-pressed="true"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
-          YAML
-        </button>
-        <button
-          class="fm-tabs-trigger"
-          data-view="rendered"
-          type="button"
-          aria-pressed="false"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
-          Preview
-        </button>
+  {
+    hasToggle ? (
+      <div class="fm-toolbar">
+        <div class="fm-tabs-list">
+          <button class="fm-tabs-trigger active" data-view="raw" type="button" aria-pressed="true">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <>
+                <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+                <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+                <path d="M10 9H8" />
+                <path d="M16 13H8" />
+                <path d="M16 17H8" />
+              </>
+            </svg>
+            YAML
+          </button>
+          <button class="fm-tabs-trigger" data-view="rendered" type="button" aria-pressed="false">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <>
+                <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
+                <circle cx="12" cy="12" r="3" />
+              </>
+            </svg>
+            Preview
+          </button>
+        </div>
       </div>
-    </div>
-  ) : null}
+    ) : null
+  }
 
   <!-- Raw YAML view (shown by default when toggle present) -->
-  {hasToggle ? (
-    <div class="fm-content fm-content-bottom" data-frontmatter-view="raw">
-      <pre class="frontmatter-raw-pre"><code>{rawYamlBlock}</code></pre>
-    </div>
-  ) : null}
+  {
+    hasToggle ? (
+      <div class="fm-content fm-content-bottom" data-frontmatter-view="raw">
+        <pre class="frontmatter-raw-pre">
+          <code>{rawYamlBlock}</code>
+        </pre>
+      </div>
+    ) : null
+  }
 
   <!-- Rendered view (hidden by default when toggle present, shown when no toggle) -->
   <div

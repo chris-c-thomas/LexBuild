@@ -60,7 +60,10 @@ export function Sidebar({ sourceId, currentPath }: SidebarProps) {
       className="relative hidden shrink-0 lg:sticky lg:top-14 lg:block lg:h-[calc(100vh-3.5rem)]"
     >
       {/* Scrollable content area */}
-      <div className="border-sidebar-border bg-sidebar h-full overflow-y-auto border-r" style={{ scrollbarGutter: "stable" }}>
+      <div
+        className="border-sidebar-border bg-sidebar h-full overflow-y-auto border-r"
+        style={{ scrollbarGutter: "stable" }}
+      >
         <SidebarContent sourceId={sourceId} currentPath={currentPath} />
       </div>
 

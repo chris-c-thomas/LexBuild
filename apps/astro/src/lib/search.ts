@@ -1,7 +1,7 @@
 /**
  * Meilisearch search wrapper.
  *
- * In production, searches go through Caddy's /api/search proxy (which handles
+ * In production, searches go through Caddy's /search proxy (which handles
  * auth via server-side MEILI_SEARCH_KEY). The Meilisearch JS client is only
  * used in local dev where the browser can reach Meilisearch directly.
  *
@@ -14,17 +14,17 @@ const INDEX_NAME = "lexbuild";
 
 let client: Meilisearch | null = null;
 let searchMode: "proxy" | "direct" = "direct";
-let proxyBase = "";
+let proxyEndpoint = "";
 
 /**
  * Initialize the search client.
- * - If meiliUrl starts with "/" or is a relative path, use proxy mode (fetch to /api/search).
+ * - If meiliUrl starts with "/", use proxy mode (fetch to /search).
  * - Otherwise, use the Meilisearch client directly (local dev).
  */
 export function initSearch(config: { host: string; apiKey: string }): void {
-  if (config.host === "/api" || config.host.startsWith("/")) {
+  if (config.host.startsWith("/")) {
     searchMode = "proxy";
-    proxyBase = config.host;
+    proxyEndpoint = config.host;
   } else {
     searchMode = "direct";
     client = new Meilisearch({
@@ -85,7 +85,7 @@ export async function search(
 
   if (searchMode === "proxy") {
     // Production: fetch through Caddy proxy (no API key needed, Caddy injects it)
-    const res = await fetch(`${proxyBase}/search`, {
+    const res = await fetch(proxyEndpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),

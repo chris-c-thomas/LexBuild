@@ -1,6 +1,7 @@
 ---
 import type { ContentFrontmatter, SourceId } from "@/lib/types";
 import { toTitleCase } from "@/lib/utils";
+import { highlightYaml } from "@/lib/shiki";
 
 interface Props {
   frontmatter: ContentFrontmatter;
@@ -56,6 +57,7 @@ if (frontmatter.authority) {
 }
 
 const rawYamlBlock = rawYaml ? `---\n${rawYaml.trim()}\n---` : "";
+const highlightedYaml = rawYamlBlock ? await highlightYaml(rawYamlBlock) : "";
 const hasToggle = !!rawYaml;
 ---
 
@@ -114,8 +116,8 @@ const hasToggle = !!rawYaml;
   <!-- Raw YAML view (shown by default when toggle present) -->
   {
     hasToggle ? (
-      <div class="fm-content fm-content-bottom" data-frontmatter-view="raw">
-<pre class="frontmatter-raw-pre"><code>{rawYamlBlock}</code></pre>
+      <div class="fm-content fm-content-bottom frontmatter-yaml-view" data-frontmatter-view="raw">
+        <Fragment set:html={highlightedYaml} />
       </div>
     ) : null
   }
@@ -345,14 +347,14 @@ const hasToggle = !!rawYaml;
     color: var(--color-slate-blue-400, #8ab8d0);
   }
 
-  .frontmatter-raw-pre {
+  .frontmatter-yaml-view :global(pre.shiki) {
     margin: 0;
     padding: 1rem;
-    font-family: var(--font-mono, ui-monospace, monospace);
     font-size: 0.8rem;
     line-height: 1.6;
-    color: var(--foreground);
     white-space: pre-wrap;
     word-break: break-word;
+    border-radius: 0;
+    background: transparent !important;
   }
 </style>

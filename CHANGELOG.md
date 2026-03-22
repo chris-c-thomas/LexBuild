@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
 
+## [1.11.0]
+
+### Added
+
+- Uptime Kuma monitoring at `status.lexbuild.dev` — PM2-managed alongside Astro and Meilisearch, Caddy reverse proxy on port 3001
+- `/health` endpoint for Astro app — returns `{ status: "ok" }` for uptime monitoring
+- Resizable sidebar with drag handle — width persisted to localStorage, 200–500px range
+- YAML/Preview toggle tabs on FrontmatterPanel with consistent styling
+- Copy and download buttons moved to route pages as standalone React islands
+- Comprehensive `docs/` directory — architecture, packages, development guides, CLI reference, element references, glossary, output format spec
+- Deploy scripts (`scripts/deploy.sh`, `scripts/setup-secrets.sh`) with 5 deploy modes: code, content, content-only, remote pipeline, search dump/push
+- Incremental search indexer with `--prune` flag for removing deleted sections
+
+### Changed
+
+- Move Meilisearch search proxy from `/api/search` to `/search` — frees `/api/` namespace for future Hono data API
+- `MEILI_SEARCH_KEY` no longer serialized to browser in proxy mode — `BaseLayout.astro` detects proxy mode and passes `undefined` for the key prop
+- `ecosystem.config.cjs` manages 3 services: `lexbuild-astro` (port 4321), `meilisearch` (port 7700), `uptime-kuma` (port 3001)
+- Rename package from `@lexbuild/web` to `@lexbuild/astro`
+- ThemeToggle redesigned as 3-way pill toggle (system/light/dark)
+- Mobile nav uses shadcn Sheet with source dropdown
+
+### Fixed
+
+- React hydration mismatches on source pages — `useLayoutEffect` for localStorage reads instead of `useState` initializer
+- Sidebar jiggle on source navigation — `scrollbar-gutter: stable` on scrollable area
+- Sidebar hydration flash — two-div structure with outer positioning container
+- Duplicate chapter directories in USC `_meta.json` — nav generator merges subchapters sharing the same directory
+- Horizontal overflow on mobile viewports
+- Sitemap files not copied to `dist/client/` when generated post-build
+- Search routing through Caddy proxy in production — `search.ts` proxy/direct mode switch
+- Shiki dark theme CSS not taking priority over defaults
+- Dependabot transitive dependency vulnerabilities via `pnpm.overrides`
+
+### Documentation
+
+- Add comprehensive monorepo documentation in `docs/` (architecture, packages, development, reference)
+- Update all CLAUDE.md files with Uptime Kuma, search migration, proxy-mode key handling, and Caddyfile formatting gotchas
+
 ## [1.10.1]
 
 ### Added

@@ -5,7 +5,7 @@ import { initSearch, search, type SearchResult } from "@/lib/search";
 
 interface SearchDialogProps {
   meiliUrl: string;
-  meiliSearchKey: string;
+  meiliSearchKey?: string;
 }
 
 export function SearchDialog({ meiliUrl, meiliSearchKey }: SearchDialogProps) {
@@ -20,7 +20,7 @@ export function SearchDialog({ meiliUrl, meiliSearchKey }: SearchDialogProps) {
 
   // Initialize search (proxy mode in production, direct in local dev)
   useEffect(() => {
-    initSearch({ host: meiliUrl, apiKey: meiliSearchKey });
+    initSearch({ host: meiliUrl, apiKey: meiliSearchKey ?? "" });
   }, [meiliUrl, meiliSearchKey]);
 
   // Cmd+K / Ctrl+K to open

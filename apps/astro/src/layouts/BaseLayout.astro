@@ -22,7 +22,8 @@ const canonicalUrl = new URL(Astro.url.pathname, siteUrl).href;
 const currentPath = Astro.url.pathname;
 const enableSearch = (import.meta.env.ENABLE_SEARCH ?? "false") === "true";
 const meiliUrl = import.meta.env.MEILI_URL ?? "http://127.0.0.1:7700";
-const meiliSearchKey = import.meta.env.MEILI_SEARCH_KEY ?? "";
+const isProxyMode = meiliUrl.startsWith("/");
+const meiliSearchKey = isProxyMode ? undefined : (import.meta.env.MEILI_SEARCH_KEY ?? "");
 ---
 
 <!doctype html>

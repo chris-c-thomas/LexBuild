@@ -192,6 +192,7 @@ Initialized with radix-nova preset, zinc theme. Components in `src/components/ui
 - **Shiki word wrapping**: `.shiki-wrap` in `global.css` forces `pre-wrap` on Shiki output with `!important`.
 - **External links**: Always use `rel="noopener noreferrer"` on `target="_blank"`.
 - **Search in production uses Caddy proxy, not direct Meilisearch access.** `MEILI_URL=/search` in `.env.production` — the browser's `127.0.0.1:7700` is the user's machine, not the VPS.
+- **`MEILI_SEARCH_KEY` is not passed to the browser in proxy mode.** `BaseLayout.astro` detects proxy mode (`meiliUrl.startsWith("/")`) and passes `undefined` for the key prop. Only Caddy has the key. In direct mode (local dev), the key is passed to the Meilisearch client.
 - **After dump import, API keys change.** Update `~/.lexbuild-secrets`, `.env.production` (via deploy.sh), AND `/etc/caddy/environment`.
 - **Astro conditionals with strings**: `{str && <jsx>}` can silently fail in `.astro` templates. Use `{str ? <jsx> : null}` with explicit `: null` for ternary conditionals.
 - **gray-matter `matter` field starts with `\n`**: When displaying raw YAML from `result.matter`, use `.trim()` to avoid a blank line between `---` and the first field.

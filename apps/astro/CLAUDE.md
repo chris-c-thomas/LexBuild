@@ -196,6 +196,7 @@ Initialized with radix-nova preset, zinc theme. Components in `src/components/ui
 - **After dump import, API keys change.** Update `~/.lexbuild-secrets`, `.env.production` (via deploy.sh), AND `/etc/caddy/environment`.
 - **Astro conditionals with strings**: `{str && <jsx>}` can silently fail in `.astro` templates. Use `{str ? <jsx> : null}` with explicit `: null` for ternary conditionals.
 - **gray-matter `matter` field starts with `\n`**: When displaying raw YAML from `result.matter`, use `.trim()` to avoid a blank line between `---` and the first field.
+- **gray-matter cache corrupts `.matter`**: `gray-matter` caches results by input string. The `.matter` property is a lazy getter consumed by `.data` access. On the second SSR request with the same file, the cached object returns `undefined` for `.matter`. Always use `matter(raw, { cache: false })` when reading `.matter`.
 - **React hydration with localStorage**: Don't read localStorage in `useState()` initializer — SSR renders the default, client reads stored value, causing hydration mismatch. Use `useLayoutEffect` to apply stored value after hydration but before paint.
 - **`--content` deploy doesn't regenerate anything**: It only rsyncs existing local files. To update nav/sitemap after code changes, either regenerate locally then `--content`, or SSH into VPS and regenerate there. `--remote` runs the full pipeline.
 

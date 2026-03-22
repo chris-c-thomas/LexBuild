@@ -159,15 +159,15 @@ const hasToggle = !!rawYaml;
   </div>
 </div>
 
-<script>
-  document.querySelectorAll<HTMLButtonElement>(".frontmatter-show-more").forEach((btn) => {
+<script is:inline>
+  document.querySelectorAll(".frontmatter-show-more").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const dd = btn.closest(".frontmatter-collapsible") as HTMLElement;
+      var dd = btn.closest(".frontmatter-collapsible");
       if (!dd) return;
-      const isCollapsed = dd.dataset.collapsed === "true";
+      var isCollapsed = dd.dataset.collapsed === "true";
       dd.dataset.collapsed = isCollapsed ? "false" : "true";
-      const collapsed = dd.querySelector<HTMLElement>(".frontmatter-collapsed-text");
-      const expanded = dd.querySelector<HTMLElement>(".frontmatter-expanded-text");
+      var collapsed = dd.querySelector(".frontmatter-collapsed-text");
+      var expanded = dd.querySelector(".frontmatter-expanded-text");
       if (collapsed) collapsed.style.display = isCollapsed ? "none" : "";
       if (expanded) expanded.style.display = isCollapsed ? "" : "none";
       btn.textContent = isCollapsed ? "Show less" : "Show more";
@@ -175,18 +175,18 @@ const hasToggle = !!rawYaml;
   });
 
   document.querySelectorAll("[data-frontmatter-toggle]").forEach((wrapper) => {
-    const buttons = wrapper.querySelectorAll<HTMLButtonElement>(".fm-tabs-trigger");
-    const views = wrapper.querySelectorAll<HTMLElement>("[data-frontmatter-view]");
+    var buttons = wrapper.querySelectorAll(".fm-tabs-trigger");
+    var views = wrapper.querySelectorAll("[data-frontmatter-view]");
 
-    buttons.forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const target = btn.dataset.view;
-        buttons.forEach((b) => {
-          const isActive = b.dataset.view === target;
+    buttons.forEach(function(btn) {
+      btn.addEventListener("click", function() {
+        var target = btn.dataset.view;
+        buttons.forEach(function(b) {
+          var isActive = b.dataset.view === target;
           b.classList.toggle("active", isActive);
           b.setAttribute("aria-pressed", String(isActive));
         });
-        views.forEach((v) => {
+        views.forEach(function(v) {
           v.style.display = v.dataset.frontmatterView === target ? "" : "none";
         });
       });

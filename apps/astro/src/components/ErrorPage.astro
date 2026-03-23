@@ -3,25 +3,21 @@ interface Props {
   status: number;
   title: string;
   description: string;
-  /** Optional longer explanation below the description. */
-  detail?: string;
   /** Show "Back to home" link. Default: true. */
   showHomeLink?: boolean;
 }
 
-const { status, title, description, detail, showHomeLink = true } = Astro.props;
+const { status, title, description, showHomeLink = true } = Astro.props;
 ---
 
 <div
   class="mx-auto flex max-w-7xl flex-col items-center justify-center px-4 py-24 text-center sm:px-6 lg:px-8"
 >
-  <h1 class="text-slate-blue-300 dark:text-slate-blue-700 text-6xl font-bold">
+  <p class="text-slate-blue-300 dark:text-slate-blue-700 text-6xl font-bold" aria-hidden="true">
     {status}
-  </h1>
-  <p class="text-muted-foreground mt-4 text-lg">{description}</p>
-  {detail ? (
-    <p class="text-muted-foreground mt-2 max-w-md text-sm">{detail}</p>
-  ) : null}
+  </p>
+  <h1 class="text-foreground mt-4 text-lg font-medium">{title}</h1>
+  <p class="text-muted-foreground mt-2 max-w-md text-base">{description}</p>
   {showHomeLink ? (
     <a
       href="/"

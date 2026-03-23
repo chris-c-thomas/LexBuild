@@ -9,11 +9,10 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
 import ErrorPage from "@/components/ErrorPage.astro";
 ---
 
-<BaseLayout title="Internal Server Error" description="Something went wrong on our end.">
+<BaseLayout title="500 Internal Server Error" description="An unexpected error occurred.">
   <ErrorPage
     status={500}
     title="Internal Server Error"
-    description="Something went wrong on our end."
-    detail="An unexpected error occurred while processing your request. The issue has been logged."
+    description="An unexpected error occurred. Please try again later."
   />
 </BaseLayout>

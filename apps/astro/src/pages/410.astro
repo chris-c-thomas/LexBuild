@@ -3,11 +3,10 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
 import ErrorPage from "@/components/ErrorPage.astro";
 ---
 
-<BaseLayout title="Gone" description="This content has been permanently removed.">
+<BaseLayout title="410 Gone" description="This content is no longer available.">
   <ErrorPage
     status={410}
     title="Gone"
-    description="This content has been permanently removed."
-    detail="The section or regulation you're looking for was repealed or withdrawn and is no longer available."
+    description="This content is no longer available."
   />
 </BaseLayout>

@@ -3,11 +3,10 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
 import ErrorPage from "@/components/ErrorPage.astro";
 ---
 
-<BaseLayout title="Gateway Timeout" description="The server took too long to respond.">
+<BaseLayout title="504 Gateway Timeout" description="The server took too long to respond. Please try again.">
   <ErrorPage
     status={504}
     title="Gateway Timeout"
-    description="The server took too long to respond."
-    detail="This may happen when loading very large titles. Try again, or navigate to a more specific section."
+    description="The server took too long to respond. Please try again."
   />
 </BaseLayout>

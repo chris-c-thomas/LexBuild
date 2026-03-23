@@ -43,15 +43,11 @@ const meiliSearchKey = isProxyMode ? undefined : (import.meta.env.MEILI_SEARCH_K
     <meta property="og:image:height" content="630" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="theme-color" content="#ffffff" id="theme-color" />
-    <!-- Prevent flash of wrong theme — supports system/light/dark -->
+    <!-- Prevent flash of wrong theme — default is light, dark only if explicitly stored -->
     <script is:inline>
       (function () {
         var d = document.documentElement;
-        var theme = localStorage.getItem("theme"); // "light" | "dark" | "system" | null
-        var isDark =
-          theme === "dark" ||
-          ((!theme || theme === "system") && matchMedia("(prefers-color-scheme: dark)").matches);
-        if (isDark) {
+        if (localStorage.getItem("theme") === "dark") {
           d.classList.add("dark");
           d.style.colorScheme = "dark";
           document.getElementById("theme-color").setAttribute("content", "#0e1821");

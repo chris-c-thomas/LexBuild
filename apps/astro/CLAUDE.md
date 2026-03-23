@@ -145,8 +145,8 @@ Gated behind `ENABLE_SEARCH`. When `false`, SearchDialog is not rendered.
 
 ## Dark Mode
 
-1. Inline `<script>` in `<head>` reads `localStorage.theme`, sets `.dark` class before first paint
-2. `ThemeToggle.tsx` toggles class + persists. Dark theme-color: `#0e1821`
+1. Inline `<script>` in `<head>` checks `localStorage.theme === "dark"`, sets `.dark` class before first paint. Default is light.
+2. `ThemeToggle.tsx` is a 2-way toggle (light/dark). Persists to localStorage. Dark theme-color: `#0e1821`
 3. Tailwind: `@custom-variant dark (&:is(.dark *))` in `global.css`
 4. **Dark palette is dark slate blue**, not default shadcn grey. All `.dark` vars use blue-tinted hex values.
 5. Hardcoded `text-slate-blue-*` colors need explicit `dark:` variants. Semantic tokens auto-adapt.
@@ -199,6 +199,9 @@ Initialized with radix-nova preset, zinc theme. Components in `src/components/ui
 - **After dump import, API keys change.** Update `~/.lexbuild-secrets`, `.env.production` (via deploy.sh), AND `/etc/caddy/environment`.
 - **Astro conditionals with strings**: `{str && <jsx>}` can silently fail in `.astro` templates. Use `{str ? <jsx> : null}` with explicit `: null` for ternary conditionals.
 - **gray-matter `matter` field starts with `\n`**: When displaying raw YAML from `result.matter`, use `.trim()` to avoid a blank line between `---` and the first field.
+- **Theme toggle is 2-way (light/dark)**, default is light. No system preference detection. Legacy `"system"` values in localStorage are migrated to `"light"` on read. The inline `<head>` script only applies dark if `localStorage.theme === "dark"`.
+- **Astro `<script>` blocks are plain JS, not TypeScript.** Don't use generics like `querySelectorAll<HTMLElement>()`. Only `<script lang="ts">` or bundled component scripts support TypeScript syntax.
+- **Homepage sections with hardcoded light backgrounds** (e.g., `bg-[#FAFAFA]`, `bg-summer-green-50/75`) must include `dark:` overrides. Use `dark:bg-background` or `dark:bg-slate-blue-950/50` for subtle dark tinting.
 - **gray-matter cache corrupts `.matter`**: `gray-matter` caches results by input string. The `.matter` property is a lazy getter consumed by `.data` access. On the second SSR request with the same file, the cached object returns `undefined` for `.matter`. Always use `matter(raw, { cache: false })` when reading `.matter`.
 - **React hydration with localStorage**: Don't read localStorage in `useState()` initializer — SSR renders the default, client reads stored value, causing hydration mismatch. Use `useLayoutEffect` to apply stored value after hydration but before paint.
 - **`--content` deploy doesn't regenerate anything**: It only rsyncs existing local files. To update nav/sitemap after code changes, either regenerate locally then `--content`, or SSH into VPS and regenerate there. `--remote` runs the full pipeline.

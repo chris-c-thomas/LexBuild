@@ -219,12 +219,22 @@ Initialized with radix-nova preset, zinc theme. Components in `src/components/ui
 
 ## SEO
 
-- Unique `<title>` per page from frontmatter
-- `<meta name="description">` built per-granularity in catch-all routes (sentence-style hierarchy)
-- Open Graph: `og:title`, `og:description`, `og:type`, `og:url`
-- Canonical URLs via `<link rel="canonical">`
+All SEO is driven by `lib/seo.ts` (pure functions, no Astro imports) and `components/seo/SEOHead.astro`.
+
+- **`BaseLayout` requires a `PageSEO` prop** (not `title`/`description`). Every page must construct a `PageSEO` object.
+- **`buildPageSEO()`** handles content pages (catch-all routes). Static pages construct `PageSEO` literals directly.
+- **`siteUrl`** is always resolved from `import.meta.env.SITE_URL` at the call site, passed as a parameter to pure functions.
+- **`rawTitle?: true`** suppresses the ` | LexBuild` suffix (used only on the landing page).
+- **Error pages** set `robots: "noindex"`.
+- **JSON-LD** uses `@graph` approach via `JsonLd.astro`. Builder functions return objects without `@context`. HTML-safe serialization escapes `<`, `>`, `&` in `<script>` output.
+- **`og:type`**: `"article"` for sections, `"website"` for everything else.
 - Sitemap: ~292k URLs in ≤50k chunks with depth-based priority
-- TODO: `og:image`, JSON-LD structured data
+
+## Testing
+
+- **Vitest** configured at `vitest.config.ts` with `@` path alias
+- Tests in `src/lib/__tests__/`. Run with `pnpm test` or `npx vitest run`
+- SEO builder functions are pure — tested without Astro runtime
 
 ## `astro.config.ts`
 

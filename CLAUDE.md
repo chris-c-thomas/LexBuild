@@ -58,6 +58,7 @@ Each package and app has its own `CLAUDE.md` with architecture details, module s
 - **Formatting**: Prettier (double quotes, trailing commas, 100 char print width)
 - **Monorepo**: Turborepo + pnpm workspaces
 - **Versioning**: `@changesets/cli` with lockstep versioning across all packages
+- **Root and Astro app versions are manually synced** with published packages. After changesets bump `packages/*` to a new version, also update `version` in root `package.json` and `apps/astro/package.json` to match, and add a corresponding entry to root `CHANGELOG.md`.
 
 ## Build & Dev Commands
 

@@ -230,9 +230,6 @@ export function buildJsonLd(params: JsonLdParams): Record<string, unknown>[] {
   }
 
   // Index pages → WebPage type
-  const titleNum = nav?.titleNumber ?? frontmatter?.title_number;
-  const titleName = nav?.titleName ? toTitleCase(nav.titleName) : frontmatter?.title_name ? toTitleCase(frontmatter.title_name) : "";
-
   const webPage: Record<string, unknown> = {
     "@type": "WebPage",
     name: buildTitle(source, granularity, frontmatter, nav),

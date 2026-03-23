@@ -8,6 +8,12 @@ const { data } = Astro.props;
 const jsonLd = Array.isArray(data)
   ? { "@context": "https://schema.org", "@graph": data }
   : { "@context": "https://schema.org", ...data };
+
+// HTML-safe serialization: escape characters that could break out of <script>
+const safeJsonLd = JSON.stringify(jsonLd)
+  .replace(/</g, "\\u003c")
+  .replace(/>/g, "\\u003e")
+  .replace(/&/g, "\\u0026");
 ---
 
-<script type="application/ld+json" set:html={JSON.stringify(jsonLd, null, 0)} />
+<script type="application/ld+json" set:html={safeJsonLd} />

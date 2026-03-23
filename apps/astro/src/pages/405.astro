@@ -1,0 +1,12 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import ErrorPage from "@/components/ErrorPage.astro";
+---
+
+<BaseLayout title="405 Method Not Allowed" description="This endpoint doesn't support that request method.">
+  <ErrorPage
+    status={405}
+    title="Method Not Allowed"
+    description="LexBuild content is read-only. If you're seeing this unexpectedly, check your request configuration."
+  />
+</BaseLayout>

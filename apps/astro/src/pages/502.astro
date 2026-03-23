@@ -1,0 +1,12 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import ErrorPage from "@/components/ErrorPage.astro";
+---
+
+<BaseLayout title="502 Bad Gateway" description="The server received an invalid response.">
+  <ErrorPage
+    status={502}
+    title="Bad Gateway"
+    description="The server received an invalid response. Please try again shortly."
+  />
+</BaseLayout>

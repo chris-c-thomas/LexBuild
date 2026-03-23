@@ -1,5 +1,16 @@
 # @lexbuild/usc
 
+## 1.13.0
+
+### Minor Changes
+
+- cb27ce5: Astro SEO enhancements, JSON-LD, Twitter card support, and robots.txt
+
+### Patch Changes
+
+- Updated dependencies [cb27ce5]
+  - @lexbuild/core@1.13.0
+
 ## 1.12.0
 
 ### Minor Changes

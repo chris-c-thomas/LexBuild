@@ -204,6 +204,7 @@ Initialized with radix-nova preset, zinc theme. Components in `src/components/ui
 - **Delete `.highlighted.html` from `output/` dirs, not `content/`**: The `content/` directory is symlinked. `find content/ -delete` silently fails on symlink targets. Always delete from `output/`, `output-chapter/`, `output-title/` directly: `find /path/to/output -name "*.highlighted.html" -type f -delete`.
 - **Shiki word wrapping**: `.shiki-wrap` in `global.css` forces `pre-wrap` on Shiki output with `!important`.
 - **`<pre>` whitespace in Astro templates**: Template indentation inside `<pre>`/`<code>` tags renders as literal whitespace. Always collapse `<pre><code>{content}</code></pre>` onto one line with no surrounding whitespace.
+- **Third-party scripts (analytics, tracking) must use `is:inline`**: Without it, Astro processes them as ES modules — `arguments` is invalid in strict mode, and globals like `window.dataLayer` won't attach. Applies to gtag, Clarity, and any script that relies on classic browser globals.
 - **External links**: Always use `rel="noopener noreferrer"` on `target="_blank"`.
 - **Search in production uses Caddy proxy, not direct Meilisearch access.** `MEILI_URL=/search` in `.env.production` — the browser's `127.0.0.1:7700` is the user's machine, not the VPS.
 - **`MEILI_SEARCH_KEY` is not passed to the browser in proxy mode.** `BaseLayout.astro` detects proxy mode (`meiliUrl.startsWith("/")`) and passes `undefined` for the key prop. Only Caddy has the key. In direct mode (local dev), the key is passed to the Meilisearch client.

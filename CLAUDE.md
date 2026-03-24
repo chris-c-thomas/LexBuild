@@ -55,6 +55,7 @@ Each package and app has its own `CLAUDE.md` with architecture details, module s
 - **Testing**: `vitest`
 - **Build**: `tsup`
 - **Linting**: ESLint + `@typescript-eslint`
+- **Unused code detection**: `knip` (config: `knip.jsonc` — must use this exact filename, not `knip.config.jsonc`)
 - **Formatting**: Prettier (double quotes, trailing commas, 100 char print width)
 - **Monorepo**: Turborepo + pnpm workspaces
 - **Versioning**: `@changesets/cli` with lockstep versioning across all packages
@@ -489,3 +490,5 @@ The multi-source architecture is proven — `@lexbuild/ecfr` validates the patte
 9. Document the source's XML schema in the package's `CLAUDE.md`
 
 Source packages must be independent — they depend only on core, never on each other.
+
+10. **Package boundary enforcement**: ESLint `no-restricted-imports` rules in `eslint.config.js` prevent source packages from importing each other. When adding a new source package, add it to the restriction lists of all other source packages and add its own restriction block.

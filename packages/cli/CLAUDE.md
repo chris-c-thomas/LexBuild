@@ -136,7 +136,6 @@ Provides consistent terminal output:
 - **`formatBytes(bytes)`** — `"11.0 MB"`
 - **`formatNumber(n)`** — Locale-aware: `"1,234,567"`
 - **`success(text)` / `error(text)`** — Green check / red X prefix
-- **`heading(text)`** — Bold text
 - **`summaryBlock({ title, rows, footer })`** — Key-value table with borders
 - **`dataTable(headings, rows)`** — Multi-column data table
 

@@ -32,7 +32,6 @@ src/
 | `releasePointToPath()` | Function | Convert `"119-73not60"` → `"119/73not60"` |
 | `isAllTitles()` | Function | Check if title list covers all 54 USC titles |
 | `FALLBACK_RELEASE_POINT` | Constant | Fallback release point when auto-detection fails |
-| `CURRENT_RELEASE_POINT` | Constant | Deprecated alias for `FALLBACK_RELEASE_POINT` |
 | `USC_TITLE_NUMBERS` | Constant | Array `[1, 2, ..., 54]` |
 | `ConvertOptions` | Type | Input options for `convertTitle()` |
 | `ConvertResult` | Type | Conversion result (sections written, files, tokens, memory) |

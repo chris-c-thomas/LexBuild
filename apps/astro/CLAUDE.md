@@ -175,6 +175,7 @@ Initialized with radix-nova preset, zinc theme. Components in `src/components/ui
 - **Semantic tokens** (`bg-surface`, `text-ink-muted`, `border-border-base`, `bg-code-surface`) for custom layouts — dark-mode-aware via `:root`/`.dark` runtime vars. Only 4 exist; add sparingly.
 - Slate-blue accent for headings, labels, active states
 - `prose prose-zinc` for rendered legal HTML content
+- **WCAG AA contrast thresholds**: `slate-blue-600` (#5285a3) fails on white (4.0:1) — use `slate-blue-700` (#476c85, 5.4:1) for body text on light backgrounds. `summer-green-600` (#558b75) also fails (3.93:1) — use `summer-green-700` (#487061, 5.3:1). Both `-400` shades fail on `slate-blue-50` — use `-700` or darker.
 
 ### Component Patterns
 

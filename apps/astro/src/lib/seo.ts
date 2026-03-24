@@ -5,13 +5,7 @@
  * rather than reading from `import.meta.env`.
  */
 
-import type {
-  SourceId,
-  Granularity,
-  ContentFrontmatter,
-  Breadcrumb,
-  PageSEO,
-} from "./types.js";
+import type { SourceId, Granularity, ContentFrontmatter, Breadcrumb, PageSEO } from "./types.js";
 import { toTitleCase } from "./utils.js";
 
 // ---------------------------------------------------------------------------
@@ -104,7 +98,11 @@ export function buildTitle(
 
   // Index pages: build from NavContext
   const titleNum = nav?.titleNumber ?? fm?.title_number;
-  const titleName = nav?.titleName ? toTitleCase(nav.titleName) : fm?.title_name ? toTitleCase(fm.title_name) : "";
+  const titleName = nav?.titleName
+    ? toTitleCase(nav.titleName)
+    : fm?.title_name
+      ? toTitleCase(fm.title_name)
+      : "";
 
   if (granularity === "title") {
     return `Title ${titleNum} — ${titleName}`;
@@ -139,7 +137,11 @@ export function buildDescription(
   nav?: NavContext,
 ): string {
   const titleNum = nav?.titleNumber ?? fm?.title_number;
-  const titleName = nav?.titleName ? toTitleCase(nav.titleName) : fm?.title_name ? toTitleCase(fm.title_name) : "";
+  const titleName = nav?.titleName
+    ? toTitleCase(nav.titleName)
+    : fm?.title_name
+      ? toTitleCase(fm.title_name)
+      : "";
   const sourceName = source === "usc" ? "U.S. Code" : "Code of Federal Regulations";
 
   // ── Title index ──
@@ -181,9 +183,7 @@ export function buildDescription(
     }
 
     // eCFR section
-    const partCtx = fm.part_name
-      ? `Part ${fm.part_number}, ${toTitleCase(fm.part_name)}`
-      : "";
+    const partCtx = fm.part_name ? `Part ${fm.part_number}, ${toTitleCase(fm.part_name)}` : "";
     return `${fm.title_number} CFR § ${fm.section_number ?? ""}${sectionName ? ` — ${sectionName}` : ""}. ${partCtx ? `${partCtx}. ` : ""}Title ${fm.title_number}, ${toTitleCase(fm.title_name)}.`;
   }
 

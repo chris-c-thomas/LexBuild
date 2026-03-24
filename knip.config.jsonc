@@ -3,15 +3,15 @@
   "workspaces": {
     "packages/*": {
       "entry": ["src/index.ts"],
-      "project": ["src/**/*.ts"]
+      "project": ["src/**/*.ts"],
     },
     "apps/astro": {
       "entry": ["src/pages/**/*.astro", "src/env.d.ts"],
-      "project": ["src/**/*.{ts,astro}"]
-    }
+      "project": ["src/**/*.{ts,astro}"],
+    },
   },
   "ignoreDependencies": [
     // If needed for false positives like Prettier plugins
-    "prettier-plugin-astro"
-  ]
+    "prettier-plugin-astro",
+  ],
 }

@@ -69,10 +69,7 @@ const seo: PageSEO = {
   },
 };
 
-Astro.response.headers.set(
-  "Cache-Control",
-  "public, s-maxage=3600, stale-while-revalidate=86400",
-);
+Astro.response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400");
 ---
 
 <BaseLayout seo={seo}>
@@ -113,12 +110,12 @@ Astro.response.headers.set(
       <div
         class="text-slate-blue-700 dark:text-slate-blue-400 mb-8 flex items-center justify-center gap-2 text-[14px] font-medium"
       >
-        <span class="whitespace-nowrap font-bold">290k+ Sections</span>
+        <span class="font-bold whitespace-nowrap">290k+ Sections</span>
         <div class="bg-slate-blue-500 dark:bg-slate-blue-600 h-3.5 w-px"></div>
-        <span class="whitespace-nowrap font-bold">Updated Daily</span>
+        <span class="font-bold whitespace-nowrap">Updated Daily</span>
         <div class="bg-slate-blue-500 dark:bg-slate-blue-600 h-3.5 w-px"></div>
 
-        <span class="whitespace-nowrap font-bold">Open Source</span>
+        <span class="font-bold whitespace-nowrap">Open Source</span>
       </div>
       <div class="flex flex-wrap items-center justify-center gap-3">
         <a
@@ -415,7 +412,11 @@ Astro.response.headers.set(
             style="display:none;"
           >
             <div class="prose prose-zinc dark:prose-invert max-w-none p-4 text-sm">
-              <h2 class="font-display text-slate-blue-800 dark:text-slate-blue-200 text-xl font-semibold tracking-tight">§ 107. Limitations on exclusive rights: Fair use</h2>
+              <h2
+                class="font-display text-slate-blue-800 dark:text-slate-blue-200 text-xl font-semibold tracking-tight"
+              >
+                § 107. Limitations on exclusive rights: Fair use
+              </h2>
               <p>
                 Notwithstanding the provisions of sections 106 and 106A, the fair use of a
                 copyrighted work, including such use by reproduction in copies or phonorecords or by

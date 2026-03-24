@@ -26,17 +26,12 @@ const seo: PageSEO = {
     },
     {
       "@type": "BreadcrumbList",
-      itemListElement: [
-        { "@type": "ListItem", position: 1, name: "eCFR" },
-      ],
+      itemListElement: [{ "@type": "ListItem", position: 1, name: "eCFR" }],
     },
   ],
 };
 
-Astro.response.headers.set(
-  "Cache-Control",
-  "public, s-maxage=3600, stale-while-revalidate=86400",
-);
+Astro.response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400");
 ---
 
 <BaseLayout seo={seo} source="ecfr">

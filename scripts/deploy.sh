@@ -18,7 +18,7 @@
 #
 # What it does:
 #   Code deploy:    git pull → pnpm install → generate .env.production → astro build → pm2 reload
-#   Content deploy: rsync local output directories + nav JSON to VPS
+#   Content deploy: rsync local output directories + nav JSON + sitemaps to VPS
 #   Remote deploy:  code deploy + build CLI → download XML → convert all granularities →
 #                   copy to content dirs → pipeline scripts → astro build → pm2 reload
 #   Search dump:    index content into local Meilisearch → create dump → scp to VPS →
@@ -171,6 +171,18 @@ deploy_content_rsync() {
   if [ -d "apps/astro/public/nav" ]; then
     echo "--- Syncing nav JSON"
     rsync "${RSYNC_OPTS[@]}" apps/astro/public/nav/ "${VPS_HOST}:${NAV_DEST}/"
+  fi
+
+  # Sitemaps and robots.txt → both public/ (for future builds) and dist/client/ (live serving)
+  SITEMAP_FILES=(apps/astro/public/sitemap*.xml apps/astro/public/robots.txt)
+  HAVE_SITEMAPS=false
+  for f in "${SITEMAP_FILES[@]}"; do
+    [ -e "$f" ] && HAVE_SITEMAPS=true && break
+  done
+  if [ "$HAVE_SITEMAPS" = true ]; then
+    echo "--- Syncing sitemaps and robots.txt"
+    rsync -avz apps/astro/public/sitemap*.xml apps/astro/public/robots.txt "${VPS_HOST}:~/lexbuild/apps/astro/public/" 2>/dev/null
+    rsync -avz apps/astro/public/sitemap*.xml apps/astro/public/robots.txt "${VPS_HOST}:~/lexbuild/apps/astro/dist/client/" 2>/dev/null
   fi
 
   echo "==> Content rsync complete (no PM2 restart needed)"

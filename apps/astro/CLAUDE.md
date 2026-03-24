@@ -216,6 +216,9 @@ Initialized with radix-nova preset, zinc theme. Components in `src/components/ui
 - **React hydration with localStorage**: Don't read localStorage in `useState()` initializer — SSR renders the default, client reads stored value, causing hydration mismatch. Use `useLayoutEffect` to apply stored value after hydration but before paint.
 - **`--content` deploy doesn't regenerate anything**: It only rsyncs existing local files. To update nav/sitemap after code changes, either regenerate locally then `--content`, or SSH into VPS and regenerate there. `--remote` runs the full pipeline.
 - **Error pages must be at `src/pages/` root** — Astro's 404/500 auto-routing only works for `src/pages/404.astro` and `src/pages/500.astro`. Subdirectories (e.g., `src/pages/errors/`) would change the URL path and break auto-routing.
+- **Sitemap chunk size is 25,000 URLs** (not 50k). 50k produced ~10MB XML files that Googlebot intermittently failed to fetch. `MAX_URLS_PER_FILE` in `scripts/generate-sitemap.ts`.
+- **Sitemap `changefreq` is per-source**: eCFR=`weekly` (updated daily), USC=`monthly` (release points every few weeks), misc=`weekly`. Passed as parameter to `writeChunkedSitemaps()`.
+- **Locally generated sitemaps need `--content` deploy**: `./scripts/deploy.sh --content` rsyncs `public/sitemap*.xml` to the VPS. Plain `deploy.sh` only does git pull + build and won't pick up gitignored sitemap files.
 
 ## SEO
 

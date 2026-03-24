@@ -68,6 +68,11 @@ const seo: PageSEO = {
       "U.S. federal law and regulations as structured Markdown for LLMs, RAG, and semantic search.",
   },
 };
+
+Astro.response.headers.set(
+  "Cache-Control",
+  "public, s-maxage=3600, stale-while-revalidate=86400",
+);
 ---
 
 <BaseLayout seo={seo}>

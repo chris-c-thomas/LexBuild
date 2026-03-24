@@ -22,7 +22,7 @@ export const lexbuildLight: ThemeRegistration = {
     // YAML
     { scope: ["entity.name.tag.yaml"], settings: { foreground: "#476c85" } },
     { scope: ["string.quoted", "string.unquoted"], settings: { foreground: "#975826" } },
-    { scope: ["constant.numeric", "constant.language"], settings: { foreground: "#558b75" } },
+    { scope: ["constant.numeric", "constant.language"], settings: { foreground: "#487061" } },
     { scope: ["punctuation", "keyword.control.flow"], settings: { foreground: "#94b7c7" } },
     // Markdown — headings (putty palette — warm brown, distinct from cool body text)
     {

@@ -49,6 +49,7 @@ Each package and app has its own `CLAUDE.md` with architecture details, module s
 - **XML Parsing**: `saxes` (SAX streaming)
 - **CLI**: `commander`
 - **CLI Output**: `chalk`, `ora`, `cli-table3`
+- **Fonts**: IBM Plex Sans (body), Serif (display), Mono (code) — self-hosted via `@fontsource`. No other font families.
 - **YAML**: `yaml` package
 - **Zip**: `yauzl`
 - **Token Counting**: character/4 heuristic

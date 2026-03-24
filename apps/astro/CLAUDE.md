@@ -157,7 +157,7 @@ Gated behind `ENABLE_SEARCH`. When `false`, SearchDialog is not rendered.
 11 error pages using a shared `ErrorPage.astro` component: 400, 403, 404, 405, 410, 429, 451, 500, 502, 503, 504.
 
 - **`404.astro` and `500.astro` must stay at `src/pages/` root** — Astro auto-routes only these two (404 for unmatched routes, 500 as SSR error boundary). Other error pages are regular pages at their numeric URL paths.
-- **`ErrorPage.astro`** component: `status` (decorative large number, `aria-hidden`), `title` (`<h1>`), `description`, optional `showHomeLink`.
+- **`ErrorPage.astro`** component: `status` (decorative large number, `aria-hidden`), `title` (`<h1>`), `description`, optional `showHomeLink`. Status number uses opacity variants (`text-slate-blue-200/60 dark:text-slate-blue-300/40`) — do NOT use the shade-swap pattern (`text-X-300 dark:text-X-700`) which inverts contrast on dark backgrounds.
 - **BaseLayout `title` includes status code** for browser tab clarity: e.g., `title="404 Not Found"` → `<title>404 Not Found | LexBuild</title>`.
 - **Cloudflare 5xx codes (520–526) are NOT Astro pages** — Cloudflare intercepts these before reaching the origin. See `.claude/todo/http-error-pages.md` for reference.
 
@@ -199,7 +199,7 @@ Initialized with radix-nova preset, zinc theme. Components in `src/components/ui
 - **`rehype-sanitize` is critical.** Defense-in-depth against injection in Markdown content.
 - **PM2 reload not restart.** Use `pm2 reload lexbuild-astro --update-env` for zero-downtime.
 - **`ecosystem.config.cjs` manages 3 services**: `lexbuild-astro` (port 4321), `meilisearch` (port 7700), `uptime-kuma` (port 3001). Uptime Kuma is installed at `/srv/uptime-kuma`, not in the monorepo.
-- **Shiki uses LexBuild brand themes** (`lexbuild-light`/`lexbuild-dark`) defined in `src/lib/shiki-themes.ts` — the single source of truth imported by both `src/lib/shiki.ts` (runtime) and `scripts/generate-highlights.ts` (pre-render). Uses 3 palettes: putty for headings, slate-blue for body/punctuation, summer-green for bold/code.
+- **Shiki uses LexBuild brand themes** (`lexbuild-light`/`lexbuild-dark`) defined in `src/lib/shiki-themes.ts` — the single source of truth imported by both `src/lib/shiki.ts` (runtime) and `scripts/generate-highlights.ts` (pre-render). Uses 3 palettes: putty for headings, slate-blue for body/punctuation, summer-green for bold/code. Light theme punctuation/link colors use `#476c85` (slate-blue-700), not `#5285a3` (slate-blue-600) — the 600 shade fails WCAG AA (4.0:1 on white).
 - **Changing Shiki themes**: Edit `src/lib/shiki-themes.ts`. Delete existing `.highlighted.html` files and re-run `generate-highlights.ts` after changes.
 - **Delete `.highlighted.html` from `output/` dirs, not `content/`**: The `content/` directory is symlinked. `find content/ -delete` silently fails on symlink targets. Always delete from `output/`, `output-chapter/`, `output-title/` directly: `find /path/to/output -name "*.highlighted.html" -type f -delete`.
 - **Shiki word wrapping**: `.shiki-wrap` in `global.css` forces `pre-wrap` on Shiki output with `!important`.

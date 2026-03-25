@@ -204,6 +204,7 @@ GPO XML reference guides (previously in `reference/usgpo-xml-reference-files/` �
 
 - **eCFR XML User Guide** — eCFR bulk XML structure (DIV hierarchy, element catalog, SGML-to-XML conversion details). Confirms `NODE` attribute is "for internal use and may be changed at any time."
 - **CFR XML User Guide** — **Annual CFR** XML format. Uses a different schema from eCFR: `CFRDOC` root, `TITLE > CHAPTER > PART > SECTION` elements (not DIV-based), `GPOTABLE` for tables (not HTML tables), `SECTNO`/`SUBJECT` for section numbers/headings. A future `@lexbuild/cfr` package would need its own builder for this format.
+- **FR XML User Guide** — Federal Register XML structure. Available at `https://github.com/usgpo/bulk-data/blob/main/FR-XML_User-Guide.md` and as PDF at `https://www.govinfo.gov/bulkdata/FR/resources/FDsys_OFR-XML_User-Guide-v1.pdf`. Schema: `FRMergedXML.xsd` (referenced in XML header). See also `.claude/guides/lexbuild-additional-sources.md` for full implementation research.
 
 ## USLM XML Schema — Key Facts
 
@@ -390,6 +391,45 @@ Where `{N}` is the title number (1-50, not zero-padded). Example: `ECFR-title17.
 **Reserved titles**: Title 35 (Panama Canal) is reserved — both sources return 404. The downloaders silently skip reserved titles during `--all` downloads. The `RESERVED_TITLES` set tracks which titles to skip.
 
 50 titles total, 49 with content.
+
+## Federal Register URLs (Planned — `@lexbuild/fr`)
+
+The Federal Register is the next planned source. The **federalregister.gov API is the recommended primary source** over govinfo bulk XML — it provides per-document XML (no container parsing), rich JSON metadata, and pre-publication access. See `.claude/guides/lexbuild-additional-sources.md` for full research.
+
+**FederalRegister.gov API (recommended primary source)**: `https://www.federalregister.gov/api/v1/`
+
+No API key required. No documented rate limits. Updated daily on publication day.
+
+Key endpoints:
+```
+GET /documents.json                              # Search/list with filtering, pagination (max 200/page)
+GET /documents/{document_number}.json            # Single document metadata (JSON)
+GET /documents/{document_number}/full_text/xml   # Individual document XML
+GET /issues/{date}.json                          # Daily issue table of contents
+GET /public-inspection-documents/current.json    # Pre-publication documents (1-2 days early)
+GET /documents/facets/{facet}                    # Aggregated counts (type, daily, yearly, agency)
+GET /agencies.json                               # All ~470 agencies
+```
+
+Coverage: JSON metadata from 1994, XML full text from January 2000. ~28,000–31,000 documents/year across 4 types: Notices (~80%), Rules (~10%), Proposed Rules (~7%), Presidential Documents (~1%).
+
+**govinfo bulk XML (fallback, better for historical backfill)**:
+```
+https://www.govinfo.gov/content/pkg/FR-{YYYY-MM-DD}/xml/FR-{YYYY-MM-DD}.xml
+```
+
+Complete daily issue XML (~2.4 MB average). Updated by 6 AM on publishing days. No API key required.
+
+**Corpus size comparison**:
+
+| Corpus | Total XML Size |
+|--------|---------------|
+| U.S. Code (54 titles) | ~2–3 GB |
+| eCFR (50 titles) | ~1–2 GB |
+| Federal Register (1 year) | ~600 MB |
+| Federal Register (2000–2025) | ~15 GB |
+
+**FR XML format**: GPO/SGML-derived, no namespace. Root `<FEDREG>`. Shares `<E T="nn">` emphasis, `<GPOTABLE>` tables, `<SU>`/`<FTNT>` footnotes with eCFR. ~92 unique elements vs eCFR's ~25, but many are simple preamble sections. Document-centric (flat) rather than hierarchical. The XML is NOT the official format — only PDF and text carry legal standing.
 
 ## Output File Naming
 

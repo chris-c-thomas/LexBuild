@@ -200,6 +200,33 @@ Astro.response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-
             <span class="text-putty-300">--all</span>
           </div>
         </div>
+        <div class="mt-4 mb-1 flex flex-col gap-1.5">
+          <span class="text-[15px] font-normal"
+            >Or download and convert a single title — like <a
+              href="/usc/title-17"
+              class="text-slate-blue-700 hover:text-slate-blue-900 dark:text-slate-blue-400 dark:hover:text-slate-blue-200 font-medium"
+              >Title 17 (Copyrights)</a
+            >, which includes the section shown in the <a
+              href="#sample-output"
+              class="text-slate-blue-700 hover:text-slate-blue-900 dark:text-slate-blue-400 dark:hover:text-slate-blue-200 font-medium"
+              >sample output</a
+            > below.</span
+          >
+        </div>
+        <div
+          class="bg-slate-blue-950 overflow-x-auto rounded-sm p-4 font-mono text-[13px] leading-relaxed text-[#d4dce4]"
+        >
+          <div>
+            <span class="text-slate-blue-400">$</span>
+            <span class="text-white">npx @lexbuild/cli download-usc</span>
+            <span class="text-putty-300">--titles 17</span>
+          </div>
+          <div>
+            <span class="text-slate-blue-400">$</span>
+            <span class="text-white">npx @lexbuild/cli convert-usc</span>
+            <span class="text-putty-300">--titles 17 --include-source-credits</span>
+          </div>
+        </div>
       </div>
       <div class="mt-5 flex justify-center">
         <a

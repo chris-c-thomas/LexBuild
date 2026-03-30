@@ -98,10 +98,13 @@ Sources:
     // For ecfr-api, fetch metadata upfront to resolve dates and display status
     let meta: EcfrTitlesResponse | undefined;
     if (options.source === "ecfr-api" && !options.date) {
+      const metaSpinner = createSpinner("Fetching eCFR title metadata...");
+      metaSpinner.start();
       try {
         meta = await fetchEcfrTitlesMeta();
+        metaSpinner.succeed("eCFR title metadata loaded");
       } catch (err) {
-        console.error(error(err instanceof Error ? err.message : String(err)));
+        metaSpinner.fail(err instanceof Error ? err.message : String(err));
         process.exit(1);
       }
     }
@@ -166,6 +169,13 @@ async function downloadFromGovinfo(
   const result = await downloadEcfrTitles({
     output: outputDir,
     titles,
+    onProgress: ({ current, total, titleNumber }) => {
+      if (total === 1) {
+        spinner.text = `Downloading eCFR Title ${titleNumber} from govinfo...`;
+      } else {
+        spinner.text = `Downloading eCFR titles from govinfo (${current}/${total}) — Title ${titleNumber}...`;
+      }
+    },
   });
 
   const elapsed = performance.now() - startTime;
@@ -190,9 +200,16 @@ async function downloadFromGovinfo(
     console.log(dataTable(["Title", "Size", "File"], fileRows));
   }
 
+  if (result.errors.length > 0) {
+    for (const err of result.errors) {
+      console.log(`  ${error(`Title ${err.titleNumber}: ${err.error}`)}`);
+    }
+  }
+
   const titleWord = result.titlesDownloaded === 1 ? "title" : "titles";
+  const failSuffix = result.errors.length > 0 ? ` (${result.errors.length} failed)` : "";
   const summary = `Downloaded ${result.titlesDownloaded} ${titleWord} (${formatBytes(result.totalBytes)}) in ${formatDuration(elapsed)}`;
-  console.log(`  ${success(summary)}`);
+  console.log(`  ${success(summary + failSuffix)}`);
   console.log("");
 }
 
@@ -210,6 +227,13 @@ async function downloadFromApi(
     titles,
     date: options.date,
     titlesMeta: meta,
+    onProgress: ({ current, total, titleNumber }) => {
+      if (total === 1) {
+        spinner.text = `Downloading eCFR Title ${titleNumber} from eCFR API...`;
+      } else {
+        spinner.text = `Downloading eCFR titles from eCFR API (${current}/${total}) — Title ${titleNumber}...`;
+      }
+    },
   });
 
   const elapsed = performance.now() - startTime;

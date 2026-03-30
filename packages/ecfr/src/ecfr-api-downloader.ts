@@ -110,6 +110,8 @@ export interface EcfrApiDownloadOptions {
   date?: string | undefined;
   /** Pre-fetched title metadata (avoids a second /titles call) */
   titlesMeta?: EcfrTitlesResponse | undefined;
+  /** Progress callback invoked before each title download */
+  onProgress?: ((progress: { current: number; total: number; titleNumber: number }) => void) | undefined;
 }
 
 /** Result of a download from the eCFR API */
@@ -224,9 +226,10 @@ export async function downloadEcfrTitlesFromApi(
   const files: EcfrApiDownloadedFile[] = [];
   const failed: EcfrDownloadFailure[] = [];
   let totalBytes = 0;
+  const downloadable = titles.filter((t) => !RESERVED_TITLES.has(t));
 
-  for (const titleNum of titles) {
-    if (RESERVED_TITLES.has(titleNum)) continue;
+  for (const [i, titleNum] of downloadable.entries()) {
+    options.onProgress?.({ current: i + 1, total: downloadable.length, titleNumber: titleNum });
 
     const titleDate = titleDateMap.get(titleNum) ?? meta.date;
     const filePath = join(output, `ECFR-title${titleNum}.xml`);

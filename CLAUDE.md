@@ -564,6 +564,9 @@ Complete daily issue XML (~2.4 MB average). Updated by 6 AM on publishing days. 
 - **FR API `results` can be absent**: When the API returns 0 results (weekends/holidays), `data.results` may be `undefined`. Always default to `data.results ?? []`.
 - **FR API 10,000 result cap**: The FederalRegister.gov API caps query results at 10,000. The downloader auto-chunks by month to stay under this limit.
 - **FR emphasis map duplicated from eCFR**: Package boundary rules prevent `@lexbuild/fr` from importing `ECFR_EMPHASIS_MAP`. `FR_EMPHASIS_MAP` in `fr-elements.ts` is an independent copy. Keep both in sync when adding new emphasis codes.
+- **FR document number prefix ≠ publication year**: `2025-24130` may have `publication_date: "2026-01-02"`. Download paths use `publication_date`, not the document number prefix.
+- **FR downloader uses concurrent worker pool**: `concurrency` option (default 10) replaced sequential `fetchDelayMs`. CLI exposes `--concurrency` flag. API latency (~10s/request) is the bottleneck, not bandwidth.
+- **Astro template expressions are plain JS, not TypeScript**: `new Map<string, T>()` and other generics in template `{}` expressions cause esbuild errors ("Unexpected const"). Move complex typed logic to the `---` frontmatter section.
 - **FR download directory structure matches output**: Both use `{YYYY}/{MM}/{document_number}.*` — downloads have `.xml`/`.json`, output has `.md`. The converter infers publication date from the path when no JSON sidecar is available.
 
 ## When Adding New Source Types

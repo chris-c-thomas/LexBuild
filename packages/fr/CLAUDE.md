@@ -144,6 +144,13 @@ FR documents include all standard fields plus:
 - `rin` — Regulation Identifier Number
 - `effective_date`, `comments_close_date`, `fr_action`
 
+## Common Pitfalls
+
+- **FR document number prefix is NOT the publication year**: Document `2025-24130` can have `publication_date: "2026-01-02"`. The prefix is the fiscal/assignment year. Files are placed by `publication_date`, not document number prefix.
+- **Concurrent downloads use a worker pool**: `downloadPool()` in `downloader.ts` uses a shared `nextIndex` counter with `N` async workers. `nextIndex++` is safe across `await` boundaries because JS is single-threaded. The `concurrency` option (default 10) replaces the old `fetchDelayMs` sequential delay.
+- **FederalRegister.gov API is slow per-request**: Individual XML fetches average ~10s regardless of file size (~26 KB average). The API's server-side latency is the bottleneck, not bandwidth. Increasing concurrency beyond 10-20 may not help if the API throttles connections.
+- **No `_meta.json` files**: Unlike USC/eCFR, the FR converter does not generate sidecar metadata files. The Astro nav generator (`generate-nav.ts`) scans the filesystem and reads frontmatter directly from each `.md` file.
+
 ## Dependency on @lexbuild/core
 
 Imports: `XMLParser`, `LevelNode`, `EmitContext`, `renderDocument`, `createLinkResolver`, `writeFile`, `mkdir`, `FORMAT_VERSION`, `GENERATOR`.

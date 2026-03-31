@@ -131,8 +131,9 @@ pnpm turbo build:astro --filter=@lexbuild/astro # Production build
 cd apps/astro
 bash scripts/link-content.sh                      # Symlink CLI output into content/
 npx tsx scripts/generate-nav.ts                    # Build sidebar JSON from _meta.json
-npx tsx scripts/generate-highlights.ts             # Pre-render Shiki HTML for all .md files
-npx tsx scripts/generate-highlights.ts --limit 50  # Test on subset
+npx tsx scripts/generate-highlights.ts                    # Pre-render Shiki HTML for all .md files
+npx tsx scripts/generate-highlights.ts --limit 50         # Test on subset
+npx tsx scripts/generate-highlights.ts --chunk-size 1000  # Smaller chunks for memory-constrained runs
 npx tsx scripts/generate-sitemap.ts                # Build sitemap index + chunked sitemaps
 npx tsx scripts/index-search.ts                    # Index into Meilisearch (~281k docs, ~26 min)
 

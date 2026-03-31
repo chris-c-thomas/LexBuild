@@ -63,7 +63,7 @@ export function buildFrDownloadJsonPath(
 }
 
 /**
- * Build the directory path for a year/month (used for _meta.json placement).
+ * Build the directory path for a year/month within the FR output structure.
  */
 export function buildMonthDir(year: string, month: string, outputRoot: string): string {
   return join(outputRoot, "fr", year, month);

@@ -146,7 +146,14 @@ Document types:
     }
 
     const to = options.to ?? new Date().toISOString().slice(0, 10);
-    const limit = options.limit ? parseInt(options.limit, 10) : undefined;
+    let limit: number | undefined;
+    if (options.limit) {
+      limit = parseInt(options.limit, 10);
+      if (isNaN(limit) || limit <= 0) {
+        console.error(error("--limit must be a positive integer"));
+        process.exit(1);
+      }
+    }
 
     const spinner = createSpinner(`Downloading Federal Register documents from ${from} to ${to}`);
 

@@ -5,7 +5,8 @@
  * enriches frontmatter with JSON sidecar metadata, renders via core's
  * renderDocument, and writes structured Markdown output.
  *
- * Follows the collect-then-write pattern from @lexbuild/ecfr.
+ * Processes FR documents in two passes: (1) parse all files and register
+ * identifiers for link resolution, (2) render and write output files.
  */
 
 import { createReadStream, existsSync } from "node:fs";
@@ -24,7 +25,8 @@ import type { FrDocumentXmlMeta } from "./fr-builder.js";
 import { buildFrFrontmatter } from "./fr-frontmatter.js";
 import type { FrDocumentJsonMeta } from "./fr-frontmatter.js";
 import { buildFrOutputPath } from "./fr-path.js";
-import type { FrDocumentType } from "./downloader.js";
+import { FR_DOCUMENT_TYPE_KEYS } from "./fr-elements.js";
+import type { FrDocumentType } from "./fr-elements.js";
 
 // ── Public types ──
 
@@ -70,6 +72,9 @@ interface CollectedDoc {
   documentNumber: string;
 }
 
+/** Set of valid FR document type element names for filtering */
+const FR_DOC_TYPE_SET = new Set<string>(FR_DOCUMENT_TYPE_KEYS);
+
 // ── Public function ──
 
 /**
@@ -87,20 +92,28 @@ export async function convertFrDocuments(options: FrConvertOptions): Promise<FrC
 
   const linkResolver = createLinkResolver();
 
-  // Process each XML file
+  // Parse all files once and cache results
+  const parsedFiles = new Map<string, CollectedDoc[]>();
   for (const xmlPath of xmlFiles) {
-    const collected = await parseXmlFile(xmlPath);
+    try {
+      const collected = await parseXmlFile(xmlPath);
+      parsedFiles.set(xmlPath, collected);
+    } catch (err) {
+      console.warn(
+        `Warning: Failed to parse ${xmlPath}: ${err instanceof Error ? err.message : String(err)}. Skipping.`,
+      );
+    }
+  }
 
+  // Register identifiers for link resolution using cached results
+  for (const [, collected] of parsedFiles) {
     for (const doc of collected) {
-      // Apply type filter
       if (options.types && options.types.length > 0) {
-        const docType = doc.xmlMeta.documentType;
-        if (!options.types.includes(docType as FrDocumentType)) {
+        if (!FR_DOC_TYPE_SET.has(doc.xmlMeta.documentType) || !options.types.includes(doc.xmlMeta.documentType as FrDocumentType)) {
           continue;
         }
       }
 
-      // Register identifier for link resolution
       if (doc.node.identifier) {
         const outputPath = buildFrOutputPath(
           doc.documentNumber,
@@ -113,10 +126,8 @@ export async function convertFrDocuments(options: FrConvertOptions): Promise<FrC
   }
 
   if (options.dryRun) {
-    // Count what would be converted
     let count = 0;
-    for (const xmlPath of xmlFiles) {
-      const collected = await parseXmlFile(xmlPath);
+    for (const [, collected] of parsedFiles) {
       count += collected.length;
     }
     return {
@@ -128,18 +139,21 @@ export async function convertFrDocuments(options: FrConvertOptions): Promise<FrC
     };
   }
 
-  // Render and write
-  for (const xmlPath of xmlFiles) {
-    const collected = await parseXmlFile(xmlPath);
-
+  // Render and write using cached results
+  for (const [, collected] of parsedFiles) {
     for (const doc of collected) {
       // Apply type filter
       if (options.types && options.types.length > 0) {
-        const docType = doc.xmlMeta.documentType;
-        if (!options.types.includes(docType as FrDocumentType)) {
+        if (!FR_DOC_TYPE_SET.has(doc.xmlMeta.documentType) || !options.types.includes(doc.xmlMeta.documentType as FrDocumentType)) {
           continue;
         }
       }
+
+      const outputPath = buildFrOutputPath(
+        doc.documentNumber,
+        doc.publicationDate,
+        options.output,
+      );
 
       const frontmatter = buildFrFrontmatter(doc.node, doc.context, doc.xmlMeta, doc.jsonMeta);
 
@@ -150,12 +164,6 @@ export async function convertFrDocuments(options: FrConvertOptions): Promise<FrC
           ? (id) => linkResolver.resolve(id, outputPath)
           : undefined,
       });
-
-      const outputPath = buildFrOutputPath(
-        doc.documentNumber,
-        doc.publicationDate,
-        options.output,
-      );
 
       await mkdir(dirname(outputPath), { recursive: true });
       await writeFile(outputPath, markdown, "utf-8");
@@ -190,16 +198,12 @@ export async function convertFrDocuments(options: FrConvertOptions): Promise<FrC
  */
 async function parseXmlFile(xmlPath: string): Promise<CollectedDoc[]> {
   const collected: CollectedDoc[] = [];
-  const docMetas: FrDocumentXmlMeta[] = [];
 
   const builder = new FrASTBuilder({
     onEmit: (node, context) => {
       // Snapshot metas at emit time
       const currentMetas = builder.getDocumentMetas();
       const meta = currentMetas[currentMetas.length - 1];
-      if (meta) {
-        docMetas.push({ ...meta });
-      }
       collected.push({
         node,
         context,
@@ -225,8 +229,10 @@ async function parseXmlFile(xmlPath: string): Promise<CollectedDoc[]> {
     try {
       const raw = await readFile(jsonPath, "utf-8");
       jsonMeta = JSON.parse(raw) as FrDocumentJsonMeta;
-    } catch {
-      // JSON sidecar is optional — continue without it
+    } catch (err) {
+      console.warn(
+        `Warning: Failed to parse JSON sidecar ${jsonPath}: ${err instanceof Error ? err.message : String(err)}. Continuing without enriched metadata.`,
+      );
     }
   }
 
@@ -237,7 +243,14 @@ async function parseXmlFile(xmlPath: string): Promise<CollectedDoc[]> {
       doc.publicationDate = jsonMeta.publication_date;
     } else {
       // Infer date from file path (downloads/fr/YYYY/MM/doc.xml)
-      doc.publicationDate = inferDateFromPath(xmlPath);
+      const inferredDate = inferDateFromPath(xmlPath);
+      if (!inferredDate) {
+        console.warn(
+          `Warning: No publication date for document ${doc.documentNumber || "(unknown)"} — ` +
+            `no JSON sidecar and path ${xmlPath} has no YYYY/MM/ pattern. Output will be in 0000/00/.`,
+        );
+      }
+      doc.publicationDate = inferredDate;
     }
   }
 
@@ -252,10 +265,21 @@ async function discoverXmlFiles(
   from?: string,
   to?: string,
 ): Promise<string[]> {
-  const inputStat = await stat(input);
+  let inputStat;
+  try {
+    inputStat = await stat(input);
+  } catch (err) {
+    throw new Error(
+      `Cannot access input path "${input}": ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
 
   if (inputStat.isFile()) {
     return [input];
+  }
+
+  if (!inputStat.isDirectory()) {
+    throw new Error(`Input path "${input}" is not a file or directory`);
   }
 
   // Recursively find all .xml files

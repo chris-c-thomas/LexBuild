@@ -135,7 +135,6 @@ Each document produces one Markdown file organized by publication date:
 | Output Path | Description |
 |---|---|
 | `fr/2026/03/2026-06029.md` | Individual document |
-| `fr/2026/03/_meta.json` | Month-level metadata (document count, token estimates) |
 
 No granularity options — FR documents are already atomic (one file per document).
 

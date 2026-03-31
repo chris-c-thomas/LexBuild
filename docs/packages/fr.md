@@ -96,13 +96,9 @@ output/fr/
   2026/
     01/
       2026-00123.md
-      _meta.json
     03/
       2026-06029.md
       2026-06048.md
-      _meta.json
-    _meta.json
-  _meta.json
 ```
 
 ## Data Source

@@ -1090,7 +1090,11 @@ export class FrASTBuilder {
       }
     }
 
-    // If no exact match, pop top frame
-    return this.stack.pop();
+    // No matching frame found — warn rather than popping an unrelated frame
+    console.warn(
+      `FrASTBuilder: no matching frame for closing element </${elementName}>, ` +
+        `stack has: [${this.stack.map((f) => f.elementName).join(", ")}]`,
+    );
+    return undefined;
   }
 }

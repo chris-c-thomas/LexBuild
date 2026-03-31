@@ -14,6 +14,7 @@ export type { FrASTBuilderOptions, FrDocumentXmlMeta } from "./fr-builder.js";
 // Element classification
 export {
   FR_DOCUMENT_ELEMENTS,
+  FR_DOCUMENT_TYPE_KEYS,
   FR_SECTION_CONTAINERS,
   FR_DOCUMENT_TYPE_MAP,
   FR_PREAMBLE_SECTIONS,
@@ -33,6 +34,7 @@ export {
   FR_SKIP_ELEMENTS,
   FR_PASSTHROUGH_ELEMENTS,
 } from "./fr-elements.js";
+export type { FrDocumentType } from "./fr-elements.js";
 
 // Frontmatter builder
 export { buildFrFrontmatter } from "./fr-frontmatter.js";
@@ -59,5 +61,4 @@ export type {
   FrDownloadedFile,
   FrDownloadFailure,
   FrDownloadProgress,
-  FrDocumentType,
 } from "./downloader.js";

@@ -14,13 +14,14 @@ import type { InlineType } from "@lexbuild/core";
 
 // ── Document type elements ──
 
+/** FR document type element names as a const tuple — single source of truth */
+export const FR_DOCUMENT_TYPE_KEYS = ["RULE", "PRORULE", "NOTICE", "PRESDOCU"] as const;
+
+/** FR document types supported by the API and XML */
+export type FrDocumentType = (typeof FR_DOCUMENT_TYPE_KEYS)[number];
+
 /** Top-level document elements — each becomes an emitted section-level node */
-export const FR_DOCUMENT_ELEMENTS = new Set([
-  "RULE", // Final rule
-  "PRORULE", // Proposed rule
-  "NOTICE", // Notice
-  "PRESDOCU", // Presidential document
-]);
+export const FR_DOCUMENT_ELEMENTS = new Set<string>(FR_DOCUMENT_TYPE_KEYS);
 
 /** Container elements that group documents within daily issues */
 export const FR_SECTION_CONTAINERS = new Set([

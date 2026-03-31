@@ -15,6 +15,8 @@ import { dirname } from "node:path";
 import { pipeline } from "node:stream/promises";
 import { Readable } from "node:stream";
 import { buildFrDownloadXmlPath, buildFrDownloadJsonPath } from "./fr-path.js";
+import type { FrDocumentJsonMeta } from "./fr-frontmatter.js";
+import type { FrDocumentType } from "./fr-elements.js";
 
 /** Base URL for the FederalRegister.gov API */
 const FR_API_BASE = "https://www.federalregister.gov/api/v1";
@@ -55,9 +57,6 @@ const API_FIELDS = [
 ];
 
 // ── Public types ──
-
-/** FR document types supported by the API */
-export type FrDocumentType = "RULE" | "PRORULE" | "NOTICE" | "PRESDOCU";
 
 /** Options for downloading FR documents */
 export interface FrDownloadOptions {
@@ -127,41 +126,13 @@ export interface FrDownloadResult {
   failed: FrDownloadFailure[];
 }
 
-/** A single document from the API listing response */
-interface FrApiDocument {
-  document_number: string;
-  type: string;
-  title: string;
-  publication_date: string;
-  citation: string;
-  volume: number;
-  start_page: number;
-  end_page: number;
-  agencies: Array<{
-    name: string;
-    id: number;
-    slug: string;
-    parent_id?: number | null;
-    raw_name?: string;
-  }>;
-  cfr_references: Array<{ title: number; part: number }>;
-  docket_ids: string[];
-  regulation_id_numbers: string[];
-  effective_on?: string | null;
-  comments_close_on?: string | null;
-  action?: string | null;
-  abstract?: string | null;
-  significant?: boolean | null;
-  topics: string[];
-  full_text_xml_url: string;
-}
-
 /** API listing response */
 interface FrApiListResponse {
   count: number;
   total_pages: number;
   next_page_url?: string | null;
-  results: FrApiDocument[];
+  /** Can be absent on weekends/holidays when count is 0 */
+  results?: FrDocumentJsonMeta[];
 }
 
 // ── Public functions ──
@@ -187,17 +158,8 @@ export function buildFrApiListUrl(
   }
 
   if (types && types.length > 0) {
-    const typeMap: Record<string, string> = {
-      RULE: "RULE",
-      PRORULE: "PRORULE",
-      NOTICE: "NOTICE",
-      PRESDOCU: "PRESDOCU",
-    };
     for (const t of types) {
-      const apiType = typeMap[t];
-      if (apiType) {
-        params.append("conditions[type][]", apiType);
-      }
+      params.append("conditions[type][]", t);
     }
   }
 
@@ -235,6 +197,13 @@ export async function downloadFrDocuments(options: FrDownloadOptions): Promise<F
       const listUrl = buildFrApiListUrl(chunk.from, chunk.to, page, options.types);
       const response = await fetchWithRetry(listUrl);
       const data = (await response.json()) as FrApiListResponse;
+
+      if (typeof data.count !== "number") {
+        throw new Error(
+          `Unexpected API response for ${listUrl}: missing or invalid 'count' field. ` +
+            `The FederalRegister.gov API may have changed its response format.`,
+        );
+      }
 
       if (page === 1 && totalDocumentsFound === 0) {
         totalDocumentsFound = data.count;
@@ -303,7 +272,13 @@ export async function downloadSingleFrDocument(
   // Fetch JSON metadata first to get publication date and XML URL
   const metaUrl = `${FR_API_BASE}/documents/${documentNumber}.json?${new URLSearchParams(API_FIELDS.map((f) => ["fields[]", f])).toString()}`;
   const metaResponse = await fetchWithRetry(metaUrl);
-  const doc = (await metaResponse.json()) as FrApiDocument;
+  const doc = (await metaResponse.json()) as FrDocumentJsonMeta;
+
+  if (!doc.document_number || !doc.publication_date) {
+    throw new Error(
+      `Invalid API response for document ${documentNumber}: missing document_number or publication_date`,
+    );
+  }
 
   return downloadSingleDocument(doc, output, 0);
 }
@@ -311,7 +286,7 @@ export async function downloadSingleFrDocument(
 // ── Private helpers ──
 
 async function downloadSingleDocument(
-  doc: FrApiDocument,
+  doc: FrDocumentJsonMeta,
   outputDir: string,
   fetchDelay: number,
 ): Promise<FrDownloadedFile> {
@@ -336,7 +311,14 @@ async function downloadSingleDocument(
   }
 
   const dest = createWriteStream(xmlPath);
-  await pipeline(Readable.fromWeb(xmlResponse.body as never), dest);
+  try {
+    await pipeline(Readable.fromWeb(xmlResponse.body as never), dest);
+  } catch (err) {
+    throw new Error(
+      `Failed to write XML for document ${doc.document_number} from ${doc.full_text_xml_url}: ` +
+        `${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
 
   // Get file sizes
   const xmlStat = await stat(xmlPath);
@@ -381,17 +363,31 @@ function buildMonthChunks(from: string, to: string): Array<{ from: string; to: s
   return chunks;
 }
 
-/** Fetch with retry on transient errors (429, 503, 504) */
+/** Fetch with retry on transient HTTP and network errors */
 async function fetchWithRetry(url: string, attempt = 0): Promise<Response> {
-  const response = await fetch(url);
+  let response: Response;
+  try {
+    response = await fetch(url);
+  } catch (err) {
+    // Network-level error (DNS, TLS, connection reset) — retry
+    if (attempt < MAX_RETRIES) {
+      const delay = RETRY_BASE_DELAY_MS * Math.pow(2, attempt);
+      await sleep(delay);
+      return fetchWithRetry(url, attempt + 1);
+    }
+    throw new Error(
+      `Network error after ${MAX_RETRIES + 1} attempts for ${url}: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
 
   if (response.ok) return response;
 
-  // Retry on transient errors
+  // Retry on transient HTTP errors
   if ((response.status === 429 || response.status === 503 || response.status === 504) && attempt < MAX_RETRIES) {
     const retryAfter = response.headers.get("Retry-After");
-    const delay = retryAfter
-      ? parseInt(retryAfter, 10) * 1000
+    const parsedRetry = retryAfter ? parseInt(retryAfter, 10) : NaN;
+    const delay = !isNaN(parsedRetry) && parsedRetry > 0
+      ? parsedRetry * 1000
       : RETRY_BASE_DELAY_MS * Math.pow(2, attempt);
     await sleep(delay);
     return fetchWithRetry(url, attempt + 1);

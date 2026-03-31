@@ -168,6 +168,7 @@ All errors call `process.exit(1)`:
 
 - **No global middleware**: All logic is self-contained in command `.action()` handlers
 - **Spinner text mutation**: Multi-title loops update spinner text in-place rather than creating new spinners
+- **Download progress via callbacks**: Downloader packages (`@lexbuild/usc`, `@lexbuild/ecfr`) expose `onProgress` callbacks on their options interfaces. The CLI commands pass callbacks that update `spinner.text` with per-title progress (e.g., `"Downloading eCFR titles from eCFR API (3/49) — Title 3"`). Progress totals exclude reserved titles. USC bulk zip uses `phase: "downloading" | "extracting"` to distinguish archive download from per-title extraction.
 - **Dynamic table columns**: Summary tables adapt columns based on granularity (section shows chapters + sections, title shows only tokens)
 - **Relative path reporting**: File paths in output use `relative(cwd, absolutePath)` for readability
 - **Performance timing**: Uses `performance.now()` for high-resolution elapsed time

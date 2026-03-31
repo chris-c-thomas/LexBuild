@@ -140,6 +140,10 @@ curl -s http://127.0.0.1:7700/health               # Verify running
 
 See `.claude/guides/lexbuild-ops.md` for the full operations guide.
 
+### CI / Release
+
+- **Publish workflow** (`.github/workflows/publish.yml`): Uses `changesets/action` with `commitMode: github-api` and a GitHub App token (`lexbuild-release-bot`) for verified commits that satisfy branch protection. Secrets: `RELEASE_BOT_APP_ID`, `RELEASE_BOT_PRIVATE_KEY` (repo secrets).
+
 ### Astro App Notes
 
 The Astro app (`apps/astro/`) is deployed to a self-managed VPS (AWS Lightsail) behind Cloudflare's edge cache. It has **no code dependency** on `@lexbuild/core`, `@lexbuild/usc`, or `@lexbuild/cli`. Deploy via `./scripts/deploy.sh` from the monorepo root.
@@ -515,6 +519,8 @@ Complete daily issue XML (~2.4 MB average). Updated by 6 AM on publishing days. 
 - **Meilisearch `--import-dump` doesn't exit**: It imports then keeps running as a foreground server. The deploy script backgrounds it, polls health, then kills it before restarting via PM2.
 - **Local Meilisearch dumps**: Use `--dump-dir ~/.meilisearch/dumps` to consolidate dumps alongside data. Without it, dumps default to `dumps/` relative to CWD. The deploy script searches multiple candidate locations as a fallback.
 - **Duplicate chapter directories in USC `_meta.json`**: Many USC titles have subchapters that share the same `chapter-NN/` directory (e.g., Title 5 Chapter 89 has three subchapters). The nav generator (`generate-nav.ts`) merges these by directory to avoid duplicate React keys in the sidebar.
+- **Ora spinner text should NOT end with `...`**: The trailing dots conflict with ora's own dots animation, causing visual artifacts (periods appearing around numbers). The spinner animation itself provides the "in progress" cue — end text with the last meaningful word, not ellipsis.
+- **Indexed array iteration with strict TypeScript**: `noUncheckedIndexedAccess` makes `arr[i]` return `T | undefined`, and `no-non-null-assertion` forbids `arr[i]!`. Use `for (const [i, item] of arr.entries())` instead of `for (let i = 0; ...)` to get typed values without assertions.
 
 ## When Adding New Source Types
 

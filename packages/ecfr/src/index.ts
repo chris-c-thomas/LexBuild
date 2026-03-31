@@ -13,6 +13,7 @@ export {
 } from "./downloader.js";
 export type {
   EcfrDownloadOptions,
+  EcfrDownloadProgress,
   EcfrDownloadResult,
   EcfrDownloadedFile,
   EcfrDownloadError,

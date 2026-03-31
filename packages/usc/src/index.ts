@@ -14,6 +14,7 @@ export {
 } from "./downloader.js";
 export type {
   DownloadOptions,
+  DownloadProgress,
   DownloadResult,
   DownloadedFile,
   DownloadError,

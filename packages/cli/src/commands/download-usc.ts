@@ -82,7 +82,7 @@ Source: https://uscode.house.gov/download/download.shtml`,
     }
 
     const label =
-      titleCount === 1 ? `Downloading Title ${titles?.[0]}` : `Downloading ${titleCount} titles`;
+      titleCount === 1 ? `Downloading Title ${titles?.[0]}` : `Downloading ${titleCount} USC titles`;
 
     const spinner = createSpinner(`${label}...`);
     spinner.start();
@@ -94,6 +94,17 @@ Source: https://uscode.house.gov/download/download.shtml`,
         outputDir,
         titles,
         releasePoint,
+        onProgress: ({ current, total, titleNumber, phase }) => {
+          if (phase === "extracting") {
+            spinner.text = `Extracting USC titles (${current}/${total}) — Title ${titleNumber}...`;
+          } else if (total === 1) {
+            spinner.text = `Downloading USC Title ${titleNumber}...`;
+          } else if (current === 0) {
+            spinner.text = "Downloading USC bulk archive...";
+          } else {
+            spinner.text = `Downloading USC titles (${current}/${total}) — Title ${titleNumber}...`;
+          }
+        },
       });
 
       const elapsed = performance.now() - startTime;

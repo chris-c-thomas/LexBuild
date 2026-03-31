@@ -23,12 +23,24 @@ export const ECFR_TITLE_NUMBERS = Array.from({ length: ECFR_TITLE_COUNT }, (_, i
 /** Titles that are reserved and have no bulk XML on govinfo */
 const RESERVED_TITLES = new Set([35]);
 
+/** Progress event emitted during download */
+export interface EcfrDownloadProgress {
+  /** Current item index (1-based) */
+  current: number;
+  /** Total items to process */
+  total: number;
+  /** Title number being processed */
+  titleNumber: number;
+}
+
 /** Options for downloading eCFR titles */
 export interface EcfrDownloadOptions {
   /** Download directory */
   output: string;
   /** Specific titles to download (1-50), or undefined for all */
   titles?: number[] | undefined;
+  /** Progress callback invoked before each title download */
+  onProgress?: ((progress: EcfrDownloadProgress) => void) | undefined;
 }
 
 /** Result of a successful download */
@@ -39,6 +51,8 @@ export interface EcfrDownloadResult {
   files: EcfrDownloadedFile[];
   /** Total bytes downloaded */
   totalBytes: number;
+  /** Titles that failed to download */
+  errors: EcfrDownloadError[];
 }
 
 /** Metadata for a single downloaded file */
@@ -72,28 +86,32 @@ export function buildEcfrDownloadUrl(titleNumber: number): string {
 export async function downloadEcfrTitles(
   options: EcfrDownloadOptions,
 ): Promise<EcfrDownloadResult> {
-  const { output } = options;
+  const { output, onProgress } = options;
   const titles = options.titles ?? ECFR_TITLE_NUMBERS;
+  const downloadable = titles.filter((t) => !RESERVED_TITLES.has(t));
 
   await mkdir(output, { recursive: true });
   const files: EcfrDownloadedFile[] = [];
+  const errors: EcfrDownloadError[] = [];
   let totalBytes = 0;
 
-  for (const titleNum of titles) {
-    // Skip reserved titles (e.g., Title 35 — Panama Canal) that have no bulk XML
-    if (RESERVED_TITLES.has(titleNum)) continue;
+  for (const [i, titleNum] of downloadable.entries()) {
+    onProgress?.({ current: i + 1, total: downloadable.length, titleNumber: titleNum });
 
     const url = buildEcfrDownloadUrl(titleNum);
     const filePath = join(output, `ECFR-title${titleNum}.xml`);
 
     const response = await fetch(url);
     if (!response.ok) {
-      console.warn(`Failed to download eCFR Title ${titleNum}: ${response.status}`);
+      errors.push({ titleNumber: titleNum, error: `HTTP ${response.status}` });
       continue;
     }
 
     const body = response.body;
-    if (!body) continue;
+    if (!body) {
+      errors.push({ titleNumber: titleNum, error: "Empty response body" });
+      continue;
+    }
 
     const dest = createWriteStream(filePath);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -106,5 +124,5 @@ export async function downloadEcfrTitles(
     files.push({ path: filePath, titleNumber: titleNum, size });
   }
 
-  return { titlesDownloaded: files.length, files, totalBytes };
+  return { titlesDownloaded: files.length, files, totalBytes, errors };
 }

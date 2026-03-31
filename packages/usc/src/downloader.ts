@@ -54,6 +54,18 @@ export function isAllTitles(titles: number[]): boolean {
 // Public API
 // ---------------------------------------------------------------------------
 
+/** Progress event emitted during download */
+export interface DownloadProgress {
+  /** Current item index (1-based for per-title, 0 for bulk archive download) */
+  current: number;
+  /** Total items to process */
+  total: number;
+  /** Title number being processed (0 for bulk archive download) */
+  titleNumber: number;
+  /** Phase of the download */
+  phase: "downloading" | "extracting";
+}
+
 /** Options for downloading USC XML files */
 export interface DownloadOptions {
   /** Directory to save downloaded XML files */
@@ -62,6 +74,8 @@ export interface DownloadOptions {
   titles?: number[] | undefined;
   /** Release point override (default: CURRENT_RELEASE_POINT) */
   releasePoint?: string | undefined;
+  /** Progress callback invoked before each title download/extraction */
+  onProgress?: ((progress: DownloadProgress) => void) | undefined;
 }
 
 /** Result of a download operation */
@@ -112,10 +126,12 @@ export async function downloadTitles(options: DownloadOptions): Promise<Download
 
   await mkdir(options.outputDir, { recursive: true });
 
+  const { onProgress } = options;
+
   // Use bulk zip when all 54 titles are requested
   if (options.titles === undefined || isAllTitles(titles)) {
     try {
-      const files = await downloadAndExtractAllTitles(releasePoint, options.outputDir);
+      const files = await downloadAndExtractAllTitles(releasePoint, options.outputDir, onProgress);
       return { releasePoint, files, errors: [] };
     } catch {
       // Fall back to per-title downloads
@@ -125,7 +141,8 @@ export async function downloadTitles(options: DownloadOptions): Promise<Download
   const files: DownloadedFile[] = [];
   const errors: DownloadError[] = [];
 
-  for (const titleNum of titles) {
+  for (const [i, titleNum] of titles.entries()) {
+    onProgress?.({ current: i + 1, total: titles.length, titleNumber: titleNum, phase: "downloading" });
     try {
       const file = await downloadAndExtractTitle(titleNum, releasePoint, options.outputDir);
       files.push(file);
@@ -322,6 +339,7 @@ const USC_XML_RE = /^(?:.*\/)?usc(\d{2})\.xml$/;
 function extractAllXmlFromZip(
   zipPath: string,
   outputDir: string,
+  onExtract?: ((titleNumber: number) => void) | undefined,
 ): Promise<{ titleNumber: number; filePath: string }[]> {
   return new Promise((resolve, reject) => {
     yauzlOpen(zipPath, { lazyEntries: true }, (err, zipFile) => {
@@ -354,6 +372,7 @@ function extractAllXmlFromZip(
           extractEntry(zipFile, entry, outPath)
             .then(() => {
               extracted.push({ titleNumber: titleNum, filePath: outPath });
+              onExtract?.(titleNum);
               pending--;
               // Continue reading entries after extraction completes
               zipFile.readEntry();
@@ -388,9 +407,12 @@ function extractAllXmlFromZip(
 async function downloadAndExtractAllTitles(
   releasePoint: string,
   outputDir: string,
+  onProgress?: ((progress: DownloadProgress) => void) | undefined,
 ): Promise<DownloadedFile[]> {
   const url = buildAllTitlesUrl(releasePoint);
   const zipPath = join(outputDir, "uscAll.zip");
+
+  onProgress?.({ current: 0, total: 54, titleNumber: 0, phase: "downloading" });
 
   // Download the zip file
   const response = await fetch(url);
@@ -407,7 +429,11 @@ async function downloadAndExtractAllTitles(
   await pipeline(Readable.fromWeb(response.body as never), fileStream);
 
   // Extract all XML files from zip
-  const extracted = await extractAllXmlFromZip(zipPath, outputDir);
+  let extractCount = 0;
+  const extracted = await extractAllXmlFromZip(zipPath, outputDir, (titleNumber) => {
+    extractCount++;
+    onProgress?.({ current: extractCount, total: 54, titleNumber, phase: "extracting" });
+  });
 
   // Clean up zip file
   await unlink(zipPath);

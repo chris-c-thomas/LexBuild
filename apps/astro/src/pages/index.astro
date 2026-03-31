@@ -319,7 +319,7 @@ Astro.response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-
           How It Works
         </h2>
         <p class="text-ink-muted text-[15px]">
-          Source-specific parsers feed a shared core engine. Every source follows the same pipeline.
+          The CLI downloads source data, routes it through source-specific parsers and a shared core engine, and writes structured Markdown.
         </p>
       </div>
 
@@ -362,7 +362,7 @@ Astro.response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-
                   </div>
                   <div>
                     <div class="pipeline-source-title">USLM 1.0 XML</div>
-                    <div class="pipeline-source-sub font-bold">OLRC <br/><a class="font-normal hover:underline" href="https://uscode.house.gov">uscode.house.gov</a></div>
+                    <div class="pipeline-source-sub font-semibold">OLRC - <a class="font-normal hover:underline" href="https://uscode.house.gov">uscode.house.gov</a></div>
                   </div>
                 </div>
                 <div class="pipeline-source pipeline-source-ecfr">
@@ -370,8 +370,8 @@ Astro.response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><path d="m16 16 2 2 4-4"></path><path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"></path><path d="m7.5 4.27 9 5.15"></path><polyline points="3.29 7 12 12 20.71 7"></polyline><line x1="12" y1="22" x2="12" y2="12"></line></svg>
                   </div>
                   <div>
-                    <div class="pipeline-source-title">GPO/SGML XML</div>
-                    <div class="pipeline-source-sub font-bold">eCFR<br/><a class="font-normal hover:underline" href="https://www.ecfr.gov">ecfr.gov</a></div>
+                    <div class="pipeline-source-title pb-1">GPO/SGML XML</div>
+                    <div class="pipeline-source-sub font-semibold">eCFR - <a class="font-normal hover:underline" href="https://www.ecfr.gov">ecfr.gov</a></div>
                   </div>
                 </div>
                 <div class="pipeline-source pipeline-source-future">
@@ -379,8 +379,8 @@ Astro.response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><circle cx="12" cy="12" r="10"></circle><path d="M8 12h8"></path><path d="M12 8v8"></path></svg>
                   </div>
                   <div>
-                    <div class="pipeline-source-title">Any Legal XML</div>
-                    <div class="pipeline-source-sub">Federal Register, state statutes, ...</div>
+                    <div class="pipeline-source-title pb-1">Any Legal Schema</div>
+                    <div class="pipeline-source-sub">Federal Register, <br/>state statutes, etc.</div>
                   </div>
                 </div>
               </div>
@@ -421,15 +421,15 @@ Astro.response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-
               <div class="pipeline-stage-label">Source Parsers</div>
               <div class="pipeline-source-stack">
                 <div class="pipeline-parser pipeline-parser-usc">
-                  <div class="pipeline-parser-name">@lexbuild/usc</div>
+                  <div class="pipeline-parser-name pb-1">@lexbuild/usc</div>
                   <div class="pipeline-parser-desc">USLM schema → AST builder</div>
                 </div>
                 <div class="pipeline-parser pipeline-parser-ecfr">
-                  <div class="pipeline-parser-name">@lexbuild/ecfr</div>
+                  <div class="pipeline-parser-name pb-1">@lexbuild/ecfr</div>
                   <div class="pipeline-parser-desc">GPO/SGML → AST builder</div>
                 </div>
                 <div class="pipeline-parser pipeline-parser-future">
-                  <div class="pipeline-parser-name">@lexbuild/&lt;source&gt;</div>
+                  <div class="pipeline-parser-name pb-1">@lexbuild/&lt;source&gt;</div>
                   <div class="pipeline-parser-desc">New schema → AST builder</div>
                 </div>
               </div>
@@ -449,8 +449,8 @@ Astro.response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path><path d="M10 9H8"></path><path d="M16 13H8"></path><path d="M16 17H8"></path></svg>
                 </div>
                 <div>
-                  <div class="pipeline-output-title">Structured Markdown</div>
-                  <div class="pipeline-output-sub">YAML frontmatter + per-section .md files</div>
+                  <div class="pipeline-output-title pb-1">Structured Markdown</div>
+                  <div class="pipeline-output-sub">YAML frontmatter + <br/>per-section .md files</div>
                 </div>
               </div>
             </div>
@@ -1089,6 +1089,10 @@ Astro.response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-
     margin-top: 0.0625rem;
   }
 
+  .pipeline-source-sub a {
+    color: inherit;
+  }
+
   :global(.dark) .pipeline-source-sub {
     color: var(--color-slate-blue-400, #94b7c7);
   }
@@ -1173,13 +1177,13 @@ Astro.response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-
 
   .pipeline-core-name {
     font-family: var(--font-mono);
-    font-size: 0.8125rem;
-    font-weight: 700;
-    color: var(--color-slate-blue-800, #3f5869);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-slate-blue-700, #476c85);
   }
 
   :global(.dark) .pipeline-core-name {
-    color: var(--color-slate-blue-200, #d3e3e9);
+    color: var(--color-slate-blue-300, #b4cfda);
   }
 
   .pipeline-core-steps {
@@ -1297,7 +1301,7 @@ Astro.response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-
   }
 
   :global(.dark) .pipeline-source-future {
-    background: color-mix(in oklch, var(--color-putty-950, #2a1d0a) 50%, var(--card));
+    background: var(--color-putty-950, #2a1d0a);
     border-color: var(--color-putty-700, #8c5e1e);
   }
 
@@ -1320,7 +1324,7 @@ Astro.response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-
   }
 
   :global(.dark) .pipeline-parser-future {
-    background: color-mix(in oklch, var(--color-putty-950, #2a1d0a) 50%, var(--card));
+    background: var(--color-putty-950, #2a1d0a);
     border-color: var(--color-putty-700, #8c5e1e);
     border-left-color: var(--color-putty-600, #b66f2b);
   }

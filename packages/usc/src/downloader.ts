@@ -56,11 +56,11 @@ export function isAllTitles(titles: number[]): boolean {
 
 /** Progress event emitted during download */
 export interface DownloadProgress {
-  /** Current item index (1-based) */
+  /** Current item index (1-based for per-title, 0 for bulk archive download) */
   current: number;
   /** Total items to process */
   total: number;
-  /** Title number being processed */
+  /** Title number being processed (0 for bulk archive download) */
   titleNumber: number;
   /** Phase of the download */
   phase: "downloading" | "extracting";

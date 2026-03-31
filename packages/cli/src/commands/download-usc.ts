@@ -95,15 +95,14 @@ Source: https://uscode.house.gov/download/download.shtml`,
         titles,
         releasePoint,
         onProgress: ({ current, total, titleNumber, phase }) => {
-          if (phase === "downloading" && total === 1) {
-            spinner.text = `Downloading USC Title ${titleNumber}...`;
-          } else if (phase === "downloading" && current === 0) {
-            // Bulk zip: current=0 means downloading the archive
-            spinner.text = "Downloading USC bulk archive...";
-          } else if (phase === "downloading") {
-            spinner.text = `Downloading USC titles (${current}/${total}) — Title ${titleNumber}...`;
-          } else {
+          if (phase === "extracting") {
             spinner.text = `Extracting USC titles (${current}/${total}) — Title ${titleNumber}...`;
+          } else if (total === 1) {
+            spinner.text = `Downloading USC Title ${titleNumber}...`;
+          } else if (current === 0) {
+            spinner.text = "Downloading USC bulk archive...";
+          } else {
+            spinner.text = `Downloading USC titles (${current}/${total}) — Title ${titleNumber}...`;
           }
         },
       });

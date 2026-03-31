@@ -108,7 +108,10 @@ export async function downloadEcfrTitles(
     }
 
     const body = response.body;
-    if (!body) continue;
+    if (!body) {
+      errors.push({ titleNumber: titleNum, error: "Empty response body" });
+      continue;
+    }
 
     const dest = createWriteStream(filePath);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

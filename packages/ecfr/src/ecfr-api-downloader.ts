@@ -17,7 +17,7 @@ import { mkdir, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { pipeline } from "node:stream/promises";
 import { Readable } from "node:stream";
-import { ECFR_TITLE_NUMBERS } from "./downloader.js";
+import { ECFR_TITLE_NUMBERS, type EcfrDownloadProgress } from "./downloader.js";
 
 /** Base URL for the eCFR versioner API */
 const ECFR_API_BASE = "https://www.ecfr.gov/api/versioner/v1";
@@ -111,7 +111,7 @@ export interface EcfrApiDownloadOptions {
   /** Pre-fetched title metadata (avoids a second /titles call) */
   titlesMeta?: EcfrTitlesResponse | undefined;
   /** Progress callback invoked before each title download */
-  onProgress?: ((progress: { current: number; total: number; titleNumber: number }) => void) | undefined;
+  onProgress?: ((progress: EcfrDownloadProgress) => void) | undefined;
 }
 
 /** Result of a download from the eCFR API */
@@ -181,7 +181,7 @@ export function buildEcfrApiDownloadUrl(titleNumber: number, date: string): stri
 export async function downloadEcfrTitlesFromApi(
   options: EcfrApiDownloadOptions,
 ): Promise<EcfrApiDownloadResult> {
-  const { output } = options;
+  const { output, onProgress } = options;
   const titles = options.titles ?? ECFR_TITLE_NUMBERS;
 
   // Fetch metadata (or use pre-fetched)
@@ -229,7 +229,7 @@ export async function downloadEcfrTitlesFromApi(
   const downloadable = titles.filter((t) => !RESERVED_TITLES.has(t));
 
   for (const [i, titleNum] of downloadable.entries()) {
-    options.onProgress?.({ current: i + 1, total: downloadable.length, titleNumber: titleNum });
+    onProgress?.({ current: i + 1, total: downloadable.length, titleNumber: titleNum });
 
     const titleDate = titleDateMap.get(titleNum) ?? meta.date;
     const filePath = join(output, `ECFR-title${titleNum}.xml`);

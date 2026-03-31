@@ -299,7 +299,8 @@ async function downloadFromApi(
   }
 
   const titleWord = result.titlesDownloaded === 1 ? "title" : "titles";
+  const failSuffix = result.failed.length > 0 ? ` (${result.failed.length} failed)` : "";
   const summary = `Downloaded ${result.titlesDownloaded} ${titleWord} (${formatBytes(result.totalBytes)}) in ${formatDuration(elapsed)}`;
-  console.log(`  ${success(summary)}`);
+  console.log(`  ${success(summary + failSuffix)}`);
   console.log("");
 }

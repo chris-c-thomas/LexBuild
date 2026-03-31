@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
 
+## [1.13.3]
+
+### Added
+
+- Download progress indicators — `onProgress` callbacks on USC and eCFR downloaders, spinner text updates per title in CLI
+- Spinner around eCFR API metadata preflight fetch
+
+### Fixed
+
+- eCFR govinfo downloader now surfaces HTTP errors structurally instead of `console.warn`
+- eCFR API download summary now shows failure count for parity with govinfo path
+- Empty response body in govinfo downloader no longer silently skipped
+
+### Security
+
+- Bump transitive deps via `pnpm.overrides`: picomatch ^2.3.2/^4.0.4, path-to-regexp ^8.4.0, brace-expansion ^5.0.5, yaml ^2.8.3, smol-toml ^1.6.1
+
+## [1.13.2]
+
+### Added
+
+- Download progress indicators — `onProgress` callbacks on USC and eCFR downloaders
+
 ## [1.13.1]
 
 ### Changed

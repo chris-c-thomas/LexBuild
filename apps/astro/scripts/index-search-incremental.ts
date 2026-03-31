@@ -6,6 +6,10 @@
  * `<content-dir>/.search-indexed-at`. On first run (no checkpoint), indexes
  * everything without deleting the existing index.
  *
+ * Indexes all three sources: USC, eCFR, and FR.
+ * IMPORTANT: Keep sources, SearchDocument shape, and index configuration in
+ * sync with `index-search.ts` (the full reindex script).
+ *
  * Use `index-search.ts` for a full clean reindex (delete + rebuild).
  *
  * Usage:
@@ -43,7 +47,7 @@ const CHECKPOINT_FILE = ".search-indexed-at";
 
 interface SearchDocument {
   id: string;
-  source: "usc" | "ecfr";
+  source: "usc" | "ecfr" | "fr";
   title_number: number;
   title_name: string;
   granularity: string;
@@ -53,6 +57,7 @@ interface SearchDocument {
   status: string;
   hierarchy: string[];
   url: string;
+  document_type?: string;
 }
 
 interface UscTitleMeta {
@@ -338,6 +343,105 @@ async function indexEcfrIncremental(
 }
 
 // ---------------------------------------------------------------------------
+// FR — walk, diff, and upsert (no _meta.json, reads frontmatter directly)
+// ---------------------------------------------------------------------------
+
+async function indexFrIncremental(
+  contentDir: string,
+  indexer: BatchIndexer,
+  checkpoint: number,
+  expectedIds: Set<string>,
+): Promise<{ indexed: number; skipped: number }> {
+  const frDir = join(contentDir, "fr", "documents");
+  let yearDirs: string[];
+  try {
+    yearDirs = (await readdir(frDir)).filter((d) => /^\d{4}$/.test(d)).sort();
+  } catch {
+    return { indexed: 0, skipped: 0 };
+  }
+
+  let indexed = 0;
+  let skipped = 0;
+
+  for (const yearDir of yearDirs) {
+    const yearPath = join(frDir, yearDir);
+    let monthDirs: string[];
+    try {
+      monthDirs = (await readdir(yearPath)).filter((d) => /^\d{2}$/.test(d)).sort();
+    } catch {
+      continue;
+    }
+
+    for (const monthDir of monthDirs) {
+      const monthPath = join(yearPath, monthDir);
+      let files: string[];
+      try {
+        files = (await readdir(monthPath)).filter((f) => f.endsWith(".md") && f !== ".md");
+      } catch {
+        continue;
+      }
+
+      for (const file of files) {
+        const mdPath = join(monthPath, file);
+        const docId = sanitizeId(`fr-${yearDir}-${monthDir}-${file.replace(/\.md$/, "")}`);
+        expectedIds.add(docId);
+
+        const mtime = await getFileMtimeMs(mdPath);
+        if (mtime <= checkpoint) {
+          skipped++;
+          continue;
+        }
+
+        try {
+          const raw = await readFile(mdPath, "utf-8");
+          const { data, content } = matter(raw);
+
+          const docNumber = (data.document_number as string) || file.replace(/\.md$/, "");
+          const heading = (data.section_name as string) || (data.title as string) || docNumber;
+          const docType = (data.document_type as string) || "";
+          const pubDate = (data.publication_date as string) || "";
+          const agencies = Array.isArray(data.agencies)
+            ? (data.agencies as string[])
+            : data.agency
+              ? [data.agency as string]
+              : [];
+
+          const body = content
+            .replace(/^#{1,6}\s+.*$/gm, "")
+            .replace(/\n{3,}/g, "\n\n")
+            .trim()
+            .slice(0, BODY_TRUNCATE_CHARS);
+
+          await indexer.add({
+            id: docId,
+            source: "fr",
+            title_number: 0,
+            title_name: "Federal Register",
+            granularity: "document",
+            identifier: (data.fr_citation as string) || `FR Doc. ${docNumber}`,
+            heading,
+            body,
+            status: docType,
+            document_type: docType,
+            hierarchy: [
+              yearDir,
+              pubDate || `${yearDir}-${monthDir}`,
+              ...(agencies.length > 0 ? [agencies[0] as string] : []),
+            ],
+            url: `/fr/${yearDir}/${monthDir}/${file.replace(/\.md$/, "")}`,
+          });
+          indexed++;
+        } catch {
+          // Skip unparseable files
+        }
+      }
+    }
+  }
+
+  return { indexed, skipped };
+}
+
+// ---------------------------------------------------------------------------
 // Prune — remove orphaned documents from the index
 // ---------------------------------------------------------------------------
 
@@ -395,7 +499,13 @@ async function configureIndex(client: Meilisearch): Promise<void> {
 
   await wait(await index.updateSearchableAttributes(["identifier", "heading", "body"]));
   await wait(
-    await index.updateFilterableAttributes(["source", "title_number", "granularity", "status"]),
+    await index.updateFilterableAttributes([
+      "source",
+      "title_number",
+      "granularity",
+      "status",
+      "document_type",
+    ]),
   );
   await wait(await index.updateSortableAttributes(["title_number", "identifier"]));
   await wait(
@@ -409,6 +519,7 @@ async function configureIndex(client: Meilisearch): Promise<void> {
       "status",
       "hierarchy",
       "url",
+      "document_type",
     ]),
   );
   await wait(
@@ -516,8 +627,16 @@ async function main(): Promise<void> {
     `  eCFR: ${ecfr.indexed} upserted, ${ecfr.skipped} skipped (unchanged since checkpoint)`,
   );
 
-  const totalIndexed = usc.indexed + ecfr.indexed;
-  const totalSkipped = usc.skipped + ecfr.skipped;
+  // Index FR
+  console.log("\nScanning FR documents...");
+  const fr = await indexFrIncremental(resolvedDir, indexer, checkpoint, expectedIds);
+  await indexer.flush();
+  console.log(
+    `  FR: ${fr.indexed} upserted, ${fr.skipped} skipped (unchanged since checkpoint)`,
+  );
+
+  const totalIndexed = usc.indexed + ecfr.indexed + fr.indexed;
+  const totalSkipped = usc.skipped + ecfr.skipped + fr.skipped;
 
   // Prune orphaned documents
   let pruned = 0;

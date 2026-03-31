@@ -131,7 +131,7 @@ npx tsx scripts/index-search.ts                     # Meilisearch index (~281k d
 
 Script notes:
 - **generate-highlights.ts**: Forks child processes in 2k-file chunks (default, tunable via `--chunk-size N`) to avoid Shiki OOM. Each child is heap-capped at 2GB (`--max-old-space-size`). Uses `matter(raw, { cache: false })` to prevent gray-matter from caching every file in memory. Supports `--limit N` for testing. Changing themes requires updating both this script and `src/lib/shiki.ts`, then deleting existing `.highlighted.html` files.
-- **index-search.ts**: 500 docs/batch, 300s waitForTask timeout. Requires `MEILI_URL` and optionally `MEILI_MASTER_KEY` env vars. Document IDs sanitized (dots/colons → underscores).
+- **index-search.ts** and **index-search-incremental.ts**: Must be kept in sync — sources indexed, `SearchDocument` shape, and `configureIndex` settings must match. Both index USC, eCFR, and FR. Full reindex deletes and rebuilds; incremental upserts only changed files (mtime-based checkpoint). 500 docs/batch, 300s waitForTask timeout. Document IDs sanitized (dots/colons → underscores).
 - **generate-nav.ts**: Includes reserved title placeholders (USC 53, eCFR 35). Chapter grouping for eCFR derived from filesystem directories, not `_meta.json`.
 
 ## Meilisearch Search

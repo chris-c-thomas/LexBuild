@@ -1,9 +1,11 @@
 /**
  * Index content into Meilisearch for full-text search.
  *
- * Reads _meta.json sidecar files and truncated Markdown body from both
- * USC and eCFR section-level output, then upserts documents into a
- * Meilisearch index in streaming batches to avoid memory exhaustion.
+ * Full clean reindex: deletes the existing index and rebuilds from scratch.
+ * Indexes all three sources: USC, eCFR, and FR.
+ *
+ * IMPORTANT: Keep sources, SearchDocument shape, and index configuration in
+ * sync with `index-search-incremental.ts` (the incremental upsert script).
  *
  * Usage: npx tsx scripts/index-search.ts [content-dir]
  *

@@ -156,6 +156,7 @@ Document types:
     }
 
     const spinner = createSpinner(`Downloading Federal Register documents from ${from} to ${to}`);
+    spinner.start();
 
     try {
       const result = await downloadFrDocuments({

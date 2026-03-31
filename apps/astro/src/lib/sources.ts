@@ -42,7 +42,7 @@ export const SOURCES: Record<SourceId, SourceConfig> = {
     titleCount: 0,
     chapterCount: 0,
     sectionCount: 0,
-    hasSidebar: false,
+    hasSidebar: true,
     slugGranularity: { 1: "year", 2: "month", 3: "document" },
   },
 };

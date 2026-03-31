@@ -172,6 +172,14 @@ if (monthDocs.length > 0) {
   for (const [date, docs] of dateMap) {
     docsByDate.push({ date, docs });
   }
+  // Most recent dates first; undated (YYYY-MM) groups go last
+  docsByDate.sort((a, b) => {
+    const aFull = a.date.length === 10;
+    const bFull = b.date.length === 10;
+    if (aFull && !bFull) return -1;
+    if (!aFull && bFull) return 1;
+    return b.date.localeCompare(a.date);
+  });
 }
 ---
 

@@ -135,7 +135,9 @@ npx tsx scripts/generate-highlights.ts                    # Pre-render Shiki HTM
 npx tsx scripts/generate-highlights.ts --limit 50         # Test on subset
 npx tsx scripts/generate-highlights.ts --chunk-size 1000  # Smaller chunks for memory-constrained runs
 npx tsx scripts/generate-sitemap.ts                # Build sitemap index + chunked sitemaps
-npx tsx scripts/index-search.ts                    # Index into Meilisearch (~281k docs, ~26 min)
+npx tsx scripts/index-search.ts                    # Full reindex into Meilisearch (~1M docs)
+npx tsx scripts/index-search-incremental.ts --source fr  # Index a single source
+npx tsx scripts/index-search-incremental.ts --set-checkpoint  # Mark checkpoint without indexing
 
 # Meilisearch local setup (macOS)
 brew install meilisearch                           # Install via Homebrew
@@ -559,6 +561,7 @@ Complete daily issue XML (~2.4 MB average). Updated by 6 AM on publishing days. 
 - **Meilisearch `--import-dump` doesn't exit**: It imports then keeps running as a foreground server. The deploy script backgrounds it, polls health, then kills it before restarting via PM2.
 - **Local Meilisearch dumps**: Use `--dump-dir ~/.meilisearch/dumps` to consolidate dumps alongside data. Without it, dumps default to `dumps/` relative to CWD. The deploy script searches multiple candidate locations as a fallback.
 - **Duplicate chapter directories in USC `_meta.json`**: Many USC titles have subchapters that share the same `chapter-NN/` directory (e.g., Title 5 Chapter 89 has three subchapters). The nav generator (`generate-nav.ts`) merges these by directory to avoid duplicate React keys in the sidebar.
+- **gray-matter `{ cache: false }` in batch scripts**: gray-matter caches every parsed file by input string, causing unbounded memory growth. Always pass `{ cache: false }` when calling `matter()` in loops or batch processing scripts.
 - **Ora spinner text should NOT end with `...`**: The trailing dots conflict with ora's own dots animation, causing visual artifacts (periods appearing around numbers). The spinner animation itself provides the "in progress" cue — end text with the last meaningful word, not ellipsis.
 - **Indexed array iteration with strict TypeScript**: `noUncheckedIndexedAccess` makes `arr[i]` return `T | undefined`, and `no-non-null-assertion` forbids `arr[i]!`. Use `for (const [i, item] of arr.entries())` instead of `for (let i = 0; ...)` to get typed values without assertions.
 - **FR documents use `title_number: 0`**: FR documents don't belong to a USC/CFR title. Convention: `title_number: 0`, `title_name: "Federal Register"`, `section_number` = document number string.

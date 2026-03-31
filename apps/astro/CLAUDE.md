@@ -85,7 +85,7 @@ scripts/
 ├── generate-nav.ts                 # _meta.json → public/nav/ JSON
 ├── generate-highlights.ts          # Batch Shiki pre-rendering
 ├── generate-sitemap.ts             # Sitemap index + chunks
-├── index-search.ts                 # Full Meilisearch index (281k docs)
+├── index-search.ts                 # Full Meilisearch reindex (~1M docs)
 └── index-search-incremental.ts     # Incremental upsert
 ```
 
@@ -126,7 +126,9 @@ npx tsx scripts/generate-nav.ts                     # Build sidebar JSON (<2s)
 npx tsx scripts/generate-highlights.ts              # Shiki pre-render (~1M files w/ FR)
 npx tsx scripts/generate-highlights.ts --chunk-size 1000  # Smaller chunks if memory-tight
 npx tsx scripts/generate-sitemap.ts                 # Sitemap (~292k URLs, <5s)
-npx tsx scripts/index-search.ts                     # Meilisearch index (~281k docs)
+npx tsx scripts/index-search.ts                     # Meilisearch full reindex (~1M docs)
+npx tsx scripts/index-search-incremental.ts --source fr  # Index only one source
+npx tsx scripts/index-search-incremental.ts --set-checkpoint  # Set checkpoint without indexing
 ```
 
 Script notes:
@@ -217,6 +219,7 @@ Initialized with radix-nova preset, zinc theme. Components in `src/components/ui
 - **Homepage sections with hardcoded light backgrounds** (e.g., `bg-[#FAFAFA]`, `bg-summer-green-50/75`) must include `dark:` overrides. Use `dark:bg-background` or `dark:bg-slate-blue-950/50` for subtle dark tinting.
 - **Homepage section order**: Hero → CLI Quick Start → Browse Sources → How It Works (pipeline diagram) → Sample Output → Packages. Background alternation: surface/grid → transparent → slate-blue-50 → transparent → #FAFAFA → summer-green-50. The pipeline diagram is a complex scoped-CSS component with CLI as outer wrapper, core engine above parsers, and dependency connectors between layers.
 - **gray-matter cache corrupts `.matter`**: `gray-matter` caches results by input string. The `.matter` property is a lazy getter consumed by `.data` access. On the second SSR request with the same file, the cached object returns `undefined` for `.matter`. Always use `matter(raw, { cache: false })` when reading `.matter`.
+- **gray-matter `{ cache: false }` in batch scripts**: gray-matter caches parsed results by input string. In batch processing (highlights, search indexing), this causes unbounded RSS growth (~30MB per 1,000 files). Always pass `{ cache: false }` when calling `matter()` in loops. Affects `generate-highlights.ts`, `index-search.ts`, and `index-search-incremental.ts`.
 - **React hydration with localStorage**: Don't read localStorage in `useState()` initializer — SSR renders the default, client reads stored value, causing hydration mismatch. Use `useLayoutEffect` to apply stored value after hydration but before paint.
 - **`--content` deploy doesn't regenerate anything**: It only rsyncs existing local files. To update nav/sitemap after code changes, either regenerate locally then `--content`, or SSH into VPS and regenerate there. `--remote` runs the full pipeline.
 - **Error pages must be at `src/pages/` root** — Astro's 404/500 auto-routing only works for `src/pages/404.astro` and `src/pages/500.astro`. Subdirectories (e.g., `src/pages/errors/`) would change the URL path and break auto-routing.

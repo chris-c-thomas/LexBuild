@@ -121,7 +121,7 @@ function sanitizeId(raw: string): string {
 async function readTruncatedBody(mdPath: string): Promise<string> {
   try {
     const raw = await readFile(mdPath, "utf-8");
-    const { content } = matter(raw);
+    const { content } = matter(raw, { cache: false });
     const cleaned = content
       .replace(/^#{1,6}\s+.*$/gm, "")
       .replace(/\n{3,}/g, "\n\n")
@@ -338,7 +338,7 @@ async function indexFrDocuments(contentDir: string, indexer: BatchIndexer): Prom
         const mdPath = join(monthPath, file);
         try {
           const raw = await readFile(mdPath, "utf-8");
-          const { data, content } = matter(raw);
+          const { data, content } = matter(raw, { cache: false });
 
           const docNumber = (data.document_number as string) || file.replace(/\.md$/, "");
           const heading = (data.section_name as string) || (data.title as string) || docNumber;

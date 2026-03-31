@@ -13,12 +13,14 @@
  * Use `index-search.ts` for a full clean reindex (delete + rebuild).
  *
  * Usage:
- *   npx tsx scripts/index-search-incremental.ts [content-dir] [--prune]
+ *   npx tsx scripts/index-search-incremental.ts [content-dir] [--prune] [--source <name>]
  *
  * Options:
- *   content-dir   Path to content directory (default: ./content)
- *   --prune       Remove documents from the index for sections that no longer
- *                 exist on disk (compares Meilisearch IDs against filesystem)
+ *   content-dir      Path to content directory (default: ./content)
+ *   --prune          Remove documents from the index for sections that no longer
+ *                    exist on disk (compares Meilisearch IDs against filesystem)
+ *   --source <name>  Only index a specific source: usc, ecfr, or fr
+ *   --set-checkpoint Write the checkpoint timestamp and exit (no indexing)
  *
  * Environment:
  *   MEILI_URL          Meilisearch endpoint (default: http://127.0.0.1:7700)
@@ -127,7 +129,7 @@ function sanitizeId(raw: string): string {
 async function readTruncatedBody(mdPath: string): Promise<string> {
   try {
     const raw = await readFile(mdPath, "utf-8");
-    const { content } = matter(raw);
+    const { content } = matter(raw, { cache: false });
     const cleaned = content
       .replace(/^#{1,6}\s+.*$/gm, "")
       .replace(/\n{3,}/g, "\n\n")
@@ -394,7 +396,7 @@ async function indexFrIncremental(
 
         try {
           const raw = await readFile(mdPath, "utf-8");
-          const { data, content } = matter(raw);
+          const { data, content } = matter(raw, { cache: false });
 
           const docNumber = (data.document_number as string) || file.replace(/\.md$/, "");
           const heading = (data.section_name as string) || (data.title as string) || docNumber;
@@ -544,10 +546,23 @@ async function main(): Promise<void> {
   const args = process.argv.slice(2);
   let contentDir = "./content";
   let prune = false;
+  let sourceFilter: "usc" | "ecfr" | "fr" | null = null;
+  let setCheckpoint = false;
 
-  for (const arg of args) {
-    if (arg === "--prune") {
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i]!;
+    if (arg === "--set-checkpoint") {
+      setCheckpoint = true;
+    } else if (arg === "--prune") {
       prune = true;
+    } else if (arg === "--source" && args[i + 1]) {
+      const val = args[i + 1]!;
+      if (val !== "usc" && val !== "ecfr" && val !== "fr") {
+        console.error(`Invalid source: ${val}. Must be usc, ecfr, or fr.`);
+        process.exit(1);
+      }
+      sourceFilter = val;
+      i++;
     } else if (!arg.startsWith("--")) {
       contentDir = arg;
     }
@@ -556,10 +571,18 @@ async function main(): Promise<void> {
   const resolvedDir = resolve(contentDir);
   const runStartTime = Date.now();
 
+  if (setCheckpoint) {
+    await writeCheckpoint(resolvedDir, Date.now());
+    console.log(`Checkpoint set to ${new Date().toISOString()} in ${resolvedDir}`);
+    return;
+  }
+
   console.log(`Content directory: ${resolvedDir}`);
   console.log(`Meilisearch URL: ${MEILI_URL}`);
   console.log(`Index name: ${INDEX_NAME}`);
-  console.log(`Mode: incremental upsert${prune ? " + prune" : ""}`);
+  console.log(
+    `Mode: incremental upsert${prune ? " + prune" : ""}${sourceFilter ? ` (${sourceFilter} only)` : ""}`,
+  );
   console.log(`  Preserves the existing index. Adds new documents and updates existing ones.`);
 
   const client = new Meilisearch({
@@ -611,41 +634,59 @@ async function main(): Promise<void> {
   // Track all expected IDs for pruning
   const expectedIds = new Set<string>();
 
+  let totalIndexed = 0;
+  let totalSkipped = 0;
+
   // Index USC
-  console.log("\nScanning USC documents...");
-  const usc = await indexUscIncremental(resolvedDir, indexer, checkpoint, expectedIds);
-  await indexer.flush();
-  console.log(
-    `  USC: ${usc.indexed} upserted, ${usc.skipped} skipped (unchanged since checkpoint)`,
-  );
+  if (!sourceFilter || sourceFilter === "usc") {
+    console.log("\nScanning USC documents...");
+    const usc = await indexUscIncremental(resolvedDir, indexer, checkpoint, expectedIds);
+    await indexer.flush();
+    console.log(
+      `  USC: ${usc.indexed} upserted, ${usc.skipped} skipped (unchanged since checkpoint)`,
+    );
+    totalIndexed += usc.indexed;
+    totalSkipped += usc.skipped;
+  }
 
   // Index eCFR
-  console.log("\nScanning eCFR documents...");
-  const ecfr = await indexEcfrIncremental(resolvedDir, indexer, checkpoint, expectedIds);
-  await indexer.flush();
-  console.log(
-    `  eCFR: ${ecfr.indexed} upserted, ${ecfr.skipped} skipped (unchanged since checkpoint)`,
-  );
+  if (!sourceFilter || sourceFilter === "ecfr") {
+    console.log("\nScanning eCFR documents...");
+    const ecfr = await indexEcfrIncremental(resolvedDir, indexer, checkpoint, expectedIds);
+    await indexer.flush();
+    console.log(
+      `  eCFR: ${ecfr.indexed} upserted, ${ecfr.skipped} skipped (unchanged since checkpoint)`,
+    );
+    totalIndexed += ecfr.indexed;
+    totalSkipped += ecfr.skipped;
+  }
 
   // Index FR
-  console.log("\nScanning FR documents...");
-  const fr = await indexFrIncremental(resolvedDir, indexer, checkpoint, expectedIds);
-  await indexer.flush();
-  console.log(
-    `  FR: ${fr.indexed} upserted, ${fr.skipped} skipped (unchanged since checkpoint)`,
-  );
+  if (!sourceFilter || sourceFilter === "fr") {
+    console.log("\nScanning FR documents...");
+    const fr = await indexFrIncremental(resolvedDir, indexer, checkpoint, expectedIds);
+    await indexer.flush();
+    console.log(
+      `  FR: ${fr.indexed} upserted, ${fr.skipped} skipped (unchanged since checkpoint)`,
+    );
+    totalIndexed += fr.indexed;
+    totalSkipped += fr.skipped;
+  }
 
-  const totalIndexed = usc.indexed + ecfr.indexed + fr.indexed;
-  const totalSkipped = usc.skipped + ecfr.skipped + fr.skipped;
-
-  // Prune orphaned documents
+  // Prune orphaned documents (only safe when all sources are scanned)
   let pruned = 0;
-  if (prune) {
+  if (prune && sourceFilter) {
+    console.log("\n  --prune ignored: cannot prune when --source is set (would delete other sources)");
+  } else if (prune) {
     pruned = await pruneOrphans(client, expectedIds);
   }
 
-  // Update checkpoint to the start of this run
-  await writeCheckpoint(resolvedDir, runStartTime);
+  // Update checkpoint to the start of this run (skip for partial --source runs)
+  if (!sourceFilter) {
+    await writeCheckpoint(resolvedDir, runStartTime);
+  } else {
+    console.log("\n  Checkpoint not updated (--source partial run).");
+  }
 
   // Summary
   const index = client.index(INDEX_NAME);

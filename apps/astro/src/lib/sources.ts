@@ -3,9 +3,9 @@ import type { SourceConfig, SourceId } from "./types";
 export const SOURCES: Record<SourceId, SourceConfig> = {
   usc: {
     id: "usc",
-    name: "U.S. Code",
+    name: "United States Code",
     shortName: "USC",
-    description: "The codified general and permanent federal statutes of the United States.",
+    description: "General and permanent federal statutes, codified by subject matter into 54 titles.",
     basePath: "/usc",
     granularities: ["section", "chapter", "title"],
     hierarchy: ["title", "chapter", "section"],
@@ -19,7 +19,7 @@ export const SOURCES: Record<SourceId, SourceConfig> = {
     id: "ecfr",
     name: "Code of Federal Regulations",
     shortName: "eCFR",
-    description: "The codified regulations of the federal executive departments and agencies.",
+    description: "Federal agency regulations, codified by subject matter into 50 titles.",
     basePath: "/ecfr",
     granularities: ["section", "part", "chapter", "title"],
     hierarchy: ["title", "chapter", "part", "section"],
@@ -35,7 +35,7 @@ export const SOURCES: Record<SourceId, SourceConfig> = {
     name: "Federal Register",
     shortName: "FR",
     description:
-      "The daily journal of the United States Government containing rules, proposed rules, notices, and presidential documents.",
+      "Daily federal rules, proposed rules, notices, and presidential documents.",
     basePath: "/fr",
     granularities: ["document"],
     hierarchy: ["year", "month", "document"],

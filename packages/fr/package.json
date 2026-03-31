@@ -1,49 +1,42 @@
 {
-  "name": "@lexbuild/cli",
+  "name": "@lexbuild/fr",
   "version": "1.13.3",
-  "description": "Compiler for legal and civic texts. Converts disparate statutory data into structured formats optimized for AI, RAG, and semantic search.",
+  "description": "Federal Register XML to Markdown converter for LexBuild",
   "author": "Chris Thomas",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/chris-c-thomas/LexBuild.git",
-    "directory": "packages/cli"
+    "directory": "packages/fr"
   },
-  "homepage": "https://github.com/chris-c-thomas/LexBuild/tree/main/packages/cli",
+  "homepage": "https://github.com/chris-c-thomas/LexBuild/tree/main/packages/fr",
   "bugs": {
     "url": "https://github.com/chris-c-thomas/LexBuild/issues"
   },
   "keywords": [
     "lexbuild",
     "legal-tech",
-    "civic-tech",
     "law",
-    "cli",
     "rag",
     "llm",
     "xml",
-    "compiler",
-    "uscode",
-    "uslm",
-    "federal-law",
-    "olrc",
-    "structured-data",
-    "semantic-search",
-    "markdown",
+    "parser",
+    "federal-register",
+    "rulemaking",
+    "regulations",
+    "govinfo",
     "typescript"
   ],
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "bin": {
-    "lexbuild": "./dist/index.js"
-  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     }
   },
+  "sideEffects": false,
   "files": [
     "dist"
   ],
@@ -51,19 +44,13 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix"
   },
   "dependencies": {
-    "@lexbuild/ecfr": "workspace:*",
-    "@lexbuild/fr": "workspace:*",
-    "@lexbuild/usc": "workspace:*",
-    "chalk": "^5.6.2",
-    "cli-table3": "^0.6.5",
-    "commander": "^13.1.0",
-    "ora": "^8.2.0"
+    "@lexbuild/core": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^25.3.2",

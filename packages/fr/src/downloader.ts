@@ -240,7 +240,9 @@ export async function downloadFrDocuments(options: FrDownloadOptions): Promise<F
         totalDocumentsFound = data.count;
       }
 
-      for (const doc of data.results) {
+      const results = data.results ?? [];
+
+      for (const doc of results) {
         // Check limit
         if (options.limit !== undefined && files.length >= options.limit) {
           hasMore = false;
@@ -274,7 +276,7 @@ export async function downloadFrDocuments(options: FrDownloadOptions): Promise<F
       }
 
       // Check for more pages
-      hasMore = hasMore && page < data.total_pages;
+      hasMore = hasMore && page < (data.total_pages ?? 0);
       page++;
     }
   }

@@ -73,6 +73,8 @@ export interface FrDocumentXmlMeta {
   rin?: string | undefined;
   /** FR document number extracted from FRDOC text */
   documentNumber?: string | undefined;
+  /** Publication date inferred from FRDOC filing date (YYYY-MM-DD) */
+  publicationDate?: string | undefined;
 }
 
 /** Frame kinds for the stack */
@@ -1048,9 +1050,27 @@ export class FrASTBuilder {
     //   Modern: "[FR Doc. 2026-06029 Filed 3-27-26; 8:45 am]"
     //   Pre-2009: "[FR Doc. E8-17594 Filed 7-31-08; 8:45 am]"
     //   Very old: "[FR Doc. 00-123 Filed 1-2-00; 8:45 am]"
-    const match = /FR\s+Doc\.\s+([\w-]+)/i.exec(text);
-    if (match) {
-      this.currentDocMeta.documentNumber = match[1];
+    const docMatch = /FR\s+Doc\.\s+([\w-]+)/i.exec(text);
+    if (docMatch) {
+      this.currentDocMeta.documentNumber = docMatch[1];
+    }
+
+    // Extract publication date from filing date (Filed M-D-YY).
+    // Publication = filing date + 1 calendar day (FR publishes the morning after).
+    const dateMatch = /Filed\s+(\d{1,2})-(\d{1,2})-(\d{2})\b/.exec(text);
+    if (dateMatch) {
+      const mm = parseInt(dateMatch[1]!, 10);
+      const dd = parseInt(dateMatch[2]!, 10);
+      const yy = parseInt(dateMatch[3]!, 10);
+      // 2-digit year: 00-49 → 2000s, 50-99 → 1900s
+      const fullYear = yy < 50 ? 2000 + yy : 1900 + yy;
+      const filed = new Date(fullYear, mm - 1, dd);
+      // Publication date = next calendar day
+      filed.setDate(filed.getDate() + 1);
+      const pubYear = filed.getFullYear();
+      const pubMonth = String(filed.getMonth() + 1).padStart(2, "0");
+      const pubDay = String(filed.getDate()).padStart(2, "0");
+      this.currentDocMeta.publicationDate = `${pubYear}-${pubMonth}-${pubDay}`;
     }
   }
 

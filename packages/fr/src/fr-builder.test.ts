@@ -240,5 +240,12 @@ describe("FrASTBuilder", () => {
       const metas = builder.getDocumentMetas();
       expect(metas[0]!.documentNumber).toBe("2026-06086");
     });
+
+    it("infers publication date from FRDOC filing date", async () => {
+      // Fixture has: Filed 3-27-26 → publication date = 2026-03-28
+      const { builder } = await parseFixture("simple-rule.xml");
+      const metas = builder.getDocumentMetas();
+      expect(metas[0]!.publicationDate).toBe("2026-03-28");
+    });
   });
 });

@@ -18,7 +18,8 @@ src/
 ├── fr-path.test.ts          # 8 unit tests
 ├── converter.ts             # Conversion orchestrator
 ├── converter.test.ts        # 6 integration tests
-└── downloader.ts            # FederalRegister.gov API client
+├── downloader.ts            # FederalRegister.gov API client
+└── govinfo-downloader.ts    # Govinfo bulk XML downloader (future backfill)
 ```
 
 ## Public API

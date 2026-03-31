@@ -168,7 +168,7 @@ Document types:
           const pct = progress.totalDocuments > 0
             ? Math.round((progress.documentsDownloaded / progress.totalDocuments) * 100)
             : 0;
-          spinner.text = `Downloading FR documents (${formatNumber(progress.documentsDownloaded)}/${formatNumber(progress.totalDocuments)}) ${pct}% — ${progress.currentDocument}`;
+          spinner.text = `Downloading FR documents (${formatNumber(progress.documentsDownloaded)}/${formatNumber(progress.totalDocuments)}) ${pct}% [${progress.currentChunk}] ${progress.currentDocument}`;
         },
       });
 

@@ -205,8 +205,9 @@ export async function downloadFrDocuments(options: FrDownloadOptions): Promise<F
         );
       }
 
-      if (page === 1 && totalDocumentsFound === 0) {
-        totalDocumentsFound = data.count;
+      // Each chunk has its own count — accumulate on the first page of each chunk
+      if (page === 1) {
+        totalDocumentsFound += data.count;
       }
 
       const results = data.results ?? [];

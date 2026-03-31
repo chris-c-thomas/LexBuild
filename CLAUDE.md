@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-LexBuild converts U.S. legal XML into structured Markdown for AI/RAG ingestion. It supports multiple source formats: U.S. Code (USLM schema) and eCFR (GPO/SGML-derived XML), with an architecture designed for additional sources (annual CFR, Federal Register, state statutes). It is a monorepo built with Turborepo, pnpm workspaces, TypeScript, and Node.js.
+LexBuild converts U.S. legal XML into structured Markdown for AI/RAG ingestion. It supports multiple source formats: U.S. Code (USLM schema), eCFR (GPO/SGML-derived XML), and Federal Register (FederalRegister.gov API), with an architecture designed for additional sources (annual CFR, Congressional bills, state statutes). It is a monorepo built with Turborepo, pnpm workspaces, TypeScript, and Node.js.
 
 ## Repository Structure
 
@@ -12,6 +12,7 @@ lexbuild/
 │   ├── core/        # @lexbuild/core — XML parsing, AST, Markdown rendering, shared utilities
 │   ├── usc/         # @lexbuild/usc — U.S. Code-specific element handlers and downloader
 │   ├── ecfr/        # @lexbuild/ecfr — eCFR (Code of Federal Regulations) converter and downloader
+│   ├── fr/          # @lexbuild/fr — Federal Register converter and downloader
 │   └── cli/         # @lexbuild/cli — CLI binary (the published npm package users install)
 ├── apps/
 │   └── astro/       # LexBuild web app — Astro 6, SSR, browse U.S. Code + eCFR as Markdown
@@ -22,8 +23,9 @@ lexbuild/
 ├── downloads/
 │   ├── usc/
 │   │   └── xml/     # Full USC XML files (usc01.xml ... usc54.xml) — gitignored
-│   └── ecfr/
-│       └── xml/     # Full eCFR XML files (ECFR-title1.xml ... ECFR-title50.xml) — gitignored
+│   ├── ecfr/
+│   │   └── xml/     # Full eCFR XML files (ECFR-title1.xml ... ECFR-title50.xml) — gitignored
+│   └── fr/          # FR XML + JSON files (YYYY/MM/doc-number.xml/.json) — gitignored
 ├── fixtures/
 │   ├── fragments/   # Small synthetic XML snippets for unit tests
 │   └── expected/    # Expected output snapshots for integration tests
@@ -39,6 +41,7 @@ Each package and app has its own `CLAUDE.md` with architecture details, module s
 - [`packages/core/CLAUDE.md`](packages/core/CLAUDE.md) — XML→AST→Markdown pipeline, emit-at-level streaming, AST node types, rendering, link resolution, resilient filesystem utilities
 - [`packages/usc/CLAUDE.md`](packages/usc/CLAUDE.md) — Collect-then-write pattern, granularity output, edge cases (duplicates, appendices), downloader
 - [`packages/ecfr/CLAUDE.md`](packages/ecfr/CLAUDE.md) — eCFR GPO/SGML XML→AST→Markdown, DIV-based hierarchy, element classification, downloader
+- [`packages/fr/CLAUDE.md`](packages/fr/CLAUDE.md) — Federal Register XML→AST→Markdown, document-centric structure, dual JSON+XML ingestion, API downloader
 - [`packages/cli/CLAUDE.md`](packages/cli/CLAUDE.md) — Commands, options, UI module, title parser, build config
 - [`apps/astro/CLAUDE.md`](apps/astro/CLAUDE.md) — Astro 6 SSR site, island architecture, multi-source content browser, deployment
 
@@ -106,6 +109,15 @@ node packages/cli/dist/index.js convert-ecfr --all
 node packages/cli/dist/index.js convert-ecfr --titles 1 -o ./test-output
 node packages/cli/dist/index.js convert-ecfr ./downloads/ecfr/xml/ECFR-title1.xml -o ./test-output
 node packages/cli/dist/index.js convert-ecfr --titles 17 -g part -o ./test-output
+
+# Federal Register commands (source: federalregister.gov API)
+node packages/cli/dist/index.js download-fr --recent 30
+node packages/cli/dist/index.js download-fr --from 2026-01-01 --to 2026-03-31
+node packages/cli/dist/index.js download-fr --document 2026-06029
+node packages/cli/dist/index.js download-fr --from 2026-01-01 --types rule,proposed_rule
+node packages/cli/dist/index.js convert-fr --all
+node packages/cli/dist/index.js convert-fr --from 2026-01-01 --to 2026-03-31 -o ./test-output
+node packages/cli/dist/index.js convert-fr ./downloads/fr/2026/03/2026-06029.xml -o ./test-output
 
 # List available OLRC release points
 node packages/cli/dist/index.js list-release-points
@@ -314,9 +326,22 @@ Examples:
 
 Note: identifiers use `/us/cfr/` (content type) not `/us/ecfr/` (data source). Both eCFR and future annual CFR use the same identifier space.
 
+**FR identifiers** (from FederalRegister.gov document numbers):
+
+```
+/us/fr/{document_number}
+
+Examples:
+/us/fr/2026-06029       — FR document 2026-06029
+/us/fr/2026-06086       — FR document 2026-06086
+```
+
+Note: FR identifiers use document numbers (unique, stable, API primary key), not citations (`91 FR 14523`) which are human-readable but not reliably unique.
+
 **Link resolution**:
 - `/us/usc/...` references → relative Markdown links within corpus, or OLRC fallback URLs
 - `/us/cfr/...` references → relative Markdown links within corpus, or ecfr.gov fallback URLs
+- `/us/fr/...` references → relative Markdown links within corpus, or federalregister.gov fallback URLs
 - `/us/stat/...` (Statutes at Large), `/us/pl/...` (Public Law) → plain text citations
 
 ### Namespaces in Use
@@ -464,6 +489,16 @@ Complete daily issue XML (~2.4 MB average). Updated by 6 AM on publishing days. 
 - Part dirs: `part-{N}` where N is the part number (e.g., `part-240`)
 - Section files: `section-{N.N}.md` where N.N is the part-prefixed section number (e.g., `section-240.10b-5.md`)
 - Section granularity generates `_meta.json` per part and title, plus `README.md` per title
+
+### FR Output
+
+`output/fr/{YYYY}/{MM}/{document_number}.md`
+
+- Year dirs: `2000` through present
+- Month dirs: `01` through `12`
+- Document files: `{document_number}.md` (e.g., `2026-06029.md`)
+- `_meta.json` per month directory (document count, list with token estimates)
+- No granularity options — FR documents are already atomic (one file per document)
 
 ## Key Design Decisions
 

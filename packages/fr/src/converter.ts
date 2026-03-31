@@ -1,0 +1,303 @@
+/**
+ * Federal Register conversion orchestrator.
+ *
+ * Discovers downloaded FR XML files, parses them with FrASTBuilder,
+ * enriches frontmatter with JSON sidecar metadata, renders via core's
+ * renderDocument, and writes structured Markdown output.
+ *
+ * Follows the collect-then-write pattern from @lexbuild/ecfr.
+ */
+
+import { createReadStream, existsSync } from "node:fs";
+import { readFile, readdir, stat } from "node:fs/promises";
+import { join, dirname } from "node:path";
+import {
+  XMLParser,
+  renderDocument,
+  createLinkResolver,
+  writeFile,
+  mkdir,
+} from "@lexbuild/core";
+import type { LevelNode, EmitContext } from "@lexbuild/core";
+import { FrASTBuilder } from "./fr-builder.js";
+import type { FrDocumentXmlMeta } from "./fr-builder.js";
+import { buildFrFrontmatter } from "./fr-frontmatter.js";
+import type { FrDocumentJsonMeta } from "./fr-frontmatter.js";
+import { buildFrOutputPath } from "./fr-path.js";
+import type { FrDocumentType } from "./downloader.js";
+
+// ── Public types ──
+
+/** Options for converting FR documents */
+export interface FrConvertOptions {
+  /** Path to input file or directory containing .xml/.json files */
+  input: string;
+  /** Output root directory */
+  output: string;
+  /** Link style for cross-references */
+  linkStyle: "relative" | "canonical" | "plaintext";
+  /** Parse only, don't write files */
+  dryRun: boolean;
+  /** Filter: start date (YYYY-MM-DD) */
+  from?: string | undefined;
+  /** Filter: end date (YYYY-MM-DD) */
+  to?: string | undefined;
+  /** Filter: document types */
+  types?: FrDocumentType[] | undefined;
+}
+
+/** Result of a conversion operation */
+export interface FrConvertResult {
+  /** Number of documents converted */
+  documentsConverted: number;
+  /** Paths of written files */
+  files: string[];
+  /** Total estimated tokens */
+  totalTokenEstimate: number;
+  /** Peak RSS in bytes */
+  peakMemoryBytes: number;
+  /** Whether this was a dry run */
+  dryRun: boolean;
+}
+
+/** Collected document info during parsing */
+interface CollectedDoc {
+  node: LevelNode;
+  context: EmitContext;
+  xmlMeta: FrDocumentXmlMeta;
+  jsonMeta?: FrDocumentJsonMeta;
+  publicationDate: string;
+  documentNumber: string;
+}
+
+// ── Public function ──
+
+/**
+ * Convert FR XML documents to Markdown.
+ *
+ * Supports both single-file mode (input is a .xml path) and batch mode
+ * (input is a directory containing year/month/doc.xml structure).
+ */
+export async function convertFrDocuments(options: FrConvertOptions): Promise<FrConvertResult> {
+  const xmlFiles = await discoverXmlFiles(options.input, options.from, options.to);
+
+  const files: string[] = [];
+  let totalTokenEstimate = 0;
+  let peakMemoryBytes = 0;
+
+  const linkResolver = createLinkResolver();
+
+  // Process each XML file
+  for (const xmlPath of xmlFiles) {
+    const collected = await parseXmlFile(xmlPath);
+
+    for (const doc of collected) {
+      // Apply type filter
+      if (options.types && options.types.length > 0) {
+        const docType = doc.xmlMeta.documentType;
+        if (!options.types.includes(docType as FrDocumentType)) {
+          continue;
+        }
+      }
+
+      // Register identifier for link resolution
+      if (doc.node.identifier) {
+        const outputPath = buildFrOutputPath(
+          doc.documentNumber,
+          doc.publicationDate,
+          options.output,
+        );
+        linkResolver.register(doc.node.identifier, outputPath);
+      }
+    }
+  }
+
+  if (options.dryRun) {
+    // Count what would be converted
+    let count = 0;
+    for (const xmlPath of xmlFiles) {
+      const collected = await parseXmlFile(xmlPath);
+      count += collected.length;
+    }
+    return {
+      documentsConverted: count,
+      files: [],
+      totalTokenEstimate: 0,
+      peakMemoryBytes: 0,
+      dryRun: true,
+    };
+  }
+
+  // Render and write
+  for (const xmlPath of xmlFiles) {
+    const collected = await parseXmlFile(xmlPath);
+
+    for (const doc of collected) {
+      // Apply type filter
+      if (options.types && options.types.length > 0) {
+        const docType = doc.xmlMeta.documentType;
+        if (!options.types.includes(docType as FrDocumentType)) {
+          continue;
+        }
+      }
+
+      const frontmatter = buildFrFrontmatter(doc.node, doc.context, doc.xmlMeta, doc.jsonMeta);
+
+      const markdown = renderDocument(doc.node, frontmatter, {
+        headingOffset: 0,
+        linkStyle: options.linkStyle,
+        resolveLink: options.linkStyle === "relative"
+          ? (id) => linkResolver.resolve(id, outputPath)
+          : undefined,
+      });
+
+      const outputPath = buildFrOutputPath(
+        doc.documentNumber,
+        doc.publicationDate,
+        options.output,
+      );
+
+      await mkdir(dirname(outputPath), { recursive: true });
+      await writeFile(outputPath, markdown, "utf-8");
+
+      files.push(outputPath);
+
+      // Estimate tokens (character/4 heuristic)
+      const tokenEstimate = Math.round(markdown.length / 4);
+      totalTokenEstimate += tokenEstimate;
+
+      // Track memory
+      const mem = process.memoryUsage().rss;
+      if (mem > peakMemoryBytes) {
+        peakMemoryBytes = mem;
+      }
+    }
+  }
+
+  return {
+    documentsConverted: files.length,
+    files,
+    totalTokenEstimate,
+    peakMemoryBytes,
+    dryRun: false,
+  };
+}
+
+// ── Private helpers ──
+
+/**
+ * Parse a single XML file and collect document nodes + metadata.
+ */
+async function parseXmlFile(xmlPath: string): Promise<CollectedDoc[]> {
+  const collected: CollectedDoc[] = [];
+  const docMetas: FrDocumentXmlMeta[] = [];
+
+  const builder = new FrASTBuilder({
+    onEmit: (node, context) => {
+      // Snapshot metas at emit time
+      const currentMetas = builder.getDocumentMetas();
+      const meta = currentMetas[currentMetas.length - 1];
+      if (meta) {
+        docMetas.push({ ...meta });
+      }
+      collected.push({
+        node,
+        context,
+        xmlMeta: meta ?? { documentType: "", documentTypeNormalized: "" },
+        publicationDate: "",
+        documentNumber: meta?.documentNumber ?? "",
+      });
+    },
+  });
+
+  const parser = new XMLParser({ defaultNamespace: "" });
+  parser.on("openElement", (name, attrs) => builder.onOpenElement(name, attrs));
+  parser.on("closeElement", (name) => builder.onCloseElement(name));
+  parser.on("text", (text) => builder.onText(text));
+
+  const stream = createReadStream(xmlPath, "utf-8");
+  await parser.parseStream(stream);
+
+  // Try to load JSON sidecar
+  const jsonPath = xmlPath.replace(/\.xml$/, ".json");
+  let jsonMeta: FrDocumentJsonMeta | undefined;
+  if (existsSync(jsonPath)) {
+    try {
+      const raw = await readFile(jsonPath, "utf-8");
+      jsonMeta = JSON.parse(raw) as FrDocumentJsonMeta;
+    } catch {
+      // JSON sidecar is optional — continue without it
+    }
+  }
+
+  // Enrich collected docs with JSON metadata and publication date
+  for (const doc of collected) {
+    if (jsonMeta && jsonMeta.document_number === doc.documentNumber) {
+      doc.jsonMeta = jsonMeta;
+      doc.publicationDate = jsonMeta.publication_date;
+    } else {
+      // Infer date from file path (downloads/fr/YYYY/MM/doc.xml)
+      doc.publicationDate = inferDateFromPath(xmlPath);
+    }
+  }
+
+  return collected;
+}
+
+/**
+ * Discover XML files in a directory or return the single file path.
+ */
+async function discoverXmlFiles(
+  input: string,
+  from?: string,
+  to?: string,
+): Promise<string[]> {
+  const inputStat = await stat(input);
+
+  if (inputStat.isFile()) {
+    return [input];
+  }
+
+  // Recursively find all .xml files
+  const xmlFiles: string[] = [];
+  await walkDir(input, xmlFiles);
+
+  // Apply date range filter based on file path structure (YYYY/MM/)
+  let filtered = xmlFiles;
+  if (from || to) {
+    filtered = xmlFiles.filter((f) => {
+      const date = inferDateFromPath(f);
+      if (!date) return true; // Can't filter if no date in path
+      if (from && date < from) return false;
+      if (to && date > to + "-32") return false; // Month-level comparison
+      return true;
+    });
+  }
+
+  return filtered.sort();
+}
+
+/** Recursively walk a directory collecting .xml files */
+async function walkDir(dir: string, results: string[]): Promise<void> {
+  const entries = await readdir(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const fullPath = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      await walkDir(fullPath, results);
+    } else if (entry.isFile() && entry.name.endsWith(".xml")) {
+      results.push(fullPath);
+    }
+  }
+}
+
+/**
+ * Infer a date string from the file path (e.g., "downloads/fr/2026/03/doc.xml" → "2026-03-01").
+ * Used when no JSON sidecar is available.
+ */
+function inferDateFromPath(filePath: string): string {
+  const match = /(\d{4})\/(\d{2})\/[^/]+\.xml$/.exec(filePath);
+  if (match) {
+    return `${match[1]}-${match[2]}-01`;
+  }
+  return "";
+}

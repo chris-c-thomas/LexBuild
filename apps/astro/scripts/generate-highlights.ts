@@ -210,7 +210,7 @@ async function main(): Promise<void> {
     const result = await new Promise<{ processed: number; errors: number }>((res, rej) => {
       const child = fork(scriptPath, ["--worker"], {
         stdio: ["pipe", "inherit", "inherit", "ipc"],
-        execArgv: [`--max-old-space-size=${CHILD_MAX_OLD_SPACE_MB}`],
+        execArgv: [...process.execArgv, `--max-old-space-size=${CHILD_MAX_OLD_SPACE_MB}`],
       });
 
       // Send file list via IPC (avoids OS env/arg size limits for large chunks)

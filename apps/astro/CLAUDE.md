@@ -123,13 +123,14 @@ Run from `apps/astro/` after CLI conversion:
 ```bash
 bash scripts/link-content.sh                       # Symlink output → content/
 npx tsx scripts/generate-nav.ts                     # Build sidebar JSON (<2s)
-npx tsx scripts/generate-highlights.ts              # Shiki pre-render (~287k files, ~6 min)
+npx tsx scripts/generate-highlights.ts              # Shiki pre-render (~1M files w/ FR)
+npx tsx scripts/generate-highlights.ts --chunk-size 1000  # Smaller chunks if memory-tight
 npx tsx scripts/generate-sitemap.ts                 # Sitemap (~292k URLs, <5s)
 npx tsx scripts/index-search.ts                     # Meilisearch index (~281k docs)
 ```
 
 Script notes:
-- **generate-highlights.ts**: Forks child processes in 10k-file chunks to avoid Shiki OOM (grammar cache leaks ~4GB over 260k+ files). Changing themes requires updating both this script and `src/lib/shiki.ts`, then deleting existing `.highlighted.html` files.
+- **generate-highlights.ts**: Forks child processes in 2k-file chunks (default, tunable via `--chunk-size N`) to avoid Shiki OOM. Each child is heap-capped at 2GB (`--max-old-space-size`). Uses `matter(raw, { cache: false })` to prevent gray-matter from caching every file in memory. Supports `--limit N` for testing. Changing themes requires updating both this script and `src/lib/shiki.ts`, then deleting existing `.highlighted.html` files.
 - **index-search.ts**: 500 docs/batch, 300s waitForTask timeout. Requires `MEILI_URL` and optionally `MEILI_MASTER_KEY` env vars. Document IDs sanitized (dots/colons → underscores).
 - **generate-nav.ts**: Includes reserved title placeholders (USC 53, eCFR 35). Chapter grouping for eCFR derived from filesystem directories, not `_meta.json`.
 

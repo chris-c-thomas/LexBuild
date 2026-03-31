@@ -25,7 +25,7 @@ const FR_API_BASE = "https://www.federalregister.gov/api/v1";
 const PER_PAGE = 200;
 
 /** Default delay between individual document XML fetches (ms) */
-const DEFAULT_FETCH_DELAY_MS = 100;
+const DEFAULT_FETCH_DELAY_MS = 25;
 
 /** Maximum retry attempts for transient errors */
 const MAX_RETRIES = 2;

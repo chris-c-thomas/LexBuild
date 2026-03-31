@@ -81,7 +81,7 @@ await parser.parseStream(createReadStream("usc01.xml"));
 | `SourceCreditNode` | Enactment source citation |
 | `FrontmatterData` | Full frontmatter field definitions |
 | `EmitContext` | Context passed with emitted nodes (ancestors, document metadata) |
-| `SourceType` | `"usc" \| "ecfr"` |
+| `SourceType` | `"usc" \| "ecfr" \| "fr"` |
 | `LegalStatus` | `"official_legal_evidence" \| "official_prima_facie" \| "authoritative_unofficial"` |
 
 ### Constants
@@ -118,7 +118,8 @@ packages/
 ├── core/    ← you are here
 ├── usc/     # depends on core
 ├── ecfr/    # depends on core
-└── cli/     # depends on core, usc, ecfr
+├── fr/      # depends on core
+└── cli/     # depends on core, usc, ecfr, fr
 ```
 
 ### Development
@@ -137,6 +138,7 @@ pnpm turbo lint --filter=@lexbuild/core
 | [`@lexbuild/cli`](https://www.npmjs.com/package/@lexbuild/cli) | CLI tool for downloading and converting legal XML |
 | [`@lexbuild/usc`](https://www.npmjs.com/package/@lexbuild/usc) | U.S. Code (USLM XML) converter and downloader |
 | [`@lexbuild/ecfr`](https://www.npmjs.com/package/@lexbuild/ecfr) | eCFR (Code of Federal Regulations) converter and downloader |
+| [`@lexbuild/fr`](https://www.npmjs.com/package/@lexbuild/fr) | Federal Register converter and downloader |
 
 ## License
 

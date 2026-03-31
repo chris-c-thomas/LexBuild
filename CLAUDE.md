@@ -422,9 +422,9 @@ Where `{N}` is the title number (1-50, not zero-padded). Example: `ECFR-title17.
 
 50 titles total, 49 with content.
 
-## Federal Register URLs (Planned — `@lexbuild/fr`)
+## Federal Register URLs (`@lexbuild/fr`)
 
-The Federal Register is the next planned source. The **federalregister.gov API is the recommended primary source** over govinfo bulk XML — it provides per-document XML (no container parsing), rich JSON metadata, and pre-publication access. See `.claude/guides/lexbuild-additional-sources.md` for full research.
+The **federalregister.gov API is the primary source** — per-document XML (no container parsing), rich JSON metadata, and pre-publication access. Govinfo bulk daily-issue XML is deferred for future historical backfill support.
 
 **FederalRegister.gov API (recommended primary source)**: `https://www.federalregister.gov/api/v1/`
 
@@ -557,10 +557,15 @@ Complete daily issue XML (~2.4 MB average). Updated by 6 AM on publishing days. 
 - **Duplicate chapter directories in USC `_meta.json`**: Many USC titles have subchapters that share the same `chapter-NN/` directory (e.g., Title 5 Chapter 89 has three subchapters). The nav generator (`generate-nav.ts`) merges these by directory to avoid duplicate React keys in the sidebar.
 - **Ora spinner text should NOT end with `...`**: The trailing dots conflict with ora's own dots animation, causing visual artifacts (periods appearing around numbers). The spinner animation itself provides the "in progress" cue — end text with the last meaningful word, not ellipsis.
 - **Indexed array iteration with strict TypeScript**: `noUncheckedIndexedAccess` makes `arr[i]` return `T | undefined`, and `no-non-null-assertion` forbids `arr[i]!`. Use `for (const [i, item] of arr.entries())` instead of `for (let i = 0; ...)` to get typed values without assertions.
+- **FR documents use `title_number: 0`**: FR documents don't belong to a USC/CFR title. Convention: `title_number: 0`, `title_name: "Federal Register"`, `section_number` = document number string.
+- **FR API `results` can be absent**: When the API returns 0 results (weekends/holidays), `data.results` may be `undefined`. Always default to `data.results ?? []`.
+- **FR API 10,000 result cap**: The FederalRegister.gov API caps query results at 10,000. The downloader auto-chunks by month to stay under this limit.
+- **FR emphasis map duplicated from eCFR**: Package boundary rules prevent `@lexbuild/fr` from importing `ECFR_EMPHASIS_MAP`. `FR_EMPHASIS_MAP` in `fr-elements.ts` is an independent copy. Keep both in sync when adding new emphasis codes.
+- **FR download directory structure matches output**: Both use `{YYYY}/{MM}/{document_number}.*` — downloads have `.xml`/`.json`, output has `.md`. The converter infers publication date from the path when no JSON sidecar is available.
 
 ## When Adding New Source Types
 
-The multi-source architecture is proven — `@lexbuild/ecfr` validates the pattern with a completely different XML schema. Adding a new source follows the established pattern:
+The multi-source architecture is proven — `@lexbuild/ecfr` and `@lexbuild/fr` validate the pattern with completely different XML schemas (hierarchical DIV-based eCFR vs flat document-centric FR). Adding a new source follows the established pattern:
 
 1. Create `packages/{source}/` with a dependency on `@lexbuild/core`
 2. Implement a source-specific AST builder (SAX events → LexBuild AST nodes) in the source package

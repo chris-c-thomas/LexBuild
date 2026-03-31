@@ -19,6 +19,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Generate release bot token
+        uses: actions/create-github-app-token@v2
+        id: app-token
+        with:
+          app-id: ${{ secrets.RELEASE_BOT_APP_ID }}
+          private-key: ${{ secrets.RELEASE_BOT_PRIVATE_KEY }}
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -48,5 +55,5 @@ jobs:
           createGithubReleases: false
           commitMode: github-api
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           NPM_CONFIG_PROVENANCE: true

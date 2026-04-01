@@ -1,6 +1,6 @@
 # LexBuild Web
 
-The web application for [LexBuild](https://github.com/chris-c-thomas/LexBuild) — a multi-source legal content browser serving the U.S. Code (54 titles, 60,000+ sections) and eCFR (50 titles, 200,000+ sections) as structured Markdown with syntax-highlighted source views.
+The web application for [LexBuild](https://github.com/chris-c-thomas/LexBuild) — a multi-source legal content browser serving the U.S. Code (54 titles, 60,000+ sections), eCFR (50 titles, 200,000+ sections), and Federal Register (770,000+ documents, 2000–present) as structured Markdown with syntax-highlighted source views.
 
 **Production:** [lexbuild.dev](https://lexbuild.dev)
 
@@ -29,6 +29,7 @@ The web application for [LexBuild](https://github.com/chris-c-thomas/LexBuild) �
 pnpm turbo build
 node packages/cli/dist/index.js download-usc --all && node packages/cli/dist/index.js convert-usc --all
 node packages/cli/dist/index.js download-ecfr --all && node packages/cli/dist/index.js convert-ecfr --all
+node packages/cli/dist/index.js download-fr --recent 30 && node packages/cli/dist/index.js convert-fr --all
 ```
 
 ## Local Development
@@ -64,15 +65,16 @@ The dev server uses Astro 6's production runtime via Vite — dev behavior match
 Generate syntax-highlighted HTML for all Markdown files (recommended for large datasets):
 
 ```bash
-npx tsx scripts/generate-highlights.ts             # Full run (~287k files, ~6 min)
-npx tsx scripts/generate-highlights.ts --limit 50  # Test subset
+npx tsx scripts/generate-highlights.ts                    # Full run (~1M files with FR)
+npx tsx scripts/generate-highlights.ts --limit 50         # Test subset
+npx tsx scripts/generate-highlights.ts --chunk-size 1000  # Smaller chunks for memory-constrained runs
 ```
 
 ### Optional: Search (Meilisearch)
 
 ```bash
 brew install meilisearch && brew services start meilisearch
-npx tsx scripts/index-search.ts     # Index ~281k documents (~26 min)
+npx tsx scripts/index-search.ts     # Full reindex (~1M documents, ~15 min)
 ```
 
 Set `ENABLE_SEARCH=true` in `.env.local` to enable the search UI.
@@ -97,10 +99,11 @@ After converting content with the CLI, these scripts prepare the app's data. Run
 | Script | Purpose | Speed |
 |--------|---------|-------|
 | `scripts/link-content.sh` | Symlink CLI output into `content/` | Instant |
-| `scripts/generate-nav.ts` | Build sidebar JSON from `_meta.json` | < 2s |
-| `scripts/generate-highlights.ts` | Pre-render Shiki HTML for all `.md` files | ~6 min (incremental) |
-| `scripts/generate-sitemap.ts` | Build sitemap index + chunked sitemaps | < 5s |
-| `scripts/index-search.ts` | Index content into Meilisearch | ~26 min |
+| `scripts/generate-nav.ts` | Build sidebar JSON from `_meta.json` (USC/eCFR) and frontmatter (FR) | < 5s |
+| `scripts/generate-highlights.ts` | Pre-render Shiki HTML for all `.md` files (2k files/chunk, heap-capped) | Incremental |
+| `scripts/generate-sitemap.ts` | Build sitemap index + chunked sitemaps (~1M URLs) | < 10s |
+| `scripts/index-search.ts` | Full reindex into Meilisearch (~1M docs) | ~15 min |
+| `scripts/index-search-incremental.ts` | Incremental upsert (supports `--source`, `--set-checkpoint`) | Varies |
 
 All outputs (`content/`, `public/nav/`, `public/sitemap.xml`, `*.highlighted.html`) are git-ignored.
 
@@ -131,10 +134,13 @@ Astro renders pages as static HTML with zero client-side JavaScript by default. 
 | eCFR | `/ecfr/title-17/chapter-IV` | chapter |
 | eCFR | `/ecfr/title-17/chapter-IV/part-240` | part |
 | eCFR | `/ecfr/title-17/chapter-IV/part-240/section-240.10b-5` | section |
+| FR | `/fr/2026` | year |
+| FR | `/fr/2026/03` | month |
+| FR | `/fr/2026/03/2026-06029` | document |
 
 ### No Code Dependency on LexBuild Packages
 
-This app has no `import` from `@lexbuild/core`, `@lexbuild/usc`, or `@lexbuild/ecfr`. It consumes their output — `.md` files with YAML frontmatter and `_meta.json` sidecar files — as data.
+This app has no `import` from `@lexbuild/core`, `@lexbuild/usc`, `@lexbuild/ecfr`, or `@lexbuild/fr`. It consumes their output — `.md` files with YAML frontmatter and `_meta.json` sidecar files — as data.
 
 ## Build
 

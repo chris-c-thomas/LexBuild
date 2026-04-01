@@ -64,9 +64,14 @@ node packages/cli/dist/index.js convert-usc ./downloads/usc/xml/usc01.xml -o ./t
 node packages/cli/dist/index.js download-ecfr --titles 1,17
 node packages/cli/dist/index.js convert-ecfr --titles 1 -o ./test-output
 node packages/cli/dist/index.js convert-ecfr --titles 17 -g part -o ./test-output
+
+# Download and convert Federal Register
+node packages/cli/dist/index.js download-fr --recent 30
+node packages/cli/dist/index.js convert-fr --all -o ./test-output
+node packages/cli/dist/index.js convert-fr --from 2026-01-01 --to 2026-03-31 -o ./test-output
 ```
 
-Downloaded XML files are stored in `downloads/usc/xml/` and `downloads/ecfr/xml/`, both of which are gitignored.
+Downloaded XML files are stored in `downloads/usc/xml/`, `downloads/ecfr/xml/`, and `downloads/fr/{YYYY}/{MM}/`, all of which are gitignored.
 
 ## Web App Development
 
@@ -98,6 +103,7 @@ lexbuild/
 │   ├── core/     # @lexbuild/core
 │   ├── usc/      # @lexbuild/usc
 │   ├── ecfr/     # @lexbuild/ecfr
+│   ├── fr/       # @lexbuild/fr
 │   └── cli/      # @lexbuild/cli
 ├── apps/
 │   └── astro/    # Web app (Astro 6, SSR)
@@ -112,6 +118,7 @@ lexbuild/
 - **[@lexbuild/core](../packages/core.md)** -- Format-agnostic foundation: XML parsing, AST types, Markdown rendering, frontmatter generation, cross-reference link resolution.
 - **[@lexbuild/usc](../packages/usc.md)** -- U.S. Code source: USLM XML conversion, OLRC download, release point detection.
 - **[@lexbuild/ecfr](../packages/ecfr.md)** -- eCFR source: GPO/SGML XML conversion, ecfr.gov and govinfo download.
+- **[@lexbuild/fr](../packages/fr.md)** -- Federal Register source: FR XML conversion, FederalRegister.gov API and govinfo bulk download.
 - **[@lexbuild/cli](../packages/cli.md)** -- CLI binary: user-facing commands, option parsing, progress UI.
 
 **Dependency graph:**
@@ -119,8 +126,9 @@ lexbuild/
 ```
 @lexbuild/core
   ├── @lexbuild/usc
-  └── @lexbuild/ecfr
-        └── @lexbuild/cli (depends on core, usc, ecfr)
+  ├── @lexbuild/ecfr
+  └── @lexbuild/fr
+        └── @lexbuild/cli (depends on core, usc, ecfr, fr)
 ```
 
-Source packages depend only on `core` and never on each other. The CLI depends on all three.
+Source packages depend only on `core` and never on each other. The CLI depends on all four.

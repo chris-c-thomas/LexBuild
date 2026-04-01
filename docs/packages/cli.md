@@ -15,13 +15,15 @@ packages/cli/src/
     list-release-points.ts    # lexbuild list-release-points command
     download-ecfr.ts          # lexbuild download-ecfr command
     convert-ecfr.ts           # lexbuild convert-ecfr command
+    download-fr.ts            # lexbuild download-fr command
+    convert-fr.ts             # lexbuild convert-fr command
 ```
 
 ## Command Architecture
 
 The entry point creates a [Commander](https://github.com/tj/commander.js) program, sets the name, description, and version (read from `package.json`), and registers source-specific commands, utility commands, and bare `download`/`convert` stubs. Running `lexbuild download` or `lexbuild convert` without a source suffix prints an error listing the available source-specific commands and exits with code 1.
 
-Download and convert commands follow the `{action}-{source}` naming pattern: `download-usc`, `convert-usc`, `download-ecfr`, `convert-ecfr`. Utility commands like `list-release-points` provide data source inspection. Each command is defined in its own module under `commands/` and registered via `program.addCommand()`.
+Download and convert commands follow the `{action}-{source}` naming pattern: `download-usc`, `convert-usc`, `download-ecfr`, `convert-ecfr`, `download-fr`, `convert-fr`. Utility commands like `list-release-points` provide data source inspection. Each command is defined in its own module under `commands/` and registered via `program.addCommand()`.
 
 ## Commands
 
@@ -98,6 +100,49 @@ Converts eCFR XML to Markdown. Delegates to `convertEcfrTitle()` from `@lexbuild
 
 All other options and behaviors -- note flags, link style, dry run, verbose output -- are identical to `convert-usc`.
 
+### `lexbuild download-fr`
+
+Downloads Federal Register documents (XML + JSON metadata) from the FederalRegister.gov API. Supports two sources: `fr-api` (default, per-document XML + JSON) and `govinfo` (bulk daily-issue XML, faster for historical backfill). Date-range based, not title-based like USC/eCFR.
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `-o, --output <dir>` | `./downloads/fr` | Download directory |
+| `--source <source>` | `fr-api` | Source: `fr-api` (per-document) or `govinfo` (bulk daily) |
+| `--from <YYYY-MM-DD>` | -- | Start date (inclusive) |
+| `--to <YYYY-MM-DD>` | Today | End date (inclusive) |
+| `--types <types>` | -- | Document types: `rule`, `proposed_rule`, `notice`, `presidential_document` (`fr-api` only) |
+| `--recent <days>` | -- | Download last N days |
+| `--document <number>` | -- | Download a single document by number (`fr-api` only) |
+| `--limit <n>` | -- | Maximum number of documents (`fr-api` only) |
+| `--concurrency <n>` | `10` | Concurrent downloads |
+
+**Three input modes** (mutually exclusive): `--from`/`--to` date range, `--recent N` as a date range shorthand, or `--document` for a single document. Requires at least one.
+
+The `fr-api` source downloads both `.xml` (full text) and `.json` (metadata) per document into `{YYYY}/{MM}/{document_number}.*` paths. The `govinfo` source downloads bulk daily-issue XML files. Auto-chunks date ranges by month to stay under the API's 10,000 result cap.
+
+### `lexbuild convert-fr`
+
+Converts downloaded Federal Register XML to Markdown with enriched frontmatter. Delegates to `convertFrDocuments()` from `@lexbuild/fr`. Reads JSON sidecar files for enriched metadata (agency, document type, CFR references, abstract) when available.
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `[input]` (positional) | -- | Path to a single FR XML file |
+| `-o, --output <dir>` | `./output` | Output directory |
+| `-i, --input-dir <dir>` | `./downloads/fr` | Directory containing downloaded FR files |
+| `--all` | `false` | Convert all downloaded documents in input directory |
+| `--from <YYYY-MM-DD>` | -- | Filter: start date |
+| `--to <YYYY-MM-DD>` | -- | Filter: end date |
+| `--types <types>` | -- | Filter: document types (`rule`, `proposed_rule`, `notice`, `presidential_document`) |
+| `--link-style` | `plaintext` | Cross-reference style: `relative`, `canonical`, or `plaintext` |
+| `--dry-run` | `false` | Parse only, no files written |
+| `-v, --verbose` | `false` | Print detailed file output |
+
+**Three input modes** (mutually exclusive): the `[input]` positional argument for a single file, `--all` to discover and convert every XML file in `--input-dir`, or `--from` to filter by date range.
+
+No `--granularity` option -- FR documents are already atomic (one file per document). No `--titles` option -- FR is date-based, not title-based. No note filter flags -- FR documents do not have the editorial/statutory note taxonomy used by USC and eCFR.
+
+**Output directory.** The `-o` flag appends a source subdirectory: `convert-fr -o /path` writes to `/path/fr/...`, not `/path/...` directly.
+
 ## Title Parser
 
 ```typescript
@@ -160,7 +205,7 @@ The CLI is built with [tsup](https://github.com/egoist/tsup) targeting ESM outpu
 
 - CLI framework: `commander`
 - Terminal output: `chalk`, `ora`, `cli-table3`
-- Source packages: `@lexbuild/core`, `@lexbuild/usc`, `@lexbuild/ecfr` (via `workspace:*`)
+- Source packages: `@lexbuild/core`, `@lexbuild/usc`, `@lexbuild/ecfr`, `@lexbuild/fr` (via `workspace:*`)
 
 ## Error Handling
 

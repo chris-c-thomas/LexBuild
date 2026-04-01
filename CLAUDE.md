@@ -138,6 +138,9 @@ npx tsx scripts/generate-sitemap.ts                # Build sitemap index + chunk
 npx tsx scripts/index-search.ts                    # Full reindex into Meilisearch (~1M docs)
 npx tsx scripts/index-search-incremental.ts --source fr  # Index a single source
 npx tsx scripts/index-search-incremental.ts --set-checkpoint  # Mark checkpoint without indexing
+npx tsx scripts/generate-nav.ts --source fr          # Generate nav for one source only
+npx tsx scripts/generate-sitemap.ts --source fr       # Generate sitemaps for one source (index not rewritten)
+npx tsx scripts/generate-highlights.ts --source fr    # Generate highlights for one source only
 
 # Meilisearch local setup (macOS)
 brew install meilisearch                           # Install via Homebrew
@@ -148,6 +151,8 @@ curl -s http://127.0.0.1:7700/health               # Verify running
 ./scripts/deploy.sh                # Code only (git pull, build, pm2 reload)
 ./scripts/deploy.sh --content      # Code + rsync local output/ to VPS
 ./scripts/deploy.sh --content-only # Rsync only, no code deploy
+./scripts/deploy.sh --nav-only     # Rsync nav JSON only (sidebar data)
+./scripts/deploy.sh --sitemaps-only # Rsync sitemaps + robots.txt only
 ./scripts/deploy.sh --remote       # Full pipeline on VPS (download + convert + highlights + build)
 ./scripts/deploy.sh --search-dump  # Index locally, dump, upload + import on VPS
 ./scripts/deploy.sh --search-push  # Dump existing local index, upload + import (no reindex)

@@ -6,12 +6,13 @@
  * keeping the production runtime lightweight.
  *
  * Usage:
- *   npx tsx scripts/generate-highlights.ts [content-dir] [--limit N] [--chunk-size N]
+ *   npx tsx scripts/generate-highlights.ts [content-dir] [--limit N] [--chunk-size N] [--source <name>]
  *
  * Options:
  *   content-dir    Path to content directory (default: ./content)
  *   --limit N      Process only the first N files (for testing)
  *   --chunk-size N Files per child process (default: 2000)
+ *   --source <name> Only process a specific source: usc, ecfr, or fr
  *
  * Memory management:
  *   Processes 300k+ files by forking child processes in batches. Each child
@@ -145,6 +146,7 @@ async function main(): Promise<void> {
   let contentDir = "./content";
   let limit = 0;
   let chunkSize = DEFAULT_CHUNK_SIZE;
+  let sourceFilter: "usc" | "ecfr" | "fr" | null = null;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--limit" && args[i + 1]) {
@@ -153,6 +155,14 @@ async function main(): Promise<void> {
     } else if (args[i] === "--chunk-size" && args[i + 1]) {
       chunkSize = parseInt(args[i + 1]!, 10);
       i++;
+    } else if (args[i] === "--source" && args[i + 1]) {
+      const val = args[i + 1]!;
+      if (val !== "usc" && val !== "ecfr" && val !== "fr") {
+        console.error(`Invalid source: ${val}. Must be usc, ecfr, or fr.`);
+        process.exit(1);
+      }
+      sourceFilter = val;
+      i++;
     } else if (!args[i]!.startsWith("--")) {
       contentDir = args[i]!;
     }
@@ -160,9 +170,22 @@ async function main(): Promise<void> {
 
   const resolvedDir = resolve(contentDir);
   console.log(`Content directory: ${resolvedDir}`);
+  if (sourceFilter) console.log(`Source filter: ${sourceFilter}`);
   console.log(`Finding .md files...`);
 
   let mdFiles = await findMdFiles(resolvedDir);
+
+  // Filter by source path prefix when --source is set
+  if (sourceFilter) {
+    const sourcePathMap: Record<string, string> = {
+      usc: "/usc/",
+      ecfr: "/ecfr/",
+      fr: "/fr/",
+    };
+    const prefix = sourcePathMap[sourceFilter]!;
+    mdFiles = mdFiles.filter((f) => f.includes(prefix));
+    console.log(`  Filtered to ${mdFiles.length} ${sourceFilter} files`);
+  }
   console.log(`  Found ${mdFiles.length} .md files`);
 
   if (limit > 0) {

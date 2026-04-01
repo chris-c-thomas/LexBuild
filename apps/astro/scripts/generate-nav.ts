@@ -558,28 +558,50 @@ function extractYamlField(yaml: string, field: string): string | undefined {
 // ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
-  const contentDir = resolve(process.argv[2] ?? "./content");
+  const args = process.argv.slice(2);
+  let contentDir = "./content";
+  let sourceFilter: "usc" | "ecfr" | "fr" | null = null;
+
+  for (const arg of args) {
+    if (arg === "--source" && args[args.indexOf(arg) + 1]) {
+      const val = args[args.indexOf(arg) + 1]!;
+      if (val !== "usc" && val !== "ecfr" && val !== "fr") {
+        console.error(`Invalid source: ${val}. Must be usc, ecfr, or fr.`);
+        process.exit(1);
+      }
+      sourceFilter = val;
+    } else if (!arg.startsWith("--") && args[args.indexOf(arg) - 1] !== "--source") {
+      contentDir = arg;
+    }
+  }
+
+  const resolvedContentDir = resolve(contentDir);
   const publicNavDir = resolve("./public/nav");
 
-  console.log(`Content directory: ${contentDir}`);
+  console.log(`Content directory: ${resolvedContentDir}`);
   console.log(`Output directory: ${publicNavDir}`);
+  if (sourceFilter) console.log(`Source filter: ${sourceFilter}`);
 
-  // Create output directories
-  const uscOutDir = join(publicNavDir, "usc");
-  const ecfrOutDir = join(publicNavDir, "ecfr");
-  const frOutDir = join(publicNavDir, "fr");
-  await mkdir(uscOutDir, { recursive: true });
-  await mkdir(ecfrOutDir, { recursive: true });
-  await mkdir(frOutDir, { recursive: true });
+  if (!sourceFilter || sourceFilter === "usc") {
+    const uscOutDir = join(publicNavDir, "usc");
+    await mkdir(uscOutDir, { recursive: true });
+    console.log("\nGenerating USC navigation...");
+    await generateUscNav(resolvedContentDir, uscOutDir);
+  }
 
-  console.log("\nGenerating USC navigation...");
-  await generateUscNav(contentDir, uscOutDir);
+  if (!sourceFilter || sourceFilter === "ecfr") {
+    const ecfrOutDir = join(publicNavDir, "ecfr");
+    await mkdir(ecfrOutDir, { recursive: true });
+    console.log("\nGenerating eCFR navigation...");
+    await generateEcfrNav(resolvedContentDir, ecfrOutDir);
+  }
 
-  console.log("\nGenerating eCFR navigation...");
-  await generateEcfrNav(contentDir, ecfrOutDir);
-
-  console.log("\nGenerating FR navigation...");
-  await generateFrNav(contentDir, frOutDir);
+  if (!sourceFilter || sourceFilter === "fr") {
+    const frOutDir = join(publicNavDir, "fr");
+    await mkdir(frOutDir, { recursive: true });
+    console.log("\nGenerating FR navigation...");
+    await generateFrNav(resolvedContentDir, frOutDir);
+  }
 
   console.log("\nDone.");
 }

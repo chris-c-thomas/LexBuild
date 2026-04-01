@@ -1,5 +1,11 @@
 # @lexbuild/core
 
+## 1.15.1
+
+### Patch Changes
+
+- 428aaeb: Package README.md updates
+
 ## 1.15.0
 
 ### Minor Changes

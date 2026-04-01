@@ -5,6 +5,52 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
 
+## [1.15.0]
+
+### Added
+
+- **Astro FR integration**: Federal Register as a browsable source on lexbuild.dev with year/month listing pages, document content pages, and breadcrumb navigation
+- **FR sidebar navigation**: Year/month tree in the sidebar (consistent with USC title/chapter and eCFR title/chapter/part trees), with doc counts per month and auto-expand to active year
+- **FR in mobile nav**: Added FR button to the source switcher in the mobile Sheet drawer
+- **Publication date inference from FRDOC**: `closeFrdoc()` extracts `Filed M-D-YY` from XML, computes publication date (+1 day), used as fallback when no JSON sidecar exists
+- **FR search indexing**: Both `index-search.ts` and `index-search-incremental.ts` now index FR documents with `publication_date` as a filterable, sortable, and displayed field
+- **`--source` flag on incremental indexer**: Index a single source (`--source usc`, `--source ecfr`, `--source fr`) without scanning others
+- **`--set-checkpoint` flag on incremental indexer**: Write the mtime checkpoint without indexing (used after per-source runs)
+- **`--chunk-size` CLI flag on generate-highlights**: Tune files-per-child-process for memory-constrained runs
+- **Govinfo bulk XML downloader** (`govinfo-downloader.ts`): Download daily FR issue XML from govinfo.gov with concurrent worker pool and retry logic
+- **Lavender and chestnut color palettes**: Added to Tailwind `@theme inline` in `global.css`
+- **FR-specific pipeline diagram colors**: FR uses lavender, future/planned uses putty in the How It Works section
+- **Publication date edge case tests**: Month-end rollover, year-end rollover, 2-digit year threshold, missing Filed clause
+- **`inferDateFromPath` tests**: Govinfo bulk path, per-document path, non-matching path
+
+### Changed
+
+- **Homepage Packages section**: FR card moved from "Planned" (dashed) to "Published" (linked to npm) with green Published label. Grid widened to 5 columns for published packages, 3 columns for planned
+- **Homepage Browse Sources cards**: Descriptions rewritten for consistent length, stats bar uses `justify-evenly` with centered text, FR stats show "Daily since 2000 | ~770k documents"
+- **Homepage How It Works diagram**: Added FR as third source (GPO/SGML XML, federalregister.gov) and `@lexbuild/fr` parser. Source/parser cards have per-source border colors (slate-blue/summer-green/lavender). Future placeholder uses putty
+- `generate-highlights.ts` default chunk size reduced from 10,000 to 2,000 files per child process
+- Child processes in highlight generation now heap-capped at 2GB via `--max-old-space-size`
+- `sources.ts`: FR `hasSidebar` changed from `false` to `true`; USC name changed to "United States Code"
+- FR month pages sort date groups most-recent-first, undated groups last
+- FR month pages suppress redundant date group header when all docs share a single `YYYY-MM` fallback date
+- `generate-nav.ts`: FR `publication_date` falls back to `YYYY-MM` from directory path when frontmatter field is empty
+- `deploy.sh`: Auto-creates FR content directory on VPS before rsync
+- Converter JSDoc updated from "two-pass" to single-pass streaming description
+
+### Fixed
+
+- **gray-matter memory leak in batch scripts**: Added `{ cache: false }` to all `matter()` calls in `generate-highlights.ts`, `index-search.ts`, and `index-search-incremental.ts` — prevents unbounded RSS growth (~30MB per 1,000 files)
+- **Child process `execArgv` override**: `fork()` now spreads `process.execArgv` to preserve tsx loader flags alongside `--max-old-space-size`
+- **Skip-to-content link stealing logo clicks**: Added `pointer-events-none` when hidden, `focus:pointer-events-auto` when visible — the invisible `z-100` link was intercepting clicks on the logo
+- **"Invalid Date" on FR month pages**: `publication_date` was empty for docs without JSON sidecars; nav generator now falls back to directory-based `YYYY-MM`
+- **Empty `<h1>` on FR document pages**: Template now uses `pageTitle` (with fallback) instead of raw `frontmatter.title`
+- **Duplicate data fetching on FR year/month pages**: `getFrYear()` and `getFrMonthDocuments()` were called twice per request
+- **Date validation in FRDOC parsing**: Rejects invalid month/day values (e.g., month 13) instead of silently wrapping via `Date` constructor
+- **govinfo-downloader error logging**: Catch block now logs `warn` with date and error message instead of silently incrementing counter
+- **Search indexer error logging**: FR catch blocks now log warnings per skipped file instead of swallowing errors
+- Removed unused `MONTH_ABBREVS` constant from `SidebarContent.tsx`
+- Updated `apps/astro/CLAUDE.md` to reflect FR sidebar existence
+
 ## [1.14.1]
 
 ### Changed

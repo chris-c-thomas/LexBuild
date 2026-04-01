@@ -50,11 +50,6 @@ const MONTH_NAMES = [
   "July", "August", "September", "October", "November", "December",
 ];
 
-const MONTH_ABBREVS = [
-  "", "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-];
-
 function parseFrActivePath(path: string) {
   const prefix = "/fr/";
   if (!path.startsWith(prefix)) return { year: null, month: null };

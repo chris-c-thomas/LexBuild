@@ -378,8 +378,8 @@ async function indexFrDocuments(contentDir: string, indexer: BatchIndexer): Prom
           });
           count++;
           trackFileAndGC();
-        } catch {
-          // Skip unparseable files
+        } catch (err) {
+          console.warn(`  Warning: skipping ${file}: ${err instanceof Error ? err.message : String(err)}`);
         }
       }
     }

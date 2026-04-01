@@ -57,11 +57,13 @@ let renderedHtml = "";
 
 // Index data (for year/month pages)
 let indexContent: { type: "year" | "month"; html: string } | null = null;
+let yearData: Awaited<ReturnType<typeof getFrYear>> = null;
+let monthDocs: Awaited<ReturnType<typeof getFrMonthDocuments>> = [];
 
 if (route.granularity === "year") {
   // ── Year index: show month cards ──
   const yearNum = parseInt(route.segments["year"] ?? "0", 10);
-  const yearData = await getFrYear(yearNum);
+  yearData = await getFrYear(yearNum);
 
   if (!yearData || yearData.months.length === 0) {
     return new Response(null, { status: 404, statusText: "Not found" });
@@ -88,19 +90,19 @@ if (route.granularity === "year") {
   // ── Month index: show document list ──
   const yearNum = parseInt(route.segments["year"] ?? "0", 10);
   const monthNum = parseInt(route.segments["month"] ?? "0", 10);
-  const docs = await getFrMonthDocuments(yearNum, monthNum);
+  monthDocs = await getFrMonthDocuments(yearNum, monthNum);
 
-  if (docs.length === 0) {
+  if (monthDocs.length === 0) {
     return new Response(null, { status: 404, statusText: "Not found" });
   }
 
   const monthName = getMonthName(monthNum);
   pageTitle = `Federal Register — ${monthName} ${yearNum}`;
-  pageDescription = `${docs.length.toLocaleString()} documents`;
+  pageDescription = `${monthDocs.length.toLocaleString()} documents`;
 
   seo = {
     title: pageTitle,
-    description: `${docs.length.toLocaleString()} Federal Register documents from ${monthName} ${yearNum}.`,
+    description: `${monthDocs.length.toLocaleString()} Federal Register documents from ${monthName} ${yearNum}.`,
     canonicalUrl: new URL(route.canonicalUrl, siteUrl).href,
     ogType: "website",
     ogImage: `${siteUrl}/og-image.png`,
@@ -143,19 +145,6 @@ if (route.granularity === "year") {
 
 const fullFileContent = rawYaml ? `---\n${rawYaml.trim()}\n---\n${body}` : body;
 const documentDownloadFilename = `fr-${slug?.replace(/\//g, "-") ?? "content"}.md`;
-
-// Load index data for rendering
-let yearData: Awaited<ReturnType<typeof getFrYear>> = null;
-let monthDocs: Awaited<ReturnType<typeof getFrMonthDocuments>> = [];
-
-if (route.granularity === "year") {
-  yearData = await getFrYear(parseInt(route.segments["year"] ?? "0", 10));
-} else if (route.granularity === "month") {
-  monthDocs = await getFrMonthDocuments(
-    parseInt(route.segments["year"] ?? "0", 10),
-    parseInt(route.segments["month"] ?? "0", 10),
-  );
-}
 
 // Group month docs by publication date (computed in frontmatter to avoid TS generics in template)
 const docsByDate: Array<{ date: string; docs: typeof monthDocs }> = [];
@@ -283,7 +272,7 @@ if (monthDocs.length > 0) {
       <div class="flex flex-col gap-6">
         <div class="flex items-start justify-between gap-4">
           <h1 class="font-display text-slate-blue-800 dark:text-slate-blue-200 text-2xl font-semibold tracking-tight">
-            {toTitleCase(frontmatter.title)}
+            {pageTitle}
           </h1>
           <div class="flex shrink-0 gap-2">
             <CopyButton client:load text={fullFileContent} />

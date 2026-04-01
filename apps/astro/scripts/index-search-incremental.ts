@@ -435,8 +435,8 @@ async function indexFrIncremental(
             url: `/fr/${yearDir}/${monthDir}/${file.replace(/\.md$/, "")}`,
           });
           indexed++;
-        } catch {
-          // Skip unparseable files
+        } catch (err) {
+          console.warn(`  Warning: skipping ${file}: ${err instanceof Error ? err.message : String(err)}`);
         }
       }
     }

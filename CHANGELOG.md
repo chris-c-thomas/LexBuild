@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
 
+## [1.15.1]
+
+### Changed
+
+- Homepage hero stat updated from "290k+ Sections" to "1.05M+ Documents" to reflect full corpus including Federal Register
+- Homepage "Open Source" label changed to "MIT Open Source"
+- Comprehensive documentation updates for Federal Register integration across `docs/`, `apps/astro/README.md`, and package docs
+- `docs/packages/fr.md` expanded from 123 to 202 lines: govinfo bulk downloader, emphasis map differences, publication date inference, whitespace normalization, converter options
+- `docs/packages/cli.md` updated with `download-fr` and `convert-fr` command sections
+- `docs/development/getting-started.md` updated with FR CLI examples, project tree, dependency graph
+- `apps/astro/README.md` updated with FR routes, content pipeline, corpus counts
+- Deploy script: added `--nav-only` and `--sitemaps-only` flags, nav JSON now syncs to both `/srv/lexbuild/nav/` and `dist/client/nav/`
+
 ## [1.15.0]
 
 ### Added

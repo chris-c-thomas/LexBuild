@@ -250,7 +250,7 @@ All SEO is driven by `lib/seo.ts` (pure functions, no Astro imports) and `compon
 
 FR is the third source (`source: "fr"`) with a fundamentally different structure from USC/eCFR:
 - **Date-based, not hierarchical**: URLs follow `/fr/{YYYY}/{MM}/{document_number}` (3 segments)
-- **FR sidebar**: `SourceConfig.hasSidebar` is `true` for FR. `FrSidebarContent` in `SidebarContent.tsx` renders a year/month tree (loaded from `years.json`). Months are leaf links to listing pages, not expandable. Years show total doc counts, months show per-month counts.
+- **FR sidebar (`FrSidebarContent`)**: Loads `years.json` client-side, renders year → month tree. Years show total doc counts, months show per-month counts with zero-padded month number prefix. `userToggled` flag prevents auto-expand effect from fighting manual toggle. Months are `<a>` links (leaf nodes), not expandable buttons.
 - **New granularity values**: `"document"` (content leaf), `"month"` (index), `"year"` (index) added to `Granularity` type. These only flow through FR code paths.
 - **Route validation is source-aware**: `isValidSegment()` in `routes.ts` accepts `sourceId` and `index` params. FR segments are `^\d{4}$` (year), `^\d{2}$` (month), `^\d{4}-\d{4,6}$` (doc number) — not the `^(title|chapter|part|section)-` prefix pattern used by USC/eCFR.
 - **Content path**: `fr/documents/{YYYY}/{MM}/{doc}.md` — symlinked from `output/fr/` via `link-content.sh`
@@ -258,6 +258,7 @@ FR is the third source (`source: "fr"`) with a fundamentally different structure
 - **Month index pages group by publication date** with document type badges (rule/notice/proposed rule/presidential). Logic for grouping must be in the Astro frontmatter section, not in template expressions (Astro templates don't support TypeScript generics like `new Map<string, T>()`).
 - **FrontmatterPanel** shows FR-specific fields: Document Type, FR Citation, Publication Date, Agencies, Effective Date, Comments Close Date, Docket IDs, RIN.
 - **`hasSidebar` on SourceConfig controls layout**: When `false`, BaseLayout renders a centered max-width `<main>` without sidebar or mobile nav tree. All three sources (USC, eCFR, FR) currently have `hasSidebar: true`. Check `SOURCES[source]?.hasSidebar !== false` in BaseLayout.
+- **Nav JSON must exist in two VPS locations**: `/srv/lexbuild/nav/` (server-side `readFile`) AND `~/lexbuild/apps/astro/dist/client/nav/` (client-side `fetch("/nav/...")`). The deploy script syncs to both. If sidebar shows "No years found" but the main content loads, the `dist/client/nav/` copy is missing.
 - **Don't pipe long-running scripts through `head`**: `npx tsx scripts/index-search.ts 2>&1 | head -25` kills the process via SIGPIPE when the pipe closes. Run indexer scripts directly or use `run_in_background`.
 
 ## `astro.config.ts`

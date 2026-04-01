@@ -1,5 +1,15 @@
 # @lexbuild/cli
 
+## 1.15.1
+
+### Patch Changes
+
+- 428aaeb: Package README.md updates
+- Updated dependencies [428aaeb]
+  - @lexbuild/ecfr@1.15.1
+  - @lexbuild/fr@1.15.1
+  - @lexbuild/usc@1.15.1
+
 ## 1.15.0
 
 ### Minor Changes

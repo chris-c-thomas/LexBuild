@@ -17,9 +17,7 @@ import { open as yauzlOpen } from "yauzl";
 import type { ZipFile, Entry } from "yauzl";
 import { detectLatestReleasePoint } from "./release-points.js";
 
-// ---------------------------------------------------------------------------
-// Release point configuration
-// ---------------------------------------------------------------------------
+// --- Release point configuration ---
 
 /**
  * Fallback OLRC release point, used when auto-detection fails.
@@ -36,9 +34,7 @@ const OLRC_BASE_URL = "https://uscode.house.gov/download/releasepoints/us/pl";
 /** Valid USC title numbers (1-54) */
 export const USC_TITLE_NUMBERS = Array.from({ length: 54 }, (_, i) => i + 1);
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+// --- Helpers ---
 
 /**
  * Check whether a list of title numbers covers all 54 USC titles.
@@ -50,9 +46,7 @@ export function isAllTitles(titles: number[]): boolean {
   return unique.size === 54 && USC_TITLE_NUMBERS.every((n) => unique.has(n));
 }
 
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
+// --- Public API ---
 
 /** Progress event emitted during download */
 export interface DownloadProgress {
@@ -157,9 +151,7 @@ export async function downloadTitles(options: DownloadOptions): Promise<Download
   return { releasePoint, files, errors };
 }
 
-// ---------------------------------------------------------------------------
-// URL construction
-// ---------------------------------------------------------------------------
+// --- URL construction ---
 
 /**
  * Build the download URL for a single title's XML zip.
@@ -195,9 +187,7 @@ export function releasePointToPath(releasePoint: string): string {
   return `${releasePoint.slice(0, dashIndex)}/${releasePoint.slice(dashIndex + 1)}`;
 }
 
-// ---------------------------------------------------------------------------
-// Download and extraction
-// ---------------------------------------------------------------------------
+// --- Download and extraction ---
 
 /**
  * Download a single title's zip and extract the XML file.
@@ -324,9 +314,7 @@ function extractEntry(zipFile: ZipFile, entry: Entry, outputPath: string): Promi
   });
 }
 
-// ---------------------------------------------------------------------------
-// Bulk download (all titles in one zip)
-// ---------------------------------------------------------------------------
+// --- Bulk download (all titles in one zip) ---
 
 /** Regex matching USC XML filenames like usc01.xml, usc54.xml */
 const USC_XML_RE = /^(?:.*\/)?usc(\d{2})\.xml$/;

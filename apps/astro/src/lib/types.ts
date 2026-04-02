@@ -1,6 +1,3 @@
-// ---------------------------------------------------------------------------
-// Source registry
-// ---------------------------------------------------------------------------
 
 /** Supported content sources */
 export type SourceId = "usc" | "ecfr" | "fr";
@@ -28,9 +25,6 @@ export interface SourceConfig {
   slugGranularity: Record<number, Granularity>;
 }
 
-// ---------------------------------------------------------------------------
-// Content types
-// ---------------------------------------------------------------------------
 
 /** Resolved route from a slug array */
 export interface ResolvedRoute {
@@ -104,9 +98,6 @@ export interface ContentFrontmatter {
   total_token_estimate?: number;
 }
 
-// ---------------------------------------------------------------------------
-// Navigation types
-// ---------------------------------------------------------------------------
 
 /** Title summary for index pages and sidebar root */
 export interface TitleSummary {
@@ -170,9 +161,6 @@ export interface FrDocumentNav {
   file: string;
 }
 
-// ---------------------------------------------------------------------------
-// SEO types
-// ---------------------------------------------------------------------------
 
 /** Fully resolved SEO metadata for a single page. */
 export interface PageSEO {
@@ -194,9 +182,6 @@ export interface PageSEO {
   rawTitle?: boolean;
 }
 
-// ---------------------------------------------------------------------------
-// Component props
-// ---------------------------------------------------------------------------
 
 /** Props passed from Astro pages to the ContentViewer React island */
 export interface ContentViewerProps {

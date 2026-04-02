@@ -13,9 +13,7 @@ interface TitleNavData {
   chapters: ChapterNav[];
 }
 
-// ---------------------------------------------------------------------------
-// State helpers
-// ---------------------------------------------------------------------------
+// --- State helpers ---
 
 /** Parse the current path to determine which title/chapter/part is active. */
 function parseActivePath(sourceId: SourceId, path: string) {
@@ -30,9 +28,7 @@ function parseActivePath(sourceId: SourceId, path: string) {
   };
 }
 
-// ---------------------------------------------------------------------------
-// SidebarContent — tree navigation (shared by desktop sidebar and mobile nav)
-// ---------------------------------------------------------------------------
+// --- SidebarContent — tree navigation (shared by desktop sidebar and mobile nav) ---
 
 export function SidebarContent({ sourceId, currentPath }: SidebarContentProps) {
   if (sourceId === "fr") {
@@ -41,9 +37,7 @@ export function SidebarContent({ sourceId, currentPath }: SidebarContentProps) {
   return <TitleSidebarContent sourceId={sourceId} currentPath={currentPath} />;
 }
 
-// ---------------------------------------------------------------------------
-// FR sidebar — year/month tree
-// ---------------------------------------------------------------------------
+// --- FR sidebar — year/month tree ---
 
 const MONTH_NAMES = [
   "", "January", "February", "March", "April", "May", "June",
@@ -187,9 +181,7 @@ function FrSidebarContent({ currentPath }: { currentPath: string }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Title-based sidebar — USC/eCFR
-// ---------------------------------------------------------------------------
+// --- Title-based sidebar — USC/eCFR ---
 
 function TitleSidebarContent({ sourceId, currentPath }: SidebarContentProps) {
   const [titles, setTitles] = useState<TitleSummary[] | null>(null);
@@ -378,9 +370,7 @@ function TitleSidebarContent({ sourceId, currentPath }: SidebarContentProps) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Chapter list (second level)
-// ---------------------------------------------------------------------------
+// --- Chapter list (second level) ---
 
 interface ChapterListProps {
   chapters: ChapterNav[];
@@ -467,9 +457,7 @@ function ChapterList({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Part list (third level — eCFR only)
-// ---------------------------------------------------------------------------
+// --- Part list (third level — eCFR only) ---
 
 interface PartListProps {
   parts: PartNav[];

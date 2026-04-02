@@ -22,9 +22,7 @@ import { join, resolve } from "node:path";
 const SITE_URL = process.env.SITE_URL ?? "https://lexbuild.dev";
 const MAX_URLS_PER_FILE = 25_000;
 
-// ---------------------------------------------------------------------------
-// _meta.json shapes (subset of fields we need)
-// ---------------------------------------------------------------------------
+// --- _meta.json shapes (subset of fields we need) ---
 
 interface UscTitleMeta {
   title_number: number;
@@ -38,9 +36,7 @@ interface EcfrPartMeta {
   sections: Array<{ file: string }>;
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+// --- Helpers ---
 
 async function readJson<T>(path: string): Promise<T | null> {
   try {
@@ -67,9 +63,7 @@ function xmlEscape(str: string): string {
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-// ---------------------------------------------------------------------------
-// URL collection
-// ---------------------------------------------------------------------------
+// --- URL collection ---
 
 async function collectUscUrls(contentDir: string): Promise<string[]> {
   const urls: string[] = [];
@@ -187,9 +181,7 @@ async function collectFrUrls(contentDir: string): Promise<string[]> {
   return urls;
 }
 
-// ---------------------------------------------------------------------------
-// Sitemap XML generation
-// ---------------------------------------------------------------------------
+// --- Sitemap XML generation ---
 
 function buildUrlset(urls: string[], today: string, sourceChangefreq: string): string {
   let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
@@ -241,9 +233,7 @@ async function writeChunkedSitemaps(
   return filenames;
 }
 
-// ---------------------------------------------------------------------------
-// Main
-// ---------------------------------------------------------------------------
+// --- Main ---
 
 async function main(): Promise<void> {
   const args = process.argv.slice(2);

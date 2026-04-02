@@ -71,6 +71,7 @@ function isValidSegment(segment: string, sourceId: SourceId, index: number): boo
   if (sourceId === "fr") {
     if (index === 0) return /^\d{4}$/.test(segment);
     if (index === 1) return /^\d{2}$/.test(segment);
+    // FR doc numbers: alphanumeric start, hyphens allowed (e.g., "2026-06029")
     if (index === 2) return /^[\w][\w-]+$/.test(segment);
     return false;
   }

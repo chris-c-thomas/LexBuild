@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
 
+## [1.15.2]
+
+### Fixed
+
+- Sidebar collapse bug: USC/eCFR titles could not be collapsed once auto-expanded. Added `userToggled` flag to prevent auto-expand from fighting manual collapse
+- Sidebar error handling: fetch failures now show "Failed to load" with retry instead of silently rendering empty or misleading "No titles found"
+- Added `res.ok` checks on all sidebar fetch calls to properly catch HTTP errors
+- Homepage sample output tab styling discrepancy between homepage and section pages (border-color and box-shadow)
+- Old Title 17 source credit in homepage preview grid not updated with new sample
+- Missing `rel="noreferrer"` on `target="_blank"` links in homepage
+- Redundant `### Commands` heading in CLI CLAUDE.md
+- `400–504.astro` in docs directory tree implying single file instead of 11 separate files
+
+### Changed
+
+- Homepage sample output updated from 17 USC § 107 (Fair Use) to 29 USC § 1022 (Summary Plan Description) with full notes
+- CLI Quick Start updated to reference Title 29 with `--include-notes` flag
+- Homepage Packages section: added planned PLAW, Bills, and Municipal Code packages alongside Annual CFR and State Statutes
+- Added "View on GitHub" button to Packages section linking to packages directory
+- Added npm organization link to site footer
+- Shiki highlighting on homepage wrapped in try-catch with fallback to unhighlighted code
+- CLAUDE.md files optimized across all packages (701 lines removed, redundancies eliminated)
+- Monorepo README.md: Sources and Data Sources tables combined, Overview section rewritten
+
 ## [1.15.1]
 
 ### Changed

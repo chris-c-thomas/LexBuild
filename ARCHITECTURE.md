@@ -3,44 +3,61 @@
 LexBuild converts U.S. legal source XML into structured Markdown. The CLI downloads source data, routes it through source-specific parsers and a shared core engine, and writes per-section `.md` files with YAML frontmatter.
 
 ```
-                        @lexbuild/cli
-                 Orchestrates the full pipeline
-               Download → Parse → Convert → Write
-                              │
-              ┌───────────────┼───────────────┐
-              │         CLI DEPENDS ON        │
-              ▼               ▼               ▼
-
-  SOURCE XML          CORE ENGINE                    OUTPUT
-  ──────────          ───────────                    ──────
-
-  USLM 1.0 XML       @lexbuild/core                 Structured Markdown
-  OLRC                ┌─────────────────────────┐    ┌────────────────────┐
-  uscode.house.gov    │                         │    │                    │
-                      │  SAX Parse → Typed AST  │    │  YAML frontmatter  │
-  eCFR GPO/SGML       │      → Render           │    │  + per-section     │
-  ecfr.gov            │                         │    │  .md files         │
-                      │  Frontmatter · Links    │    │                    │
-  FR GPO/SGML         │  Metadata · File I/O    │    └────────────────────┘
-  federalregister.gov └─────────────────────────┘
-                              ▲
-                       PARSERS USE
-                              │
-                      SOURCE PARSERS
-                      ──────────────
-
-                      @lexbuild/usc
-                      USLM schema → AST builder
-
-                      @lexbuild/ecfr
-                      eCFR GPO/SGML → AST builder
-
-                      @lexbuild/fr
-                      FR GPO/SGML → AST builder
-                      + API enricher
-
-                      @lexbuild/<source>
-                      New schema → AST builder
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                                                                              │
+│   @lexbuild/cli                          Download → Parse → Convert → Write  │
+│   Orchestrates the full pipeline                                             │
+│                                                                              │
+└──────────────────────────────┬───────────────────────────────────────────────┘
+                               │
+                          CLI DEPENDS ON
+                               │
+         ┌─────────────────────┼─────────────────────┐
+         ▼                     ▼                     ▼
+┌─────────────────┐  ┌──────────────────────┐  ┌─────────────────────┐
+│                 │  │                      │  │                     │
+│  SOURCE XML     │  │  CORE ENGINE         │  │  OUTPUT             │
+│                 │  │                      │  │                     │
+│ ┌─────────────┐ │  │  @lexbuild/core      │  │ ┌─────────────────┐ │
+│ │ USLM 1.0    │ │  │ ┌──────────────────┐ │  │ │                 │ │
+│ │ XML         │ │  │ │                  │ │  │ │  Structured     │ │
+│ │ OLRC        │ │  │ │ SAX Parse        │ │  │ │  Markdown       │ │
+│ └─────────────┘ │  │ │  → Typed AST     │ │  │ │                 │ │
+│ ┌─────────────┐ │  │ │  → Render        │ │  │ │  YAML           │ │
+│ │ eCFR        │ │  │ │                  │ │  │ │  frontmatter +  │ │
+│ │ GPO/SGML    │ │  │ │ Frontmatter     │ │  │ │  per-section    │ │
+│ │ ecfr.gov    │ │  │ │ Link Resolution │ │  │ │  .md files      │ │
+│ └─────────────┘ │  │ │ Metadata        │ │  │ │                 │ │
+│ ┌─────────────┐ │  │ │ File I/O        │ │  │ └─────────────────┘ │
+│ │ FR GPO/SGML │ │  │ └──────────────────┘ │  │                     │
+│ │ + JSON      │ │  │                      │  │                     │
+│ │ FR API      │ │  └──────────┬───────────┘  └─────────────────────┘
+│ └─────────────┘ │             │
+│ ┌ ─ ─ ─ ─ ─ ─┐ │        PARSERS USE
+│   Any Legal     │             │
+│ │ Schema      │ │             │
+│  ─ ─ ─ ─ ─ ─ ─ │  ┌──────────┴───────────────────────────────────┐
+│                 │  │                                              │
+└─────────────────┘  │  SOURCE PARSERS                              │
+                     │                                              │
+                     │  ┌────────────────────────────────────────┐  │
+                     │  │ @lexbuild/usc                          │  │
+                     │  │ USLM schema → AST builder              │  │
+                     │  └────────────────────────────────────────┘  │
+                     │  ┌────────────────────────────────────────┐  │
+                     │  │ @lexbuild/ecfr                         │  │
+                     │  │ eCFR GPO/SGML → AST builder            │  │
+                     │  └────────────────────────────────────────┘  │
+                     │  ┌────────────────────────────────────────┐  │
+                     │  │ @lexbuild/fr                           │  │
+                     │  │ FR GPO/SGML → AST builder + enricher   │  │
+                     │  └────────────────────────────────────────┘  │
+                     │  ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─┐  │
+                     │    @lexbuild/<source>                        │
+                     │  │ New schema → AST builder               │  │
+                     │   ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─  │
+                     │                                              │
+                     └──────────────────────────────────────────────┘
 ```
 
 ## Three Layers

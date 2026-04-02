@@ -25,11 +25,11 @@
 
 ## Overview
 
-The full text of U.S. federal law is publicly available from official government sources. The [U.S. Code](https://uscode.house.gov/) contains 54 titles of statutory law published by the [Office of the Law Revision Counsel](https://uscode.house.gov/about_office.xhtml). The [Electronic Code of Federal Regulations](https://www.ecfr.gov/) (eCFR) contains 50 titles of federal regulations updated daily. The [Federal Register](https://www.federalregister.gov/) publishes roughly 30,000 new documents each year including rules, proposed rules, notices, and presidential documents.
+The full text of U.S. law is publicly available from official government sources at the federal, state, and local level. At the federal level, the [U.S. Code](https://uscode.house.gov/) contains 54 titles of statutory law published by the [Office of the Law Revision Counsel](https://uscode.house.gov/about_office.xhtml). The [Electronic Code of Federal Regulations](https://www.ecfr.gov/) (eCFR) contains 50 titles of federal regulations updated daily. The [Federal Register](https://www.federalregister.gov/) publishes roughly 30,000 new documents each year including rules, proposed rules, notices, and presidential documents.
 
-These sources are available in structured formats but they are complex and vary significantly from one source to the next. Working with them directly takes real effort.
+These sources are available in structured formats but they are complex, dense and deeply nested, and vary significantly from one source to the next. Working with them directly takes real effort.
 
-LexBuild handles the downloading and conversion. It produces per-section Markdown files with YAML frontmatter, predictable file paths, and content sized for typical context windows. The goal is to make the full corpus of federal law and regulations accessible to LLMs, RAG pipelines, vector databases, and legal research tools.
+LexBuild handles the downloading and conversion. It produces per-section Markdown files with YAML frontmatter, predictable file paths, and content sized for typical AI context windows. The goal is to make U.S. law accessible to LLMs, agentic workflows, RAG pipelines, vector databases, and other legal research tools.
 
 ---
 

@@ -35,13 +35,13 @@ LexBuild handles the downloading and conversion. It produces per-section Markdow
 
 ## Sources
 
-| Source                                                                              | Package                            | Type | Format       | Update Frequency | Notes                                     |
-| ----------------------------------------------------------------------------------- | ---------------------------------- | ---- | ------------ | ---------------- | ----------------------------------------- |
-| [U.S. Code](https://uscode.house.gov/download/download.shtml)                       | [`@lexbuild/usc`](packages/usc/)   | Bulk | USLM 1.0 XML | Irregular        | Release point auto-detected from OLRC     |
-| [eCFR](https://www.ecfr.gov/api/versioner/v1/titles)                                | [`@lexbuild/ecfr`](packages/ecfr/) | API  | GPO/SGML XML | Daily            | Point-in-time support via `--date` flag   |
-| [eCFR](https://www.govinfo.gov/bulkdata/ECFR)                                       | [`@lexbuild/ecfr`](packages/ecfr/) | Bulk | GPO/SGML XML | Irregular        | Updates per-title as regulations change   |
-| [Federal Register](https://www.federalregister.gov/developers/documentation/api/v1) | [`@lexbuild/fr`](packages/fr/)     | API  | GPO/SGML XML | Daily            | API daily-issue XML + JSON metadata       |
-| [Federal Register](https://www.govinfo.gov/bulkdata/FR)                             | [`@lexbuild/fr`](packages/fr/)     | Bulk | GPO/SGML XML | Daily            | Bulk XML. Faster for historical backfill  |
+| Source | Package | Type | Format | Updates | Notes |
+|--------|---------|------|--------|---------|-------|
+| [U.S. Code](https://uscode.house.gov/download/download.shtml) | [@lexbuild/usc](packages/usc/) | Bulk | USLM 1.0 XML | Irregular | Release point auto-detected from OLRC |
+| [eCFR](https://www.ecfr.gov/api/versioner/v1/titles) | [@lexbuild/ecfr](packages/ecfr/) | API | eCFR XML | Daily | Default source. Supports `--date` for historical queries |
+| [eCFR](https://www.govinfo.gov/bulkdata/ECFR)  | [@lexbuild/ecfr](packages/ecfr/) | Bulk | eCFR XML | Irregular | Fallback source. Updates per title as regulations change |
+| [Federal Register](https://www.federalregister.gov/developers/documentation/api/v1) | [@lexbuild/fr](packages/fr/) | API | FR XML + JSON | Daily | Per document XML full text with JSON metadata sidecar |
+| [Federal Register](https://www.govinfo.gov/bulkdata/FR)  | [@lexbuild/fr](packages/fr/) | Bulk | FR XML | Daily | Complete daily issue XML. Faster for historical backfill |
 
 ---
 

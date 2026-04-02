@@ -35,12 +35,13 @@ LexBuild handles the downloading and conversion. It produces per-section Markdow
 
 ## Sources
 
-| Source | Package | Format | Update Frequency | Notes |
-|--------|---------|--------|------------------|-------|
-| [U.S. Code](https://uscode.house.gov/download/download.shtml) | [`@lexbuild/usc`](packages/usc/) | USLM 1.0 XML | Irregular | 54 titles. Release point auto-detected from OLRC |
-| [eCFR](https://www.ecfr.gov/api/versioner/v1/titles) (default) | [`@lexbuild/ecfr`](packages/ecfr/) | GPO/SGML XML | Daily | 50 titles. Point-in-time support via `--date` flag |
-| [eCFR](https://www.govinfo.gov/bulkdata/ECFR) (fallback) | [`@lexbuild/ecfr`](packages/ecfr/) | GPO/SGML XML | Irregular | Bulk XML. Updates per-title as regulations change |
-| [Federal Register](https://www.federalregister.gov/developers/documentation/api/v1) | [`@lexbuild/fr`](packages/fr/) | GPO/SGML XML | Daily | ~30k docs/yr. Per-document XML + JSON metadata |
+| Source                                                                              | Package                            | Type | Format       | Update Frequency | Notes                                     |
+| ----------------------------------------------------------------------------------- | ---------------------------------- | ---- | ------------ | ---------------- | ----------------------------------------- |
+| [U.S. Code](https://uscode.house.gov/download/download.shtml)                       | [`@lexbuild/usc`](packages/usc/)   | Bulk | USLM 1.0 XML | Irregular        | Release point auto-detected from OLRC     |
+| [eCFR](https://www.ecfr.gov/api/versioner/v1/titles)                                | [`@lexbuild/ecfr`](packages/ecfr/) | API  | GPO/SGML XML | Daily            | Point-in-time support via `--date` flag   |
+| [eCFR](https://www.govinfo.gov/bulkdata/ECFR)                                       | [`@lexbuild/ecfr`](packages/ecfr/) | Bulk | GPO/SGML XML | Irregular        | Updates per-title as regulations change   |
+| [Federal Register](https://www.federalregister.gov/developers/documentation/api/v1) | [`@lexbuild/fr`](packages/fr/)     | API  | GPO/SGML XML | Daily            | API daily-issue XML + JSON metadata       |
+| [Federal Register](https://www.govinfo.gov/bulkdata/FR)                             | [`@lexbuild/fr`](packages/fr/)     | Bulk | GPO/SGML XML | Daily            | Bulk XML. Faster for historical backfill  |
 
 ---
 

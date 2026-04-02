@@ -23,8 +23,6 @@ src/
 
 ## Commands
 
-### Commands
-
 All commands support `--help` for full option details.
 
 | Command | Purpose | Key Options |

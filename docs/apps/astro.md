@@ -155,7 +155,7 @@ apps/astro/
 │   │   ├── ecfr/[...slug].astro       # eCFR catch-all route
 │   │   ├── fr/[...slug].astro         # FR catch-all route (year/month/document)
 │   │   ├── fr/index.astro             # FR landing page
-│   │   ├── 400–504.astro              # HTTP error pages (11 total)
+│   │   ├── 400.astro … 504.astro      # HTTP error pages (11 separate files)
 │   │   └── health.ts                  # Health check endpoint
 │   ├── components/
 │   │   ├── content/                    # ContentViewer, FrontmatterPanel, BreadcrumbNav

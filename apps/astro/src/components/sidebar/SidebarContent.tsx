@@ -68,6 +68,7 @@ function FrSidebarContent({ currentPath }: { currentPath: string }) {
   const active = parseFrActivePath(currentPath);
 
   useEffect(() => {
+    setYearsError(false);
     fetch("/nav/fr/years.json")
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -203,8 +204,10 @@ function TitleSidebarContent({ sourceId, currentPath }: SidebarContentProps) {
 
   const active = parseActivePath(sourceId, currentPath);
 
-  // Fetch titles.json on mount
+  // Fetch titles.json on mount (and when source changes)
   useEffect(() => {
+    setTitlesError(false);
+    setTitles(null);
     fetch(`/nav/${sourceId}/titles.json`)
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -225,7 +228,7 @@ function TitleSidebarContent({ sourceId, currentPath }: SidebarContentProps) {
   // Lazy-load per-title nav JSON
   const loadTitleNav = useCallback(
     async (titleDir: string) => {
-      if (titleNavCache[titleDir] || failedTitles.has(titleDir)) return;
+      if (titleNavCache[titleDir]) return;
       setLoadingTitle(titleDir);
       try {
         const res = await fetch(`/nav/${sourceId}/${titleDir}.json`);
@@ -238,15 +241,15 @@ function TitleSidebarContent({ sourceId, currentPath }: SidebarContentProps) {
         setLoadingTitle(null);
       }
     },
-    [sourceId, titleNavCache, failedTitles],
+    [sourceId, titleNavCache],
   );
 
-  // Load nav data when a title is expanded
+  // Load nav data when a title is expanded (skip if already failed — retry is manual)
   useEffect(() => {
-    if (expandedTitle) {
+    if (expandedTitle && !failedTitles.has(expandedTitle)) {
       void loadTitleNav(expandedTitle);
     }
-  }, [expandedTitle, loadTitleNav]);
+  }, [expandedTitle, loadTitleNav, failedTitles]);
 
   const toggleTitle = (dir: string) => {
     setUserToggled(true);

@@ -169,13 +169,17 @@ class BatchIndexer {
   async flush(): Promise<void> {
     if (this.batch.length === 0) return;
 
+    // Move batch to local var BEFORE sending — prevents cascading failures
+    // if Meilisearch is down (otherwise the stale batch retriggers on every add)
+    const toSend = this.batch;
+    this.batch = [];
+
     const index = this.client.index(this.indexName);
-    const task = await index.addDocuments(this.batch);
+    const task = await index.addDocuments(toSend);
     await this.client.tasks.waitForTask(task.taskUid, { timeout: 300_000 });
 
-    this.totalSent += this.batch.length;
+    this.totalSent += toSend.length;
     this.batchesSent++;
-    this.batch = []; // Release memory
 
     if (this.batchesSent % 5 === 0) {
       const elapsed = ((performance.now() - this.startTime) / 1000).toFixed(1);

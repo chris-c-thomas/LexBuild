@@ -527,13 +527,13 @@ deploy_search_dump() {
 
   check_local_meilisearch
 
-  # The indexer expects {contentDir}/usc/sections/ and {contentDir}/ecfr/sections/
-  # but local CLI output is at output/usc/ and output/ecfr/ (no sections/ level).
-  # Create a temp content directory with symlinks to match the expected structure.
+  # The indexer expects {contentDir}/usc/sections/, {contentDir}/ecfr/sections/,
+  # and {contentDir}/fr/documents/ but local CLI output is at output/{source}/
+  # (no sections/documents level). Create a temp content directory with symlinks.
 
   TEMP_CONTENT="$REPO_ROOT/.search-dump-content"
   rm -rf "$TEMP_CONTENT"
-  mkdir -p "$TEMP_CONTENT/usc" "$TEMP_CONTENT/ecfr"
+  mkdir -p "$TEMP_CONTENT/usc" "$TEMP_CONTENT/ecfr" "$TEMP_CONTENT/fr"
 
   if [ -d "$REPO_ROOT/output/usc" ]; then
     ln -s "$REPO_ROOT/output/usc" "$TEMP_CONTENT/usc/sections"
@@ -547,6 +547,14 @@ deploy_search_dump() {
     ln -s "$REPO_ROOT/output/ecfr" "$TEMP_CONTENT/ecfr/sections"
   else
     echo "Error: output/ecfr not found. Run the converter first."
+    rm -rf "$TEMP_CONTENT"
+    exit 1
+  fi
+
+  if [ -d "$REPO_ROOT/output/fr" ]; then
+    ln -s "$REPO_ROOT/output/fr" "$TEMP_CONTENT/fr/documents"
+  else
+    echo "Error: output/fr not found. Run the converter first."
     rm -rf "$TEMP_CONTENT"
     exit 1
   fi

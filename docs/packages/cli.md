@@ -17,13 +17,14 @@ packages/cli/src/
     convert-ecfr.ts           # lexbuild convert-ecfr command
     download-fr.ts            # lexbuild download-fr command
     convert-fr.ts             # lexbuild convert-fr command
+    enrich-fr.ts              # lexbuild enrich-fr command
 ```
 
 ## Command Architecture
 
 The entry point creates a [Commander](https://github.com/tj/commander.js) program, sets the name, description, and version (read from `package.json`), and registers source-specific commands, utility commands, and bare `download`/`convert` stubs. Running `lexbuild download` or `lexbuild convert` without a source suffix prints an error listing the available source-specific commands and exits with code 1.
 
-Download and convert commands follow the `{action}-{source}` naming pattern: `download-usc`, `convert-usc`, `download-ecfr`, `convert-ecfr`, `download-fr`, `convert-fr`. Utility commands like `list-release-points` provide data source inspection. Each command is defined in its own module under `commands/` and registered via `program.addCommand()`.
+Download and convert commands follow the `{action}-{source}` naming pattern: `download-usc`, `convert-usc`, `download-ecfr`, `convert-ecfr`, `download-fr`, `convert-fr`. The `enrich-fr` command enriches existing FR Markdown frontmatter with API metadata. Utility commands like `list-release-points` provide data source inspection. Each command is defined in its own module under `commands/` and registered via `program.addCommand()`.
 
 ## Commands
 
@@ -142,6 +143,20 @@ Converts downloaded Federal Register XML to Markdown with enriched frontmatter. 
 No `--granularity` option -- FR documents are already atomic (one file per document). No `--titles` option -- FR is date-based, not title-based. No note filter flags -- FR documents do not have the editorial/statutory note taxonomy used by USC and eCFR.
 
 **Output directory.** The `-o` flag appends a source subdirectory: `convert-fr -o /path` writes to `/path/fr/...`, not `/path/...` directly.
+
+### `lexbuild enrich-fr`
+
+Enriches existing FR Markdown frontmatter with metadata from the FederalRegister.gov API listing endpoint. Delegates to `enrichFrDocuments()` from `@lexbuild/fr`. Designed for backfilling rich metadata into files originally converted from govinfo bulk XML.
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `-o, --output <dir>` | `./output` | Output directory containing FR `.md` files |
+| `--from <YYYY-MM-DD>` | -- | Start date (inclusive) |
+| `--to <YYYY-MM-DD>` | Today | End date (inclusive) |
+| `--recent <days>` | -- | Enrich last N days |
+| `--force` | `false` | Overwrite files that already have `fr_citation` |
+
+Requires either `--from` or `--recent`. Paginates through the API listing endpoint (200 docs/page), matches documents to `.md` files by document number and publication date, and patches YAML frontmatter only. The Markdown body is preserved as-is -- no XML re-parsing or re-rendering occurs. Files with existing `fr_citation` are skipped unless `--force` is used.
 
 ## Title Parser
 

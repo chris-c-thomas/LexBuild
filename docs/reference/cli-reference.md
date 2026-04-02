@@ -15,6 +15,7 @@ The CLI uses a `{action}-{source}` naming pattern for download and convert comma
 | `convert-ecfr` | Convert eCFR XML to Markdown |
 | `download-fr` | Download Federal Register XML and metadata from federalregister.gov |
 | `convert-fr` | Convert Federal Register XML to Markdown |
+| `enrich-fr` | Enrich FR Markdown frontmatter with API metadata |
 
 Bare `download` and `convert` commands (without a source suffix) display an error prompting you to specify a source.
 
@@ -451,6 +452,51 @@ lexbuild convert-fr --all --dry-run
 
 ---
 
+## enrich-fr
+
+Enrich existing Federal Register Markdown files with metadata from the FederalRegister.gov API listing endpoint. This patches YAML frontmatter in `.md` files that were originally converted from govinfo bulk XML, adding fields like `fr_citation`, `agencies`, `cfr_references`, `docket_ids`, `effective_date`, `comments_close_date`, and `fr_action` that are only available from the API's JSON metadata.
+
+```
+lexbuild enrich-fr [options]
+```
+
+### Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `-o, --output <dir>` | `./output` | Output directory containing FR `.md` files |
+| `--from <YYYY-MM-DD>` | -- | Start date (inclusive) |
+| `--to <YYYY-MM-DD>` | today | End date (inclusive) |
+| `--recent <days>` | -- | Enrich last N days (convenience shorthand) |
+| `--force` | `false` | Overwrite files that already have `fr_citation` |
+
+Requires either `--from` or `--recent`.
+
+The enricher paginates through the API listing endpoint (200 documents per page), matches each API document to its `.md` file by document number and publication date, and patches the YAML frontmatter. The Markdown body is preserved exactly as-is -- no XML re-parsing or Markdown re-rendering occurs.
+
+Files that already have `fr_citation` in their frontmatter are considered already enriched and skipped unless `--force` is used. This makes re-runs safe and incremental.
+
+### Examples
+
+```bash
+# Enrich all govinfo-backfilled documents (2000 onward)
+lexbuild enrich-fr --from 2000-01-01
+
+# Enrich a specific date range
+lexbuild enrich-fr --from 2020-01-01 --to 2025-12-31
+
+# Enrich last 30 days
+lexbuild enrich-fr --recent 30
+
+# Force re-enrichment of already-enriched files
+lexbuild enrich-fr --from 2026-01-01 --force
+
+# Custom output directory
+lexbuild enrich-fr --from 2000-01-01 -o ./my-output
+```
+
+---
+
 ## Combined Workflows
 
 Full pipeline examples for downloading and converting from both sources.
@@ -473,6 +519,11 @@ lexbuild convert-ecfr --titles 1-5 -o ./output
 # Full FR pipeline (recent documents)
 lexbuild download-fr --recent 30
 lexbuild convert-fr --all -o ./output
+
+# Backfill FR metadata from govinfo bulk
+lexbuild download-fr --source govinfo --from 2000-01-01 --to 2025-12-31
+lexbuild convert-fr --all -o ./output
+lexbuild enrich-fr --from 2000-01-01 -o ./output
 
 # Convert all sources with relative cross-reference links
 lexbuild convert-usc --all --link-style relative -o ./output

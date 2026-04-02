@@ -18,7 +18,8 @@ src/
     ├── download-ecfr.ts        # lexbuild download-ecfr command
     ├── convert-ecfr.ts         # lexbuild convert-ecfr command
     ├── download-fr.ts          # lexbuild download-fr command
-    └── convert-fr.ts           # lexbuild convert-fr command
+    ├── convert-fr.ts           # lexbuild convert-fr command
+    └── enrich-fr.ts           # lexbuild enrich-fr command
 ```
 
 ## Commands
@@ -33,6 +34,7 @@ All commands support `--help` for full option details.
 | `convert-ecfr` | Convert eCFR XML to Markdown | `[input]`, `--all`, `--titles`, `-g section\|part\|chapter\|title` |
 | `download-fr` | Download FR documents (XML+JSON) | `--from`/`--to`, `--recent <days>`, `--document <number>` |
 | `convert-fr` | Convert FR XML to Markdown | `[input]`, `--all`, `--from`/`--to`, `--types` |
+| `enrich-fr` | Enrich FR .md frontmatter with API metadata | `--from`/`--to`, `--recent <days>`, `--force` |
 | `list-release-points` | List OLRC release points | `-n <count>` |
 
 **Common convert options**: `--output <dir>` (default `./output`), `--link-style relative|canonical|plaintext`, `--include-notes`, `--include-editorial-notes`, `--include-statutory-notes`, `--include-amendments`, `--dry-run`, `-v`.
@@ -42,6 +44,7 @@ All commands support `--help` for full option details.
 - Convert commands have three input modes (mutually exclusive): positional `[input]`, `--titles`, or `--all`.
 - If any selective note flag is set, the broad `--include-notes` is automatically disabled.
 - FR has no `--granularity` (documents are already atomic) and no `--titles` (date-based).
+- `enrich-fr` patches YAML frontmatter only (no XML re-parse or Markdown re-render). Skips files that already have `fr_citation` unless `--force`.
 - Bare `download`/`convert` without a source suffix prints an error listing available commands.
 
 ### Convert Summary Footer

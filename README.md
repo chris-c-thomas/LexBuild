@@ -117,6 +117,9 @@ lexbuild download-fr --from 2026-01-01 --types rule
 
 # Download a single document
 lexbuild download-fr --document 2026-06029
+
+# Enrich govinfo-backfilled files with API metadata
+lexbuild enrich-fr --from 2000-01-01
 ```
 
 ---
@@ -272,6 +275,27 @@ lexbuild convert-fr ./downloads/fr/2026/03/2026-06029.xml           # Single fil
 | `--link-style` | `plaintext` | `plaintext`, `canonical`, or `relative` |
 | `--dry-run` | — | Parse and report without writing |
 | `-v, --verbose` | — | Verbose output |
+
+### `enrich-fr`
+
+Enrich existing FR Markdown frontmatter with metadata from the FederalRegister.gov API. Useful for backfilling rich metadata (agencies, CFR references, docket IDs, citations, etc.) into files originally converted from govinfo bulk XML.
+
+```bash
+lexbuild enrich-fr --from 2000-01-01                         # Enrich all from 2000 onward
+lexbuild enrich-fr --from 2020-01-01 --to 2025-12-31         # Specific date range
+lexbuild enrich-fr --recent 30                                # Last 30 days
+lexbuild enrich-fr --from 2000-01-01 --force                 # Overwrite already-enriched files
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--from <YYYY-MM-DD>` | — | Start date (inclusive) |
+| `--to <YYYY-MM-DD>` | today | End date (inclusive) |
+| `--recent <days>` | — | Enrich last N days |
+| `-o, --output <dir>` | `./output` | Output directory containing FR `.md` files |
+| `--force` | — | Overwrite files that already have `fr_citation` |
+
+Files that already have `fr_citation` in their frontmatter are skipped unless `--force` is used. Only YAML frontmatter is updated — the Markdown body is preserved as-is.
 
 ---
 
@@ -558,6 +582,7 @@ node packages/cli/dist/index.js download-ecfr --titles 17
 node packages/cli/dist/index.js convert-ecfr --titles 17
 node packages/cli/dist/index.js download-fr --recent 7
 node packages/cli/dist/index.js convert-fr --all
+node packages/cli/dist/index.js enrich-fr --from 2000-01-01
 ```
 
 ### Web App Development

@@ -11,6 +11,7 @@ packages/fr/src/
   index.ts                 # Barrel exports
   converter.ts             # Conversion orchestrator
   converter.test.ts        # 6 integration tests
+  enricher.ts              # Frontmatter enricher (API metadata --> existing .md files)
   fr-builder.ts            # FR SAX --> AST state machine
   fr-builder.test.ts       # 16 unit tests
   fr-elements.ts           # FR XML element classification (~92 elements) + FrDocumentType
@@ -27,9 +28,12 @@ packages/fr/src/
 | Export | Type | Purpose |
 |--------|------|---------|
 | `convertFrDocuments(options)` | Function | Convert FR XML files to Markdown |
+| `enrichFrDocuments(options)` | Function | Enrich existing .md frontmatter with API metadata |
 | `downloadFrDocuments(options)` | Function | Download FR documents by date range |
 | `downloadSingleFrDocument(number, output)` | Function | Download a single document by number |
 | `buildFrApiListUrl(from, to, page, types?)` | Function | Build API listing URL |
+| `buildMonthChunks(from, to)` | Function | Break date range into month-sized chunks |
+| `fetchWithRetry(url, attempt?)` | Function | Fetch with retry on 429/503/504 and network errors |
 | `buildFrFrontmatter(node, ctx, xmlMeta, jsonMeta?)` | Function | Build frontmatter from AST + metadata |
 | `buildFrOutputPath(number, date, root)` | Function | Build output file path |
 | `buildFrDownloadXmlPath(number, date, root)` | Function | Build download XML file path |
@@ -39,7 +43,7 @@ packages/fr/src/
 | `buildGovinfoFrUrl(date)` | Function | Build govinfo download URL for a single day |
 | `buildGovinfoBulkPath(date, output)` | Function | Build local file path for a downloaded daily-issue XML |
 
-Key type exports: `FrConvertOptions`, `FrConvertResult`, `FrConvertProgress`, `FrDownloadOptions`, `FrDownloadResult`, `FrDownloadedFile`, `FrDownloadFailure`, `FrDownloadProgress`, `FrGovinfoBulkOptions`, `FrGovinfoResult`, `FrGovinfoDownloadedFile`, `FrGovinfoProgress`, `FrASTBuilderOptions`, `FrDocumentXmlMeta`, `FrDocumentJsonMeta`, `FrDocumentType`.
+Key type exports: `FrConvertOptions`, `FrConvertResult`, `FrConvertProgress`, `EnrichFrOptions`, `EnrichFrResult`, `EnrichFrProgress`, `FrDownloadOptions`, `FrDownloadResult`, `FrDownloadedFile`, `FrDownloadFailure`, `FrDownloadProgress`, `FrGovinfoBulkOptions`, `FrGovinfoResult`, `FrGovinfoDownloadedFile`, `FrGovinfoProgress`, `FrASTBuilderOptions`, `FrDocumentXmlMeta`, `FrDocumentJsonMeta`, `FrDocumentType`.
 
 ## Key Design Differences from Other Sources
 
@@ -133,6 +137,36 @@ The `FrASTBuilder` handles daily-issue XML natively -- the `FEDREG` root and sec
 
 Use the per-document API downloader for incremental updates (recent documents, pre-publication access, JSON metadata sidecars). Use govinfo bulk for historical backfill where throughput matters more than metadata richness.
 
+## Frontmatter Enricher
+
+The enricher (`enricher.ts`) patches YAML frontmatter in existing `.md` files with metadata from the FederalRegister.gov API listing endpoint. This is designed for backfilling rich metadata into files originally converted from govinfo bulk XML, which lacks JSON sidecar data.
+
+### How It Works
+
+1. **Paginates the API listing endpoint** (200 docs/page) for the given date range, chunked by month
+2. **Matches each API document** to its `.md` file using `buildFrOutputPath(documentNumber, publicationDate, outputDir)`
+3. **Parses existing YAML frontmatter**, merges enrichment fields, and writes the file back
+4. **Preserves the Markdown body** exactly as-is -- no XML re-parsing or re-rendering
+
+### Enrichment Fields
+
+The following fields are added or updated from API metadata:
+
+- `document_type`, `fr_citation`, `fr_volume`, `publication_date`
+- `agency`, `agencies` (structured agency list with hierarchy)
+- `cfr_references` (formatted as `"{title} CFR Part {part}"`)
+- `docket_ids`, `rin`
+- `effective_date`, `comments_close_date`, `fr_action`
+- `title`, `section_name` (API titles are often more descriptive than XML subjects)
+
+### Skip Logic
+
+Files that already have `fr_citation` in their frontmatter are considered already enriched and skipped by default. Use `--force` to overwrite.
+
+### Dependencies
+
+The enricher uses the `yaml` package (direct dependency of `@lexbuild/fr`) for YAML parsing and serialization, matching the format produced by `@lexbuild/core`'s `generateFrontmatter()`.
+
 ## Frontmatter Fields
 
 FR documents produce these fields in addition to standard LexBuild frontmatter:
@@ -189,7 +223,7 @@ Notable absences compared to eCFR's `EcfrConvertOptions`: no `granularity` (FR d
 |-------|--------|
 | API | `federalregister.gov/api/v1/` |
 | Authentication | None required |
-| Rate limits | No documented limits |
+| Rate limits | Undocumented; ~10 concurrent requests is the safe ceiling (429s at ~15+) |
 | Coverage | JSON from 1994, XML from 2000 |
 | Update cadence | Daily (business days) |
 | Volume | ~28,000--31,000 documents/year |

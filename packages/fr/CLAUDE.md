@@ -18,6 +18,7 @@ src/
 ├── fr-path.test.ts          # 8 unit tests
 ├── converter.ts             # Conversion orchestrator
 ├── converter.test.ts        # 6 integration tests
+├── enricher.ts              # Frontmatter enricher (API metadata → existing .md files)
 ├── downloader.ts            # FederalRegister.gov API client
 └── govinfo-downloader.ts    # Govinfo bulk XML downloader (future backfill)
 ```
@@ -29,8 +30,11 @@ Key exports (see `index.ts` for full list):
 | Export | Purpose |
 |--------|---------|
 | `convertFrDocuments()` | Convert FR XML files to Markdown |
+| `enrichFrDocuments()` | Enrich existing .md frontmatter with API metadata |
 | `downloadFrDocuments()` | Download FR documents by date range |
 | `downloadSingleFrDocument()` | Download a single document by number |
+| `buildMonthChunks()` | Break date range into month-sized chunks |
+| `fetchWithRetry()` | Fetch with retry on 429/503/504 and network errors |
 | `FrASTBuilder` | SAX→AST builder for FR XML |
 
 ## FR XML Schema
@@ -147,7 +151,8 @@ FR documents include all standard fields plus:
 
 - **FR document number prefix is NOT the publication year**: Document `2025-24130` can have `publication_date: "2026-01-02"`. The prefix is the fiscal/assignment year. Files are placed by `publication_date`, not document number prefix.
 - **Concurrent downloads use a worker pool**: `downloadPool()` in `downloader.ts` uses a shared `nextIndex` counter with `N` async workers. `nextIndex++` is safe across `await` boundaries because JS is single-threaded. The `concurrency` option (default 10) replaces the old `fetchDelayMs` sequential delay.
-- **FederalRegister.gov API is slow per-request**: Individual XML fetches average ~10s regardless of file size (~26 KB average). The API's server-side latency is the bottleneck, not bandwidth. Increasing concurrency beyond 10-20 may not help if the API throttles connections.
+- **FederalRegister.gov API is slow per-request**: Individual XML fetches average ~10s regardless of file size (~26 KB average). The API's server-side latency is the bottleneck, not bandwidth.
+- **FederalRegister.gov API rate limits at ~15+ concurrency**: Default 10 is the safe ceiling. Higher concurrency triggers 429s with exponential backoff — net throughput actually decreases.
 - **No `_meta.json` files**: Unlike USC/eCFR, the FR converter does not generate sidecar metadata files. The Astro nav generator (`generate-nav.ts`) scans the filesystem and reads frontmatter directly from each `.md` file.
 - **FR `E T="03"` maps to italic, not bold**: Unlike eCFR which uses T="03" for general emphasis (bold), FR uses it for legal citations, case names, and publication titles which are conventionally italicized. The `FR_EMPHASIS_MAP` intentionally diverges from `ECFR_EMPHASIS_MAP` on this code.
 - **`SU` inside `FTNT` is a footnote marker**: The builder checks `findFrame("note")` to determine context. Inside a footnote → `footnoteRef` type. In body text → `sup` type (unless followed by `FTREF`).

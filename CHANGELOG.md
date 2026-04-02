@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
 
+## [1.15.3]
+
+### Added
+
+- `scripts/update-fr.sh` — dedicated script for daily Federal Register updates (download, convert, deploy, incremental search index)
+- `cache: false` "why" comments on all `gray-matter` calls in batch processing scripts
+- JSDoc for `cn()` utility, "why" comment on FR doc number regex, Shiki SSR externalization comment
+
+### Changed
+
+- Standardized section divider comments across 17 files: replaced 164 lines of full-width `// ----...----` bars with compact `// --- Label ---` format (-167 net lines)
+- Removed dividers entirely in pure type-definition files (`core/ast/types.ts`, `astro/lib/types.ts`) where JSDoc already labels each section
+- Removed redundant inline comments in `FrontmatterPanel.astro` that restated what the code does
+
 ## [1.15.2]
 
 ### Fixed

@@ -99,7 +99,7 @@ pnpm turbo build:astro --filter=@lexbuild/astro    # Production build
 ./scripts/deploy.sh --search-dump  # Index locally, dump, upload + import on VPS
 ```
 
-See `packages/cli/CLAUDE.md` for full command options. See `apps/astro/CLAUDE.md` for content pipeline scripts. See `.claude/guides/lexbuild-ops.md` for the full operations guide.
+See `packages/cli/CLAUDE.md` for full command options. See `apps/astro/CLAUDE.md` for content pipeline scripts. See `.claude/internal/lexbuild-ops.md` for the full operations guide.
 
 ### CI / Release
 
@@ -215,7 +215,7 @@ Note: identifiers use `/us/cfr/` (content type) not `/us/ecfr/` (data source). B
 
 8. **Resilient file I/O**: `@lexbuild/core` exports `writeFile` and `mkdir` wrappers (`packages/core/src/fs.ts`) that retry on `ENFILE`/`EMFILE` errors with exponential backoff, preventing file descriptor exhaustion when writing ~60k+ files.
 
-9. **Secrets management**: `~/.lexbuild-secrets` on the VPS is the single source of truth. `ecosystem.config.cjs` reads secrets from `process.env` (populated via `~/.zshenv` → `~/.lexbuild-secrets`). `.env.production` is **generated** by `scripts/deploy.sh` on every deploy — never manually maintained. See `.claude/guides/lexbuild-ops.md` for details.
+9. **Secrets management**: `~/.lexbuild-secrets` on the VPS is the single source of truth. `ecosystem.config.cjs` reads secrets from `process.env` (populated via `~/.zshenv` → `~/.lexbuild-secrets`). `.env.production` is **generated** by `scripts/deploy.sh` on every deploy — never manually maintained. See `.claude/internal/lexbuild-ops.md` for details.
 
 ## Common Pitfalls
 

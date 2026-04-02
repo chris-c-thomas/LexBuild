@@ -121,6 +121,15 @@ export function MobileNav({ source, currentPath }: MobileNavProps) {
             >
               GitHub
             </a>
+            <span
+              className="text-sidebar-foreground/30 inline-flex items-center gap-1 cursor-default select-none text-xs font-medium"
+              aria-disabled="true"
+            >
+              API
+              <span className="bg-sidebar-accent text-sidebar-foreground/50 rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-none">
+                Soon
+              </span>
+            </span>
           </nav>
         </div>
       </SheetContent>

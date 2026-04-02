@@ -53,8 +53,18 @@ export {
 export { convertFrDocuments } from "./converter.js";
 export type { FrConvertOptions, FrConvertResult, FrConvertProgress } from "./converter.js";
 
+// Enricher (patch frontmatter with API metadata)
+export { enrichFrDocuments } from "./enricher.js";
+export type { EnrichFrOptions, EnrichFrResult, EnrichFrProgress } from "./enricher.js";
+
 // Downloader (FederalRegister.gov API)
-export { downloadFrDocuments, downloadSingleFrDocument, buildFrApiListUrl } from "./downloader.js";
+export {
+  downloadFrDocuments,
+  downloadSingleFrDocument,
+  buildFrApiListUrl,
+  buildMonthChunks,
+  fetchWithRetry,
+} from "./downloader.js";
 export type {
   FrDownloadOptions,
   FrDownloadResult,

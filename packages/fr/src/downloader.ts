@@ -127,7 +127,7 @@ export interface FrDownloadResult {
 }
 
 /** API listing response */
-interface FrApiListResponse {
+export interface FrApiListResponse {
   count: number;
   total_pages: number;
   next_page_url?: string | null;
@@ -375,7 +375,7 @@ async function downloadSingleDocument(
  * Break a date range into month-sized chunks.
  * Each chunk covers one calendar month (or partial month at boundaries).
  */
-function buildMonthChunks(from: string, to: string): Array<{ from: string; to: string }> {
+export function buildMonthChunks(from: string, to: string): Array<{ from: string; to: string }> {
   const chunks: Array<{ from: string; to: string }> = [];
 
   let current = new Date(from + "T00:00:00Z");
@@ -398,7 +398,7 @@ function buildMonthChunks(from: string, to: string): Array<{ from: string; to: s
 }
 
 /** Fetch with retry on transient HTTP and network errors */
-async function fetchWithRetry(url: string, attempt = 0): Promise<Response> {
+export async function fetchWithRetry(url: string, attempt = 0): Promise<Response> {
   let response: Response;
   try {
     response = await fetch(url);

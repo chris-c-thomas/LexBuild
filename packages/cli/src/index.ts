@@ -9,6 +9,7 @@ import { convertEcfrCommand } from "./commands/convert-ecfr.js";
 import { downloadEcfrCommand } from "./commands/download-ecfr.js";
 import { downloadFrCommand } from "./commands/download-fr.js";
 import { convertFrCommand } from "./commands/convert-fr.js";
+import { enrichFrCommand } from "./commands/enrich-fr.js";
 import { error } from "./ui.js";
 
 const require = createRequire(import.meta.url);
@@ -48,6 +49,7 @@ program.addCommand(downloadEcfrCommand);
 program.addCommand(convertEcfrCommand);
 program.addCommand(downloadFrCommand);
 program.addCommand(convertFrCommand);
+program.addCommand(enrichFrCommand);
 
 // Bare "download" and "convert" stubs — guide users to source-specific commands
 program.addCommand(

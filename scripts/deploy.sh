@@ -478,8 +478,8 @@ dump_and_push() {
       --master-key "$MEILI_MASTER_KEY" &
     MEILI_PID=$!
 
-    # Wait for import to complete — poll for port binding, then verify doc count
-    echo "--- Waiting for import to complete and server to bind port 7700..."
+    # Wait for import to complete — poll for port binding first
+    echo "--- Waiting for Meilisearch to bind port 7700..."
     IMPORT_TIMEOUT=600  # 10 minutes max for large indexes (1M+ docs)
     for i in $(seq 1 $IMPORT_TIMEOUT); do
       if ss -tlnp | grep -q ':7700 '; then
@@ -493,8 +493,22 @@ dump_and_push() {
       sleep 1
     done
 
-    # Give it a moment to finish any post-bind indexing
-    sleep 3
+    # Wait for document import to finish — poll until isIndexing is false and docs > 0
+    echo "--- Waiting for document import to complete (polling every 5s)..."
+    INDEX_WAIT_TIMEOUT=600  # 10 minutes for document indexing
+    for i in $(seq 1 5 $INDEX_WAIT_TIMEOUT); do
+      STATS=$(curl -sf http://127.0.0.1:7700/indexes/lexbuild/stats \
+        -H "Authorization: Bearer ${MEILI_MASTER_KEY}" 2>/dev/null || echo "{}")
+      DOC_COUNT=$(echo "$STATS" | python3 -c "import sys,json; print(json.load(sys.stdin).get('numberOfDocuments', 0))" 2>/dev/null || echo "0")
+      IS_INDEXING=$(echo "$STATS" | python3 -c "import sys,json; print(json.load(sys.stdin).get('isIndexing', True))" 2>/dev/null || echo "True")
+
+      if [ "$IS_INDEXING" = "False" ] && [ "$DOC_COUNT" -gt 0 ] 2>/dev/null; then
+        echo "--- Import complete: $DOC_COUNT documents indexed after ~${i}s"
+        break
+      fi
+      echo "    ... $DOC_COUNT docs, isIndexing=$IS_INDEXING (${i}s elapsed)"
+      sleep 5
+    done
 
     # Kill the foreground Meilisearch process so PM2 can manage it
     kill "$MEILI_PID" 2>/dev/null || true

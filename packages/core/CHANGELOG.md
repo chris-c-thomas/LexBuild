@@ -1,5 +1,11 @@
 # @lexbuild/core
 
+## 1.17.0
+
+### Minor Changes
+
+- 15c21c9: Meilisearch Docker Container
+
 ## 1.16.1
 
 ### Patch Changes

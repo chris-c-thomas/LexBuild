@@ -83,6 +83,7 @@ export function createApp(config: AppConfig): OpenAPIHono {
       url: "/api/openapi.json",
       theme: "kepler",
       title: "LexBuild API Reference",
+      defaultOpenAllTags: false,
     }),
   );
 

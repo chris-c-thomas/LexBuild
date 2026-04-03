@@ -10,7 +10,8 @@ import { summaryBlock, dataTable, success, error as errorMsg } from "../ui.js";
 const API_KEY_PBKDF2_ITERATIONS = 100_000;
 const API_KEY_PBKDF2_KEYLEN = 32;
 const API_KEY_PBKDF2_DIGEST = "sha256";
-const API_KEY_PBKDF2_SALT = "lxb_api_key_pbkdf2_salt_v1";
+// Not a secret — fixed application-level salt for deterministic key derivation
+const API_KEY_PBKDF2_SALT = "lexbuild-api-key-derivation-v1";
 
 function deriveApiKeyHash(key: string): string {
   return pbkdf2Sync(

@@ -97,7 +97,8 @@ pnpm turbo build:astro --filter=@lexbuild/astro    # Production build
 ./scripts/deploy.sh --content      # Code + rsync local output/ to VPS
 ./scripts/deploy.sh --content-only # Rsync only, no code deploy
 ./scripts/deploy.sh --remote       # Full pipeline on VPS (download + convert + build)
-./scripts/deploy.sh --search-dump  # Index locally, dump, upload + import on VPS
+./scripts/deploy.sh --search-docker              # Build search index in Docker, transfer to VPS
+./scripts/deploy.sh --search-docker --source fr   # Incremental: index one source into existing volume
 ```
 
 See `packages/cli/CLAUDE.md` for full command options. See `apps/astro/CLAUDE.md` for content pipeline scripts. See `.claude/internal/lexbuild-ops.md` for the full operations guide.

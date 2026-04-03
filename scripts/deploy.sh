@@ -6,9 +6,8 @@
 #   ./scripts/deploy.sh --content      # Deploy code + rsync content from local output/
 #   ./scripts/deploy.sh --content-only # Rsync content only, no code deploy
 #   ./scripts/deploy.sh --remote       # Full pipeline on VPS (code + download + convert + build)
-#   ./scripts/deploy.sh --search-docker # Index in Docker, transfer data dir to VPS (recommended)
-#   ./scripts/deploy.sh --search-dump  # Reindex locally, dump, upload to VPS, import (legacy)
-#   ./scripts/deploy.sh --search-push  # Dump existing local index, upload to VPS, import (legacy)
+#   ./scripts/deploy.sh --search-docker                # Full reindex in Docker, transfer to VPS
+#   ./scripts/deploy.sh --search-docker --source fr    # Incremental: add/update one source only
 #
 # Requires:
 #   - SSH access to the VPS (key-based auth)
@@ -16,7 +15,7 @@
 #   - For --content/--content-only: local output/ directories populated by the CLI converter
 #   - For --remote: sufficient VPS resources (recommend 4 vCPU / 8+ GB RAM)
 #   - For --search-docker: Docker Desktop, local content in output/ directories
-#   - For --search-dump: local Meilisearch running, local content in output/ directories
+#     With --source: existing Docker volume from a prior --search-docker run
 #
 # What it does:
 #   Code deploy:    git pull → pnpm install → generate .env.production → astro build → pm2 reload
@@ -25,8 +24,6 @@
 #                   copy to content dirs → pipeline scripts → astro build → pm2 reload
 #   Search docker: index in Docker (linux/amd64) → tar data dir → scp to VPS →
 #                   extract → start Meilisearch (instant, no re-indexing)
-#   Search dump:    index content into local Meilisearch → create dump → scp to VPS →
-#                   stop remote Meilisearch → import dump → restart (slow, legacy)
 #
 # Notes:
 #   --remote runs the entire pipeline on the VPS via SSH. This can take 30+ minutes
@@ -36,6 +33,8 @@
 #   --search-docker is the recommended way to update search. It indexes into a local
 #   Docker container (linux/amd64) and transfers the pre-built database to the VPS.
 #   No re-indexing on the VPS — import is instant regardless of corpus size.
+#   Use --source to add/update a single source incrementally (keeps Docker volume).
+#   Without --source, does a full reindex (destroys and rebuilds Docker volume).
 
 set -euo pipefail
 
@@ -62,7 +61,8 @@ NAV_DEST="${NAV_DEST:-/srv/lexbuild/nav}"
 
 # --- Parse arguments ---
 
-MODE="code" # code | content | content-only | nav-only | sitemaps-only | remote | search-docker | search-dump | search-push
+MODE="code" # code | content | content-only | nav-only | sitemaps-only | remote | search-docker
+SEARCH_SOURCE=""  # optional --source filter for --search-docker
 
 case "${1:-}" in
   --content)
@@ -82,12 +82,14 @@ case "${1:-}" in
     ;;
   --search-docker)
     MODE="search-docker"
-    ;;
-  --search-dump)
-    MODE="search-dump"
-    ;;
-  --search-push)
-    MODE="search-push"
+    # Parse optional --source <name>
+    if [ "${2:-}" = "--source" ] && [ -n "${3:-}" ]; then
+      SEARCH_SOURCE="$3"
+      if [[ ! "$SEARCH_SOURCE" =~ ^(usc|ecfr|fr)$ ]]; then
+        echo "Error: --source must be usc, ecfr, or fr (got: $SEARCH_SOURCE)"
+        exit 1
+      fi
+    fi
     ;;
   --help|-h)
     sed -n '2,/^$/{ s/^# //; s/^#$//; p }' "$0"
@@ -97,7 +99,7 @@ case "${1:-}" in
     ;; # default: code only
   *)
     echo "Unknown option: $1"
-    echo "Usage: ./scripts/deploy.sh [--content | --content-only | --nav-only | --sitemaps-only | --remote | --search-docker | --search-dump | --search-push | --help]"
+    echo "Usage: ./scripts/deploy.sh [--content | --content-only | --nav-only | --sitemaps-only | --remote | --search-docker [--source <name>] | --help]"
     exit 1
     ;;
 esac
@@ -353,221 +355,16 @@ EOF
 REMOTE
 }
 
-# --- Search dump: index locally, transfer dump to VPS (used by: search-dump) ---
-
-# --- Shared: verify local Meilisearch, create dump, transfer, import on VPS ---
-
-check_local_meilisearch() {
-  LOCAL_MEILI_URL="http://127.0.0.1:7700"
-  echo "--- Checking local Meilisearch..."
-  if ! curl -sf "$LOCAL_MEILI_URL/health" > /dev/null 2>&1; then
-    echo "Error: Local Meilisearch is not running at $LOCAL_MEILI_URL"
-    echo ""
-    echo "Start it with:"
-    echo "  meilisearch --db-path ~/.meilisearch/data.ms --dump-dir ~/.meilisearch/dumps --env development"
-    exit 1
-  fi
-  echo "--- Local Meilisearch is healthy"
-}
-
-dump_and_push() {
-  LOCAL_MEILI_URL="http://127.0.0.1:7700"
-
-  # --- Create dump ---
-
-  echo "--- Creating Meilisearch dump..."
-  DUMP_RESPONSE=$(curl -sf -X POST "$LOCAL_MEILI_URL/dumps")
-  DUMP_TASK_UID=$(echo "$DUMP_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['taskUid'])")
-
-  echo "--- Waiting for dump task $DUMP_TASK_UID to complete..."
-  while true; do
-    TASK_STATUS=$(curl -sf "$LOCAL_MEILI_URL/tasks/$DUMP_TASK_UID" | python3 -c "import sys,json; print(json.load(sys.stdin)['status'])")
-    case "$TASK_STATUS" in
-      succeeded)
-        DUMP_FILE=$(curl -sf "$LOCAL_MEILI_URL/tasks/$DUMP_TASK_UID" | python3 -c "import sys,json; d=json.load(sys.stdin)['details']; print(d.get('dumpUid',''))")
-        echo "--- Dump created: $DUMP_FILE"
-        break
-        ;;
-      failed)
-        echo "Error: Dump task failed."
-        curl -sf "$LOCAL_MEILI_URL/tasks/$DUMP_TASK_UID" | python3 -m json.tool
-        exit 1
-        ;;
-      *)
-        sleep 2
-        ;;
-    esac
-  done
-
-  # --- Find the dump file ---
-  # With --dump-dir ~/.meilisearch/dumps, dumps go there.
-  # Fallback paths cover older setups where dumps landed in ~/dumps/ or {db-path}/dumps/.
-
-  DUMP_PATH=""
-  for SEARCH_DIR in \
-    "$HOME/.meilisearch/dumps" \
-    "$HOME/dumps" \
-    "$HOME/.meilisearch/data.ms/dumps" \
-    "/opt/homebrew/var/meilisearch/data.ms/dumps" \
-    "$HOME/data.ms/dumps"; do
-    if [ -d "$SEARCH_DIR" ]; then
-      LATEST=$(ls -t "$SEARCH_DIR"/*.dump 2>/dev/null | head -1)
-      if [ -n "$LATEST" ]; then
-        DUMP_PATH="$LATEST"
-        break
-      fi
-    fi
-  done
-
-  if [ -z "$DUMP_PATH" ]; then
-    echo "Error: Could not find dump file."
-    echo "Check your Meilisearch --db-path for a dumps/ directory."
-    exit 1
-  fi
-
-  echo "--- Found dump: $DUMP_PATH ($(du -h "$DUMP_PATH" | cut -f1))"
-
-  # --- Transfer to VPS ---
-
-  echo "--- Uploading dump to VPS..."
-  scp "$DUMP_PATH" "${VPS_HOST}:/tmp/lexbuild-search.dump"
-
-  # --- Import on VPS ---
-
-  echo "--- Importing dump on VPS (stops Meilisearch temporarily)..."
-  ssh "$VPS_HOST" << 'REMOTE'
-    set -euo pipefail
-    source ~/.lexbuild-secrets
-
-    echo "--- Stopping Meilisearch (PM2)"
-    pm2 stop meilisearch
-
-    # Kill any rogue Meilisearch processes not managed by PM2 (e.g., stale
-    # --import-dump processes from prior failed imports). These can silently
-    # hold port 7700, causing new imports to fail to bind and health checks
-    # to hit the old instance.
-    echo "--- Checking for rogue Meilisearch processes..."
-    ROGUE_PIDS=$(pgrep -f '/usr/local/bin/meilisearch' || true)
-    if [ -n "$ROGUE_PIDS" ]; then
-      echo "--- Killing rogue Meilisearch processes: $ROGUE_PIDS"
-      echo "$ROGUE_PIDS" | xargs kill 2>/dev/null || true
-      sleep 2
-      # Force-kill any survivors
-      REMAINING=$(pgrep -f '/usr/local/bin/meilisearch' || true)
-      if [ -n "$REMAINING" ]; then
-        echo "--- Force-killing stubborn processes: $REMAINING"
-        echo "$REMAINING" | xargs kill -9 2>/dev/null || true
-        sleep 1
-      fi
-    fi
-
-    # Verify port 7700 is free
-    if ss -tlnp | grep -q ':7700 '; then
-      echo "ERROR: Port 7700 is still in use after killing all Meilisearch processes."
-      ss -tlnp | grep ':7700 '
-      exit 1
-    fi
-    echo "--- Port 7700 is free"
-
-    echo "--- Clearing existing database for dump import..."
-    rm -rf /var/lib/meilisearch/data
-    mkdir -p /var/lib/meilisearch/data
-
-    echo "--- Importing dump (this may take several minutes for large indexes)..."
-    # --import-dump imports then keeps running as a server.
-    # Run in background, poll until port 7700 is listening (not just health,
-    # which can respond before import completes on older versions).
-    /usr/local/bin/meilisearch \
-      --import-dump /tmp/lexbuild-search.dump \
-      --db-path /var/lib/meilisearch/data \
-      --env production \
-      --http-addr 127.0.0.1:7700 \
-      --master-key "$MEILI_MASTER_KEY" &
-    MEILI_PID=$!
-
-    # Wait for port binding first (import starts, then server binds)
-    echo "--- Waiting for Meilisearch to bind port 7700..."
-    BIND_TIMEOUT=600
-    for i in $(seq 1 $BIND_TIMEOUT); do
-      if ss -tlnp | grep -q ':7700 '; then
-        echo "--- Meilisearch is listening on port 7700 after ~${i}s"
-        break
-      fi
-      if ! kill -0 "$MEILI_PID" 2>/dev/null; then
-        echo "ERROR: Meilisearch import process died unexpectedly."
-        exit 1
-      fi
-      sleep 1
-    done
-
-    # Wait for document import to finish. Meilisearch reports 0 docs and
-    # isIndexing=true throughout the import, then jumps to the full count
-    # atomically. Poll until docs > 0 OR the process exits (crash/OOM).
-    # 60-minute timeout for 1M+ doc imports on memory-constrained VPS.
-    echo "--- Waiting for document import to complete (polling every 10s, up to 60min)..."
-    INDEX_WAIT_TIMEOUT=3600
-    ELAPSED=0
-    while [ "$ELAPSED" -lt "$INDEX_WAIT_TIMEOUT" ]; do
-      if ! kill -0 "$MEILI_PID" 2>/dev/null; then
-        echo "ERROR: Meilisearch import process died (likely OOM). Check: dmesg | tail"
-        exit 1
-      fi
-
-      STATS=$(curl -sf http://127.0.0.1:7700/indexes/lexbuild/stats \
-        -H "Authorization: Bearer ${MEILI_MASTER_KEY}" 2>/dev/null || echo "{}")
-      DOC_COUNT=$(echo "$STATS" | python3 -c "import sys,json; print(json.load(sys.stdin).get('numberOfDocuments', 0))" 2>/dev/null || echo "0")
-      IS_INDEXING=$(echo "$STATS" | python3 -c "import sys,json; print(json.load(sys.stdin).get('isIndexing', True))" 2>/dev/null || echo "True")
-
-      if [ "$DOC_COUNT" -gt 0 ] 2>/dev/null; then
-        echo "--- Import complete: $DOC_COUNT documents indexed after ~${ELAPSED}s"
-        # Wait for any final indexing to settle
-        if [ "$IS_INDEXING" = "True" ]; then
-          echo "    Waiting for indexing to finish..."
-          sleep 10
-        fi
-        break
-      fi
-
-      MEM=$(ps -o rss= -p "$MEILI_PID" 2>/dev/null | awk '{printf "%.0fMB", $1/1024}')
-      echo "    ... $DOC_COUNT docs, isIndexing=$IS_INDEXING, meili RSS=$MEM (${ELAPSED}s elapsed)"
-      sleep 10
-      ELAPSED=$((ELAPSED + 10))
-    done
-
-    if [ "$DOC_COUNT" -eq 0 ] 2>/dev/null; then
-      echo "ERROR: Import timed out after ${INDEX_WAIT_TIMEOUT}s with 0 documents."
-      kill "$MEILI_PID" 2>/dev/null || true
-      exit 1
-    fi
-
-    # Kill the foreground Meilisearch process so PM2 can manage it
-    kill "$MEILI_PID" 2>/dev/null || true
-    wait "$MEILI_PID" 2>/dev/null || true
-    sleep 1
-
-    echo "--- Starting Meilisearch via PM2"
-    pm2 start meilisearch
-    sleep 3
-
-    # Verify
-    if curl -sf http://127.0.0.1:7700/health > /dev/null 2>&1; then
-      DOC_COUNT=$(curl -sf http://127.0.0.1:7700/indexes/lexbuild/stats \
-        -H "Authorization: Bearer ${MEILI_MASTER_KEY}" \
-        | python3 -c "import sys,json; print(json.load(sys.stdin).get('numberOfDocuments', 'unknown'))")
-      echo "--- Meilisearch healthy. Index has $DOC_COUNT documents."
-    else
-      echo "WARNING: Meilisearch health check failed. Check: pm2 logs meilisearch"
-    fi
-
-    rm -f /tmp/lexbuild-search.dump
-    echo "==> Search dump import complete"
-REMOTE
-}
-
 # --- Search docker: index in Docker, transfer data dir to VPS (used by: search-docker) ---
 
 deploy_search_docker() {
-  echo "==> Indexing in Docker and transferring data directory to VPS..."
+  INCREMENTAL=false
+  if [ -n "$SEARCH_SOURCE" ]; then
+    INCREMENTAL=true
+    echo "==> Incremental Docker index: source=$SEARCH_SOURCE"
+  else
+    echo "==> Full Docker reindex and transfer to VPS..."
+  fi
 
   # --- Prerequisites ---
 
@@ -590,9 +387,9 @@ deploy_search_docker() {
   fi
   export MEILI_MASTER_KEY
 
-  # --- Content symlinks (same as search-dump) ---
+  # --- Content symlinks ---
 
-  TEMP_CONTENT="$REPO_ROOT/.search-dump-content"
+  TEMP_CONTENT="$REPO_ROOT/.search-docker-content"
   rm -rf "$TEMP_CONTENT"
   mkdir -p "$TEMP_CONTENT/usc" "$TEMP_CONTENT/ecfr" "$TEMP_CONTENT/fr"
 
@@ -620,8 +417,14 @@ deploy_search_docker() {
   DOCKER_PORT=7711
 
   echo "--- Starting Docker Meilisearch (linux/amd64)..."
-  docker compose -f "$COMPOSE_FILE" down -v 2>/dev/null || true
-  docker compose -f "$COMPOSE_FILE" up -d
+  if [ "$INCREMENTAL" = true ]; then
+    # Incremental: keep existing volume, just start the container
+    docker compose -f "$COMPOSE_FILE" up -d
+  else
+    # Full reindex: destroy volume for a clean slate
+    docker compose -f "$COMPOSE_FILE" down -v 2>/dev/null || true
+    docker compose -f "$COMPOSE_FILE" up -d
+  fi
 
   # Wait for Docker Meilisearch to be healthy
   echo "--- Waiting for Docker Meilisearch on port $DOCKER_PORT..."
@@ -642,11 +445,19 @@ deploy_search_docker() {
 
   # --- Index content ---
 
-  echo "--- Indexing content into Docker Meilisearch..."
-  cd "$REPO_ROOT/apps/astro"
-  MEILI_URL="http://localhost:$DOCKER_PORT" \
-  MEILI_MASTER_KEY="$MEILI_MASTER_KEY" \
-    pnpm dlx tsx scripts/index-search.ts "$TEMP_CONTENT"
+  if [ "$INCREMENTAL" = true ]; then
+    echo "--- Incremental index: adding/updating $SEARCH_SOURCE documents..."
+    cd "$REPO_ROOT/apps/astro"
+    MEILI_URL="http://localhost:$DOCKER_PORT" \
+    MEILI_MASTER_KEY="$MEILI_MASTER_KEY" \
+      pnpm dlx tsx scripts/index-search-incremental.ts "$TEMP_CONTENT" --source "$SEARCH_SOURCE"
+  else
+    echo "--- Full index: all sources..."
+    cd "$REPO_ROOT/apps/astro"
+    MEILI_URL="http://localhost:$DOCKER_PORT" \
+    MEILI_MASTER_KEY="$MEILI_MASTER_KEY" \
+      pnpm dlx tsx scripts/index-search.ts "$TEMP_CONTENT"
+  fi
   cd "$REPO_ROOT"
 
   rm -rf "$TEMP_CONTENT"
@@ -682,8 +493,8 @@ deploy_search_docker() {
   TAR_SIZE=$(du -h "$TAR_PATH" | cut -f1)
   echo "--- Data archive: $TAR_PATH ($TAR_SIZE)"
 
-  # Clean up Docker resources
-  docker compose -f "$COMPOSE_FILE" down -v
+  # Clean up Docker container (keep volume for incremental runs)
+  docker compose -f "$COMPOSE_FILE" down
 
   # --- Transfer to VPS ---
 
@@ -740,65 +551,6 @@ REMOTE
   rm -f "$TAR_PATH"
 }
 
-# --- Search dump: reindex locally, then dump + push (used by: search-dump) ---
-
-deploy_search_dump() {
-  echo "==> Reindexing locally and transferring dump to VPS..."
-
-  check_local_meilisearch
-
-  # The indexer expects {contentDir}/usc/sections/, {contentDir}/ecfr/sections/,
-  # and {contentDir}/fr/documents/ but local CLI output is at output/{source}/
-  # (no sections/documents level). Create a temp content directory with symlinks.
-
-  TEMP_CONTENT="$REPO_ROOT/.search-dump-content"
-  rm -rf "$TEMP_CONTENT"
-  mkdir -p "$TEMP_CONTENT/usc" "$TEMP_CONTENT/ecfr" "$TEMP_CONTENT/fr"
-
-  if [ -d "$REPO_ROOT/output/usc" ]; then
-    ln -s "$REPO_ROOT/output/usc" "$TEMP_CONTENT/usc/sections"
-  else
-    echo "Error: output/usc not found. Run the converter first."
-    rm -rf "$TEMP_CONTENT"
-    exit 1
-  fi
-
-  if [ -d "$REPO_ROOT/output/ecfr" ]; then
-    ln -s "$REPO_ROOT/output/ecfr" "$TEMP_CONTENT/ecfr/sections"
-  else
-    echo "Error: output/ecfr not found. Run the converter first."
-    rm -rf "$TEMP_CONTENT"
-    exit 1
-  fi
-
-  if [ -d "$REPO_ROOT/output/fr" ]; then
-    ln -s "$REPO_ROOT/output/fr" "$TEMP_CONTENT/fr/documents"
-  else
-    echo "Error: output/fr not found. Run the converter first."
-    rm -rf "$TEMP_CONTENT"
-    exit 1
-  fi
-
-  echo "--- Indexing content into local Meilisearch..."
-  cd "$REPO_ROOT/apps/astro"
-  pnpm dlx tsx scripts/index-search.ts "$TEMP_CONTENT"
-  cd "$REPO_ROOT"
-
-  rm -rf "$TEMP_CONTENT"
-
-  dump_and_push
-}
-
-# --- Search push: dump existing local index + push (used by: search-push) ---
-
-deploy_search_push() {
-  echo "==> Dumping existing local index and transferring to VPS..."
-  echo "    Skipping reindex — pushing whatever is currently in local Meilisearch."
-
-  check_local_meilisearch
-  dump_and_push
-}
-
 # --- Main ---
 
 case "$MODE" in
@@ -823,12 +575,6 @@ case "$MODE" in
     ;;
   search-docker)
     deploy_search_docker
-    ;;
-  search-dump)
-    deploy_search_dump
-    ;;
-  search-push)
-    deploy_search_push
     ;;
 esac
 

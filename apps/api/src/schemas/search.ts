@@ -10,9 +10,7 @@ export const searchQuerySchema = z.object({
     description: "Filter results to a specific source",
   }),
   title_number: z.coerce.number().int().optional(),
-  document_type: z
-    .enum(["rule", "proposed_rule", "notice", "presidential_document"])
-    .optional(),
+  document_type: z.enum(["rule", "proposed_rule", "notice", "presidential_document"]).optional(),
   agency: z.string().optional(),
   status: z.string().optional(),
   date_from: z.string().optional().openapi({
@@ -65,13 +63,9 @@ export const searchResultSchema = z.object({
     processing_time_ms: z.number(),
     estimated_total_hits: z.number(),
   }),
-  facets: z
-    .record(z.string(), z.record(z.string(), z.number()))
-    .optional()
-    .openapi({
-      description:
-        "Facet distribution counts. Keys are facet names, values are maps of facet value to count.",
-    }),
+  facets: z.record(z.string(), z.record(z.string(), z.number())).optional().openapi({
+    description: "Facet distribution counts. Keys are facet names, values are maps of facet value to count.",
+  }),
   meta: z.object({
     api_version: z.string(),
     timestamp: z.string(),

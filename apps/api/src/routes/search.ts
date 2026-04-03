@@ -36,12 +36,7 @@ const ALLOWED_FACETS = new Set([
 ]);
 
 /** Sort fields allowed in Meilisearch queries. */
-const ALLOWED_SORT_FIELDS = new Set([
-  "publication_date",
-  "title_number",
-  "identifier",
-  "document_number",
-]);
+const ALLOWED_SORT_FIELDS = new Set(["publication_date", "title_number", "identifier", "document_number"]);
 
 /** Translate API query params into a Meilisearch filter string. */
 function buildMeiliFilter(params: z.infer<typeof searchQuerySchema>): string | undefined {
@@ -119,11 +114,7 @@ const searchRoute = createRoute({
 });
 
 /** Register the search endpoint. */
-export function registerSearchRoutes(
-  app: OpenAPIHono,
-  meiliUrl: string,
-  meiliKey: string,
-): void {
+export function registerSearchRoutes(app: OpenAPIHono, meiliUrl: string, meiliKey: string): void {
   const client = new Meilisearch({ host: meiliUrl, apiKey: meiliKey });
 
   // Short cache — search results depend on query but are stable between re-indexes
@@ -162,9 +153,7 @@ export function registerSearchRoutes(
 
     const hits = (result.hits as MeiliSearchDocument[]).map((hit) => {
       // Access _formatted for highlights (Meilisearch adds this to each hit)
-      const formatted = (hit as unknown as Record<string, unknown>)._formatted as
-        | Record<string, string>
-        | undefined;
+      const formatted = (hit as unknown as Record<string, unknown>)._formatted as Record<string, string> | undefined;
 
       return {
         id: hit.id,

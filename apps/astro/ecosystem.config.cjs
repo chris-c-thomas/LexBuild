@@ -96,6 +96,7 @@ module.exports = {
         NODE_ENV: "production",
         API_PORT: "4322",
         LEXBUILD_DB_PATH: "/srv/lexbuild/data/lexbuild.db",
+        LEXBUILD_KEYS_DB_PATH: "/srv/lexbuild/data/lexbuild-keys.db",
         MEILI_URL: "http://127.0.0.1:7700",
         MEILI_MASTER_KEY: process.env.MEILI_MASTER_KEY || "",
       },

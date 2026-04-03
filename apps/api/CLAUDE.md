@@ -87,3 +87,18 @@ pnpm turbo dev:api --filter=@lexbuild/api
 # Production start (after build)
 node apps/api/dist/index.js
 ```
+
+## Ingest Command
+
+The `lexbuild ingest` CLI command (in `packages/cli/`) populates the SQLite database:
+
+```bash
+lexbuild ingest ./output --db ./lexbuild.db                    # Full ingest
+lexbuild ingest ./output --db ./lexbuild.db --source fr --incremental  # Incremental FR only
+lexbuild ingest ./output --db ./lexbuild.db --prune            # Remove deleted files
+```
+
+- Uses SHA-256 content hashing for incremental change detection
+- Batch upserts in SQLite transactions (default 1000 docs/batch)
+- WAL mode for concurrent read access
+- `gray-matter` with `{ cache: false }` to prevent memory leaks on 1M+ files

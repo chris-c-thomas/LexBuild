@@ -19,7 +19,8 @@ src/
     ├── convert-ecfr.ts         # lexbuild convert-ecfr command
     ├── download-fr.ts          # lexbuild download-fr command
     ├── convert-fr.ts           # lexbuild convert-fr command
-    └── enrich-fr.ts           # lexbuild enrich-fr command
+    ├── enrich-fr.ts           # lexbuild enrich-fr command
+    └── ingest.ts              # lexbuild ingest command (SQLite population)
 ```
 
 ## Commands
@@ -35,6 +36,7 @@ All commands support `--help` for full option details.
 | `download-fr` | Download FR documents (XML+JSON) | `--from`/`--to`, `--recent <days>`, `--document <number>` |
 | `convert-fr` | Convert FR XML to Markdown | `[input]`, `--all`, `--from`/`--to`, `--types` |
 | `enrich-fr` | Enrich FR .md frontmatter with API metadata | `--from`/`--to`, `--recent <days>`, `--force` |
+| `ingest` | Populate SQLite DB from converted .md files | `[content-dir]`, `--db`, `--source`, `--incremental`, `--prune`, `--batch-size`, `--stats` |
 | `list-release-points` | List OLRC release points | `-n <count>` |
 
 **Common convert options**: `--output <dir>` (default `./output`), `--link-style relative|canonical|plaintext`, `--include-notes`, `--include-editorial-notes`, `--include-statutory-notes`, `--include-amendments`, `--dry-run`, `-v`.

@@ -15,7 +15,8 @@ lexbuild/
 │   ├── fr/          # @lexbuild/fr — Federal Register converter and downloader
 │   └── cli/         # @lexbuild/cli — CLI binary (the published npm package users install)
 ├── apps/
-│   └── astro/       # LexBuild web app — Astro 6, SSR, browse U.S. Code + eCFR as Markdown
+│   ├── astro/       # LexBuild web app — Astro 6, SSR, browse U.S. Code + eCFR as Markdown
+│   └── api/         # @lexbuild/api — Data API (Hono, SQLite, Meilisearch proxy)
 ├── scripts/
 │   ├── deploy.sh           # Production deploy (code, content, or full remote pipeline)
 │   ├── setup-secrets.sh    # Initialize ~/.lexbuild-secrets on VPS
@@ -91,6 +92,10 @@ node packages/cli/dist/index.js list-release-points
 # Astro app — NOT included in default `pnpm turbo build`
 pnpm turbo dev:astro --filter=@lexbuild/astro      # Dev server (http://localhost:4321)
 pnpm turbo build:astro --filter=@lexbuild/astro    # Production build
+
+# Data API — NOT included in default `pnpm turbo build`
+pnpm turbo dev:api --filter=@lexbuild/api          # Dev server (http://localhost:4322)
+pnpm turbo build:api --filter=@lexbuild/api        # Production build
 
 # Deploy to production VPS (from monorepo root)
 ./scripts/deploy.sh                # Code only (git pull, build, pm2 reload)
@@ -237,6 +242,12 @@ Note: identifiers use `/us/cfr/` (content type) not `/us/ecfr/` (data source). B
 - **Ora spinner text should NOT end with `...`**: The trailing dots conflict with ora's own dots animation. The spinner animation itself provides the "in progress" cue.
 - **Indexed array iteration with strict TypeScript**: `noUncheckedIndexedAccess` makes `arr[i]` return `T | undefined`, and `no-non-null-assertion` forbids `arr[i]!`. Use `for (const [i, item] of arr.entries())` to get typed values without assertions.
 - **Astro template expressions are plain JS, not TypeScript**: `new Map<string, T>()` and other generics in template `{}` expressions cause esbuild errors. Move complex typed logic to the `---` frontmatter section.
+- **Meilisearch dumps re-index on import**: Dumps are blueprints, not ready-to-use databases. Use Docker data directory transfer (`--search-docker`) instead — VPS import is instant.
+- **LMDB is architecture-dependent**: Meilisearch data directories from macOS won't work on Linux. Docker with `--platform linux/amd64` produces compatible data.
+- **SQLite is architecture-independent**: Unlike LMDB, SQLite `.db` files transfer between macOS and Linux without issues. SCP directly.
+- **`gray-matter` `cache` option not in TypeScript types**: The `{ cache: false }` option works at runtime but isn't in the type definitions. Use `as any` with an eslint-disable comment in typechecked code.
+- **`pnpm.onlyBuiltDependencies`**: Native packages like `better-sqlite3` need explicit approval in root `package.json` under `pnpm.onlyBuiltDependencies` to compile during install.
+- **Turborepo app task naming**: Apps excluded from default `build` need matching script names (e.g., `build:api` in both `turbo.json` and the app's `package.json`).
 
 ## When Adding New Source Types
 

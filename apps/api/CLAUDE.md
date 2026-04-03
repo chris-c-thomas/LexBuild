@@ -45,9 +45,10 @@ src/
 
 | Variable | Default | Description |
 |---|---|---|
-| `PORT` | `4322` | HTTP server port |
-| `DATABASE_PATH` | `./data/lexbuild.db` | Path to SQLite database file |
+| `API_PORT` | `4322` | HTTP server port |
+| `LEXBUILD_DB_PATH` | `./lexbuild.db` | Path to SQLite database file |
 | `MEILI_URL` | `http://127.0.0.1:7700` | Meilisearch endpoint for search proxy |
+| `MEILI_MASTER_KEY` | — | Meilisearch master key |
 | `MEILI_SEARCH_KEY` | — | Meilisearch search-only API key |
 | `API_RATE_LIMIT` | `100` | Requests per minute per IP |
 
@@ -55,7 +56,7 @@ src/
 
 - **Engine**: SQLite via `better-sqlite3` (synchronous, native bindings)
 - **Schema**: Shared with `@lexbuild/cli` ingest command via `@lexbuild/core/db/schema`
-- **Location**: Configurable via `DATABASE_PATH`, default `./data/lexbuild.db`
+- **Location**: Configurable via `LEXBUILD_DB_PATH`, default `./lexbuild.db`
 - **Population**: The CLI `ingest` command writes to the database; the API only reads
 
 ## Port Assignment
@@ -103,7 +104,25 @@ lexbuild ingest ./output --db ./lexbuild.db --prune            # Remove deleted 
 - WAL mode for concurrent read access
 - `gray-matter` with `{ cache: false }` to prevent memory leaks on 1M+ files
 
+## Implemented Endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/v1/health` | Health check with DB stats |
+| GET | `/api/v1/sources` | Source metadata with live document counts |
+| GET | `/api/v1/openapi.json` | Auto-generated OpenAPI 3.1 spec |
+| GET | `/api/v1/docs` | Scalar API reference UI |
+| GET | `/api/v1/usc/documents/{identifier}` | Single USC document |
+| GET | `/api/v1/cfr/documents/{identifier}` | Single CFR document |
+| GET | `/api/v1/fr/documents/{identifier}` | Single FR document |
+
+Document endpoints support: content negotiation (`?format=json|markdown|text` or `Accept` header), field selection (`?fields=metadata|body|field1,field2`), ETag caching (`If-None-Match` → 304), and per-source `Cache-Control` headers.
+
 ## Common Pitfalls
 
 - **`better-sqlite3` requires build approval**: Must be listed in root `package.json` under `pnpm.onlyBuiltDependencies`. Without it, `pnpm install` skips native compilation and the module fails at runtime.
 - **`better-sqlite3` is platform-specific**: macOS binaries won't work on Linux. The VPS must run `pnpm install` or `pnpm rebuild better-sqlite3` after deployment.
+- **`@lexbuild/core` must be external in tsup**: The bundler can't resolve workspace deps with `noExternal: [/(.*)/]`. Both `better-sqlite3` and `@lexbuild/core` are listed in `external`.
+- **`@scalar/hono-api-reference` API changed**: Use `url` (not `spec: { url }`) and `title` (not `pageTitle`) in the config object. The `spec` property is deprecated.
+- **Hono `createMiddleware` + `noImplicitReturns`**: If the middleware catch block returns a Response, the try block must also have an explicit `return`. Use a named function returning `MiddlewareHandler` instead of arrow + `createMiddleware` to avoid this.
+- **CFR source mapping**: API URL uses `/cfr/` but database stores `source = "ecfr"`. `URL_TO_DB_SOURCE` in `lib/source-registry.ts` handles this translation. Always use it for DB queries.

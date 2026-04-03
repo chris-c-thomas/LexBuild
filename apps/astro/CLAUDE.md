@@ -208,7 +208,7 @@ Initialized with radix-nova preset, zinc theme. Components in `src/components/ui
 - **Caddy handles TLS.** Astro listens on HTTP localhost only.
 - **`rehype-sanitize` is critical.** Defense-in-depth against injection in Markdown content.
 - **PM2 reload not restart.** Use `pm2 reload lexbuild-astro --update-env` for zero-downtime.
-- **`ecosystem.config.cjs` manages 3 services**: `lexbuild-astro` (port 4321), `meilisearch` (port 7700), `uptime-kuma` (port 3001). Uptime Kuma is installed at `/srv/uptime-kuma`, not in the monorepo.
+- **`ecosystem.config.cjs` manages 4 services**: `lexbuild-astro` (port 4321), `meilisearch` (port 7700), `uptime-kuma` (port 3001), `lexbuild-api` (port 4322). Uptime Kuma is installed at `/srv/uptime-kuma`, not in the monorepo.
 - **Search index deployment uses Docker**: `./scripts/deploy.sh --search-docker` builds the Meilisearch index locally in a Docker container (linux/amd64), then transfers the pre-built data directory to the VPS. No re-indexing on the VPS. Use `--source fr|usc|ecfr` for incremental updates. Use `--search-docker-seed` to repopulate the Docker volume from VPS data if the volume is lost.
 - **Dev search uses Docker on port 7711**: `MEILI_PROFILE=dev docker compose -f docker-compose.meili.yml up -d`. No auth needed (dev mode). Configured in `.env.local` with `MEILI_URL=http://localhost:7711` and empty `MEILI_SEARCH_KEY`.
 - **Two Docker volume profiles**: `meili-data-full` (1M+ docs, seeded from VPS) and `meili-data-dev` (548 sample docs, indexed locally). Switch with `MEILI_PROFILE=dev|full`. Only one runs at a time (shared port 7711).

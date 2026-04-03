@@ -1,2 +1,29 @@
-/** LexBuild Data API entry point */
-console.log("LexBuild API starting...");
+import { serve } from "@hono/node-server";
+import { createApp } from "./app.js";
+import { closeDatabase } from "./db/client.js";
+
+const port = parseInt(process.env.API_PORT ?? "4322", 10);
+const dbPath = process.env.LEXBUILD_DB_PATH ?? "./lexbuild.db";
+
+const app = createApp({ dbPath });
+
+console.log(`LexBuild API starting on port ${port}`);
+console.log(`  Database: ${dbPath}`);
+console.log(`  OpenAPI docs: http://localhost:${port}/api/v1/docs`);
+
+serve({ fetch: app.fetch, port }, (info) => {
+  console.log(`LexBuild API listening on port ${info.port}`);
+});
+
+// Graceful shutdown
+process.on("SIGTERM", () => {
+  console.log("SIGTERM received, shutting down");
+  closeDatabase();
+  process.exit(0);
+});
+
+process.on("SIGINT", () => {
+  console.log("SIGINT received, shutting down");
+  closeDatabase();
+  process.exit(0);
+});

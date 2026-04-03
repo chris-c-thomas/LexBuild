@@ -9,7 +9,7 @@ export default defineConfig({
   sourcemap: true,
   dts: false,
   // Bundle all dependencies into a single file for simpler deployment
-  // Except better-sqlite3 which has native bindings
+  // Except better-sqlite3 (native bindings) and @lexbuild/core (workspace dep)
   noExternal: [/(.*)/],
-  external: ["better-sqlite3"],
+  external: ["better-sqlite3", "@lexbuild/core"],
 });

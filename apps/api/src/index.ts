@@ -18,7 +18,7 @@ console.log(`LexBuild API starting on port ${port}`);
 console.log(`  Database: ${dbPath}`);
 console.log(`  Keys DB: ${keysDbPath}`);
 console.log(`  Meilisearch: ${meiliUrl}`);
-console.log(`  OpenAPI docs: http://localhost:${port}/api/v1/docs`);
+console.log(`  OpenAPI docs: http://localhost:${port}/api/docs`);
 
 serve({ fetch: app.fetch, port }, (info) => {
   console.log(`LexBuild API listening on port ${info.port}`);

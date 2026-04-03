@@ -78,7 +78,7 @@ export function registerFrRoutes(app: OpenAPIHono, db: Database.Database): void 
       offset,
       cursor,
     });
-    return c.json(buildListingResponse(result, "/api/v1/fr/documents", { ...filters, sort, fields }));
+    return c.json(buildListingResponse(result, "/api/fr/documents", { ...filters, sort, fields }));
   });
 
   app.openapi(getDocumentRoute, (c) => {

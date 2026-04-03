@@ -127,7 +127,7 @@ The Astro app (`apps/astro/`) is deployed to a self-managed VPS (AWS Lightsail) 
 
 ### Data API
 
-The Data API (`apps/api/`) serves legal content programmatically at `https://lexbuild.dev/api/v1/`. Hono + SQLite + Meilisearch. See `apps/api/CLAUDE.md` for the full spec.
+The Data API (`apps/api/`) serves legal content programmatically at `https://lexbuild.dev/api/`. Hono + SQLite + Meilisearch. See `apps/api/CLAUDE.md` for the full spec.
 
 - **Excluded from `pnpm turbo build`** — uses `build:api` (same pattern as Astro app)
 - **Excluded from changesets** — `"private": true`

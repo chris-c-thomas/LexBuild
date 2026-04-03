@@ -71,8 +71,8 @@ export function createApp(config: AppConfig): OpenAPIHono {
       contact: { name: "LexBuild", url: "https://lexbuild.dev" },
     },
     servers: [
-      { url: "https://lexbuild.dev/api/v1", description: "Production" },
-      { url: "http://localhost:4322/api/v1", description: "Local development" },
+      { url: "https://lexbuild.dev/api", description: "Production" },
+      { url: "http://localhost:4322/api", description: "Local development" },
     ],
     security: [{ apiKey: [] }],
   });
@@ -80,13 +80,13 @@ export function createApp(config: AppConfig): OpenAPIHono {
   v1.get(
     "/docs",
     apiReference({
-      url: "/api/v1/openapi.json",
+      url: "/api/openapi.json",
       theme: "kepler",
       title: "LexBuild API Reference",
     }),
   );
 
-  app.route("/api/v1", v1);
+  app.route("/api", v1);
 
   return app;
 }

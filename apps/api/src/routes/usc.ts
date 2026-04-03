@@ -78,7 +78,7 @@ export function registerUscRoutes(app: OpenAPIHono, db: Database.Database): void
       offset,
       cursor,
     });
-    return c.json(buildListingResponse(result, "/api/v1/usc/documents", { ...filters, sort, fields }));
+    return c.json(buildListingResponse(result, "/api/usc/documents", { ...filters, sort, fields }));
   });
 
   app.openapi(getDocumentRoute, (c) => {

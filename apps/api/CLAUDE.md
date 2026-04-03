@@ -24,8 +24,8 @@ src/
 │   ├── cache-headers.ts   # Configurable Cache-Control
 │   └── rate-limit.ts      # In-memory sliding window, tiered API key limits
 ├── routes/
-│   ├── health.ts          # GET /api/v1/health
-│   ├── sources.ts         # GET /api/v1/sources
+│   ├── health.ts          # GET /api/health
+│   ├── sources.ts         # GET /api/sources
 │   ├── usc.ts             # USC document + listing endpoints
 │   ├── cfr.ts             # CFR document + listing endpoints
 │   ├── fr.ts              # FR document + listing endpoints
@@ -116,25 +116,25 @@ lexbuild ingest ./output --db ./lexbuild.db --prune            # Remove deleted 
 
 | Method | Path | Description |
 |---|---|---|
-| GET | `/api/v1/health` | Health check with DB stats |
-| GET | `/api/v1/sources` | Source metadata with live counts |
-| GET | `/api/v1/openapi.json` | OpenAPI 3.1 spec |
-| GET | `/api/v1/docs` | Scalar API reference UI |
-| GET | `/api/v1/stats` | Corpus-wide statistics |
-| GET | `/api/v1/search` | Cross-source Meilisearch proxy with facets |
-| GET | `/api/v1/usc/documents` | List/filter/sort USC sections |
-| GET | `/api/v1/usc/documents/{identifier}` | Single USC document |
-| GET | `/api/v1/usc/titles` | USC title listing with counts |
-| GET | `/api/v1/usc/titles/{number}` | Title detail + chapters |
-| GET | `/api/v1/cfr/documents` | List/filter/sort CFR sections |
-| GET | `/api/v1/cfr/documents/{identifier}` | Single CFR document |
-| GET | `/api/v1/cfr/titles` | CFR title listing with counts |
-| GET | `/api/v1/cfr/titles/{number}` | Title detail + chapters |
-| GET | `/api/v1/fr/documents` | List/filter/sort FR documents |
-| GET | `/api/v1/fr/documents/{identifier}` | Single FR document |
-| GET | `/api/v1/fr/years` | FR year listing with counts |
-| GET | `/api/v1/fr/years/{year}` | Year detail + months |
-| GET | `/api/v1/fr/years/{year}/{month}` | Month document listing |
+| GET | `/api/health` | Health check with DB stats |
+| GET | `/api/sources` | Source metadata with live counts |
+| GET | `/api/openapi.json` | OpenAPI 3.1 spec |
+| GET | `/api/docs` | Scalar API reference UI |
+| GET | `/api/stats` | Corpus-wide statistics |
+| GET | `/api/search` | Cross-source Meilisearch proxy with facets |
+| GET | `/api/usc/documents` | List/filter/sort USC sections |
+| GET | `/api/usc/documents/{identifier}` | Single USC document |
+| GET | `/api/usc/titles` | USC title listing with counts |
+| GET | `/api/usc/titles/{number}` | Title detail + chapters |
+| GET | `/api/cfr/documents` | List/filter/sort CFR sections |
+| GET | `/api/cfr/documents/{identifier}` | Single CFR document |
+| GET | `/api/cfr/titles` | CFR title listing with counts |
+| GET | `/api/cfr/titles/{number}` | Title detail + chapters |
+| GET | `/api/fr/documents` | List/filter/sort FR documents |
+| GET | `/api/fr/documents/{identifier}` | Single FR document |
+| GET | `/api/fr/years` | FR year listing with counts |
+| GET | `/api/fr/years/{year}` | Year detail + months |
+| GET | `/api/fr/years/{year}/{month}` | Month document listing |
 
 Document endpoints support: content negotiation, field selection, ETag caching, per-source Cache-Control.
 Listing endpoints support: offset/cursor pagination, multi-field filtering, sorting.

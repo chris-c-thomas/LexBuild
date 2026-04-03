@@ -8,8 +8,11 @@ export default defineConfig({
   clean: true,
   sourcemap: true,
   dts: false,
-  // Bundle all dependencies into a single file for simpler deployment
-  // Except better-sqlite3 (native bindings) and @lexbuild/core (workspace dep)
+  // Bundle all dependencies except native bindings and workspace deps
   noExternal: [/(.*)/],
   external: ["better-sqlite3", "@lexbuild/core"],
+  // Provide createRequire for external CJS modules (better-sqlite3) loaded from ESM bundle
+  banner: {
+    js: 'import { createRequire } from "node:module"; const require = createRequire(import.meta.url);',
+  },
 });

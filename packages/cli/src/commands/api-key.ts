@@ -1,51 +1,9 @@
 import { Command } from "commander";
 import Database from "better-sqlite3";
-import { pbkdf2Sync, randomBytes, randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import chalk from "chalk";
+import { deriveApiKeyHash, TIER_DEFAULTS, API_KEYS_TABLE_SQL } from "@lexbuild/core";
 import { summaryBlock, dataTable, success, error as errorMsg } from "../ui.js";
-
-// Must match apps/api/src/db/keys.ts — shared key derivation parameters
-const API_KEY_PBKDF2_ITERATIONS = 100_000;
-const API_KEY_PBKDF2_KEYLEN = 32;
-const API_KEY_PBKDF2_DIGEST = "sha256";
-// Not a secret — fixed application-level salt for deterministic key derivation
-const API_KEY_PBKDF2_SALT = "lexbuild-api-key-derivation-v1";
-
-function deriveApiKeyHash(key: string): string {
-  return pbkdf2Sync(
-    key,
-    API_KEY_PBKDF2_SALT,
-    API_KEY_PBKDF2_ITERATIONS,
-    API_KEY_PBKDF2_KEYLEN,
-    API_KEY_PBKDF2_DIGEST,
-  ).toString("hex");
-}
-
-const TIER_DEFAULTS: Record<string, { rate_limit: number; rate_window: number }> = {
-  standard: { rate_limit: 1000, rate_window: 60 },
-  elevated: { rate_limit: 5000, rate_window: 60 },
-  unlimited: { rate_limit: 0, rate_window: 0 },
-};
-
-const API_KEYS_TABLE_SQL = `
-CREATE TABLE IF NOT EXISTS api_keys (
-  id              TEXT PRIMARY KEY,
-  key_hash        TEXT NOT NULL UNIQUE,
-  key_prefix      TEXT NOT NULL,
-  label           TEXT NOT NULL,
-  tier            TEXT NOT NULL DEFAULT 'standard',
-  rate_limit      INTEGER NOT NULL DEFAULT 1000,
-  rate_window     INTEGER NOT NULL DEFAULT 60,
-  created_at      TEXT NOT NULL DEFAULT (datetime('now')),
-  expires_at      TEXT,
-  revoked_at      TEXT,
-  last_used       TEXT,
-  total_requests  INTEGER NOT NULL DEFAULT 0
-);
-
-CREATE INDEX IF NOT EXISTS idx_keys_hash ON api_keys(key_hash);
-CREATE INDEX IF NOT EXISTS idx_keys_prefix ON api_keys(key_prefix);
-`;
 
 function openKeysDb(dbPath: string): Database.Database {
   const db = new Database(dbPath);
@@ -89,7 +47,10 @@ apiKeyCommand
       process.exit(1);
     }
 
-    const tierDefaults = TIER_DEFAULTS[options.tier] ?? { rate_limit: 1000, rate_window: 60 };
+    const tierDefaults = TIER_DEFAULTS[options.tier as keyof typeof TIER_DEFAULTS] ?? {
+      rate_limit: 1000,
+      rate_window: 60,
+    };
     const rateLimit = options.rateLimit ?? tierDefaults.rate_limit;
     const rateWindow = tierDefaults.rate_window;
 
@@ -216,7 +177,10 @@ apiKeyCommand
 
       // Also update rate limit to tier default unless explicitly overridden
       if (options.rateLimit === undefined) {
-        const tierDefaults = TIER_DEFAULTS[options.tier] ?? { rate_limit: 1000, rate_window: 60 };
+        const tierDefaults = TIER_DEFAULTS[options.tier as keyof typeof TIER_DEFAULTS] ?? {
+          rate_limit: 1000,
+          rate_window: 60,
+        };
         updates.push("rate_limit = ?");
         params.push(tierDefaults.rate_limit);
       }

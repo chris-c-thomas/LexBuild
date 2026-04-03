@@ -63,3 +63,7 @@ export { writeFile, mkdir } from "./fs.js";
 // Database schema (shared between CLI ingest and Data API)
 export { SCHEMA_VERSION, DOCUMENTS_TABLE_SQL, SCHEMA_META_TABLE_SQL, INDEXES_SQL } from "./db/schema.js";
 export type { DocumentRow } from "./db/schema.js";
+
+// API keys schema (shared between CLI api-key commands and Data API)
+export { deriveApiKeyHash, TIER_DEFAULTS, API_KEYS_TABLE_SQL } from "./db/keys-schema.js";
+export type { Tier } from "./db/keys-schema.js";

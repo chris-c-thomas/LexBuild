@@ -16,6 +16,7 @@ import {
   registerFrHierarchyRoutes,
 } from "./routes/hierarchy.js";
 import { registerStatsRoutes } from "./routes/stats.js";
+import { registerSearchRoutes } from "./routes/search.js";
 
 /** Configuration for the Hono app factory. */
 export interface AppConfig {
@@ -50,6 +51,11 @@ export function createApp(config: AppConfig): OpenAPIHono {
   registerCfrHierarchyRoutes(v1, db);
   registerFrHierarchyRoutes(v1, db);
   registerStatsRoutes(v1, db);
+
+  // Search (Meilisearch proxy) — only register if configured
+  const meiliUrl = config.meiliUrl ?? "http://127.0.0.1:7700";
+  const meiliKey = config.meiliKey ?? "";
+  registerSearchRoutes(v1, meiliUrl, meiliKey);
 
   // OpenAPI spec
   v1.doc("/openapi.json", {

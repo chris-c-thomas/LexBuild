@@ -1,0 +1,30 @@
+# Local Meilisearch for search index builds.
+#
+# Runs linux/amd64 Meilisearch so the data directory is binary-compatible
+# with the VPS (Linux x86_64). The data directory can be transferred
+# directly — no re-indexing needed on the VPS.
+#
+# Usage (via deploy script):
+#   ./scripts/deploy.sh --search-docker
+#
+# Manual usage:
+#   docker compose -f docker-compose.meili.yml up -d
+#   MEILI_URL=http://localhost:7711 npx tsx apps/astro/scripts/index-search.ts ./content
+#   docker compose -f docker-compose.meili.yml down
+
+services:
+  meilisearch:
+    image: getmeili/meilisearch:v1.41.0
+    platform: linux/amd64
+    container_name: lexbuild-meili-build
+    ports:
+      - "7711:7700"
+    volumes:
+      - meili-data:/meili_data
+    environment:
+      - MEILI_ENV=production
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
+      - MEILI_LOG_LEVEL=WARN
+
+volumes:
+  meili-data:

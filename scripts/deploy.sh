@@ -487,12 +487,14 @@ deploy_search_docker() {
   VOLUME_NAME="lexbuild_meili-data"
   TAR_PATH="$REPO_ROOT/.meili-data.tar.gz"
 
-  # Tar the data directory from the Docker volume
+  # Tar the data directory from the Docker volume.
+  # Docker Meilisearch stores data at /meili_data/data.ms/ inside the volume.
+  # Extract from data.ms/ so files land directly in the VPS db-path.
   docker run --rm \
     -v "${VOLUME_NAME}:/data:ro" \
     --platform linux/amd64 \
     alpine:latest \
-    tar czf - -C /data . > "$TAR_PATH"
+    tar czf - -C /data/data.ms . > "$TAR_PATH"
 
   TAR_SIZE=$(du -h "$TAR_PATH" | cut -f1)
   echo "--- Data archive: $TAR_PATH ($TAR_SIZE)"
@@ -602,7 +604,7 @@ deploy_search_docker_seed() {
     -v "${TAR_PATH}:/import.tar.gz:ro" \
     --platform linux/amd64 \
     alpine:latest \
-    sh -c "tar xzf /import.tar.gz -C /data/"
+    sh -c "mkdir -p /data/data.ms && tar xzf /import.tar.gz -C /data/data.ms/"
 
   rm -f "$TAR_PATH"
 

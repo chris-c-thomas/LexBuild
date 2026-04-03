@@ -18,19 +18,12 @@ export const documentResponseSchema = z.object({
 
 /** Query parameters for document retrieval. */
 export const documentQuerySchema = z.object({
-  fields: z
-    .string()
-    .optional()
-    .openapi({
-      description:
-        "Field selection. Use 'metadata' for metadata only, 'body' for body only, or comma-separated field names.",
-      example: "metadata",
-    }),
-  format: z
-    .enum(["json", "markdown", "text"])
-    .optional()
-    .default("json")
-    .openapi({
-      description: "Response format override. Alternative to Accept header content negotiation.",
-    }),
+  fields: z.string().optional().openapi({
+    description:
+      "Field selection. Use 'metadata' for metadata only, 'body' for body only, or comma-separated field names.",
+    example: "metadata",
+  }),
+  format: z.enum(["json", "markdown", "text"]).optional().default("json").openapi({
+    description: "Response format override. Alternative to Accept header content negotiation.",
+  }),
 });

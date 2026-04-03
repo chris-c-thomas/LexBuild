@@ -10,6 +10,12 @@ import { registerSourceRoutes } from "./routes/sources.js";
 import { registerUscRoutes } from "./routes/usc.js";
 import { registerCfrRoutes } from "./routes/cfr.js";
 import { registerFrRoutes } from "./routes/fr.js";
+import {
+  registerUscHierarchyRoutes,
+  registerCfrHierarchyRoutes,
+  registerFrHierarchyRoutes,
+} from "./routes/hierarchy.js";
+import { registerStatsRoutes } from "./routes/stats.js";
 
 /** Configuration for the Hono app factory. */
 export interface AppConfig {
@@ -40,6 +46,10 @@ export function createApp(config: AppConfig): OpenAPIHono {
   registerUscRoutes(v1, db);
   registerCfrRoutes(v1, db);
   registerFrRoutes(v1, db);
+  registerUscHierarchyRoutes(v1, db);
+  registerCfrHierarchyRoutes(v1, db);
+  registerFrHierarchyRoutes(v1, db);
+  registerStatsRoutes(v1, db);
 
   // OpenAPI spec
   v1.doc("/openapi.json", {

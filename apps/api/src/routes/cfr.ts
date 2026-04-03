@@ -3,10 +3,29 @@ import type { OpenAPIHono } from "@hono/zod-openapi";
 import type Database from "better-sqlite3";
 import type { DocumentRow } from "@lexbuild/core";
 import { documentResponseSchema, documentQuerySchema } from "../schemas/documents.js";
+import { collectionResponseSchema } from "../schemas/pagination.js";
+import { cfrFilterSchema } from "../schemas/filters.js";
 import { errorResponseSchema } from "../schemas/errors.js";
 import { URL_TO_DB_SOURCE } from "../lib/source-registry.js";
 import { resolveIdentifier, renderDocumentResponse } from "../lib/documents.js";
+import { buildListingResponse } from "../lib/listings.js";
+import { queryDocuments } from "../db/queries.js";
 import { cacheHeaders } from "../middleware/cache-headers.js";
+
+const listDocumentsRoute = createRoute({
+  method: "get",
+  path: "/cfr/documents",
+  tags: ["Code of Federal Regulations"],
+  summary: "List CFR sections",
+  description: "Paginated listing of CFR sections with filtering and sorting.",
+  request: { query: cfrFilterSchema },
+  responses: {
+    200: {
+      content: { "application/json": { schema: collectionResponseSchema } },
+      description: "Paginated document list",
+    },
+  },
+});
 
 const getDocumentRoute = createRoute({
   method: "get",
@@ -43,13 +62,27 @@ const getDocumentRoute = createRoute({
 
 /** Register Code of Federal Regulations document endpoints. */
 export function registerCfrRoutes(app: OpenAPIHono, db: Database.Database): void {
-  // URL uses /cfr/ but database stores source as "ecfr"
-  const dbSource = URL_TO_DB_SOURCE["cfr"];
+  const dbSource = URL_TO_DB_SOURCE["cfr"] ?? "ecfr";
   const findByIdentifier = db.prepare("SELECT * FROM documents WHERE identifier = ? AND source = ?");
 
   // eCFR updates daily but individual sections change less often
   app.use("/cfr/*", cacheHeaders({ maxAge: 3600, sMaxAge: 43200, staleWhileRevalidate: 604800 }));
 
+  // List documents
+  app.openapi(listDocumentsRoute, (c) => {
+    const { limit, offset, cursor, sort = "identifier", fields, ...filters } = c.req.valid("query");
+    const result = queryDocuments(db, {
+      source: dbSource,
+      filters,
+      sort: sort ?? "identifier",
+      limit,
+      offset,
+      cursor,
+    });
+    return c.json(buildListingResponse(result, "/api/v1/cfr/documents", { ...filters, sort, fields }));
+  });
+
+  // Get single document
   app.openapi(getDocumentRoute, (c) => {
     const rawIdentifier = c.req.param("identifier");
     const identifier = resolveIdentifier("cfr", rawIdentifier);

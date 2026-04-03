@@ -3,10 +3,29 @@ import type { OpenAPIHono } from "@hono/zod-openapi";
 import type Database from "better-sqlite3";
 import type { DocumentRow } from "@lexbuild/core";
 import { documentResponseSchema, documentQuerySchema } from "../schemas/documents.js";
+import { collectionResponseSchema } from "../schemas/pagination.js";
+import { frFilterSchema } from "../schemas/filters.js";
 import { errorResponseSchema } from "../schemas/errors.js";
 import { URL_TO_DB_SOURCE } from "../lib/source-registry.js";
 import { resolveIdentifier, renderDocumentResponse } from "../lib/documents.js";
+import { buildListingResponse } from "../lib/listings.js";
+import { queryDocuments } from "../db/queries.js";
 import { cacheHeaders } from "../middleware/cache-headers.js";
+
+const listDocumentsRoute = createRoute({
+  method: "get",
+  path: "/fr/documents",
+  tags: ["Federal Register"],
+  summary: "List Federal Register documents",
+  description: "Paginated listing of FR documents with filtering and sorting.",
+  request: { query: frFilterSchema },
+  responses: {
+    200: {
+      content: { "application/json": { schema: collectionResponseSchema } },
+      description: "Paginated document list",
+    },
+  },
+});
 
 const getDocumentRoute = createRoute({
   method: "get",
@@ -43,12 +62,27 @@ const getDocumentRoute = createRoute({
 
 /** Register Federal Register document endpoints. */
 export function registerFrRoutes(app: OpenAPIHono, db: Database.Database): void {
-  const dbSource = URL_TO_DB_SOURCE["fr"];
+  const dbSource = URL_TO_DB_SOURCE["fr"] ?? "fr";
   const findByIdentifier = db.prepare("SELECT * FROM documents WHERE identifier = ? AND source = ?");
 
   // Published FR documents never change after publication
   app.use("/fr/*", cacheHeaders({ maxAge: 3600, sMaxAge: 86400, staleWhileRevalidate: 2592000 }));
 
+  // List documents
+  app.openapi(listDocumentsRoute, (c) => {
+    const { limit, offset, cursor, sort = "-publication_date", fields, ...filters } = c.req.valid("query");
+    const result = queryDocuments(db, {
+      source: dbSource,
+      filters,
+      sort: sort ?? "-publication_date",
+      limit,
+      offset,
+      cursor,
+    });
+    return c.json(buildListingResponse(result, "/api/v1/fr/documents", { ...filters, sort, fields }));
+  });
+
+  // Get single document
   app.openapi(getDocumentRoute, (c) => {
     const rawIdentifier = c.req.param("identifier");
     const identifier = resolveIdentifier("fr", rawIdentifier);

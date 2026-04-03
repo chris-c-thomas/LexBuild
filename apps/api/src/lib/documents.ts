@@ -113,10 +113,7 @@ export function selectFields(
  * Render the full HTTP response for a document row, handling content negotiation,
  * ETag, and field selection. Returns the Hono Response.
  */
-export function renderDocumentResponse(
-  c: Context,
-  row: DocumentRow,
-): Response {
+export function renderDocumentResponse(c: Context, row: DocumentRow): Response {
   // ETag from content hash
   const etag = `"${row.content_hash.slice(0, 16)}"`;
   c.header("ETag", etag);

@@ -8,9 +8,9 @@ export default defineConfig({
   clean: true,
   sourcemap: true,
   dts: false,
-  // Bundle all dependencies except native bindings and workspace deps
-  noExternal: [/(.*)/],
-  external: ["better-sqlite3", "@lexbuild/core"],
+  // Bundle npm dependencies for simpler deployment, but keep native
+  // modules and workspace deps external (resolved from node_modules at runtime)
+  noExternal: [/^(?!better-sqlite3|bindings|file-uri-to-path|@lexbuild\/)/],
   // Provide CJS globals for dependencies that assume CommonJS context
   banner: {
     js: [

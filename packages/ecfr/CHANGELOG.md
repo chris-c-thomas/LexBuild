@@ -1,5 +1,16 @@
 # @lexbuild/ecfr
 
+## 1.17.0
+
+### Minor Changes
+
+- 15c21c9: Meilisearch Docker Container
+
+### Patch Changes
+
+- Updated dependencies [15c21c9]
+  - @lexbuild/core@1.17.0
+
 ## 1.16.1
 
 ### Patch Changes

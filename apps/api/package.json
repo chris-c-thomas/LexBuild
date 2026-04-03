@@ -18,7 +18,6 @@
     "@lexbuild/core": "workspace:*",
     "@scalar/hono-api-reference": "^0.10.6",
     "better-sqlite3": "^11.9",
-    "gray-matter": "^4.0",
     "hono": "^4.7",
     "meilisearch": "^0.48",
     "zod": "^3.25"

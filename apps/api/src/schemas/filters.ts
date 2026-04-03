@@ -1,6 +1,12 @@
 import { z } from "@hono/zod-openapi";
 import { paginationSchema } from "./pagination.js";
 
+/** ISO date string pattern (YYYY-MM-DD). */
+const dateString = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD format")
+  .optional();
+
 /** USC document listing filter parameters. */
 export const uscFilterSchema = paginationSchema.extend({
   title_number: z.coerce.number().int().optional(),
@@ -32,14 +38,14 @@ export const cfrFilterSchema = paginationSchema.extend({
 export const frFilterSchema = paginationSchema.extend({
   document_type: z.enum(["rule", "proposed_rule", "notice", "presidential_document"]).optional(),
   agency: z.string().optional(),
-  date_from: z.string().optional().openapi({
+  date_from: dateString.openapi({
     description: "Publication date range start (YYYY-MM-DD)",
   }),
-  date_to: z.string().optional().openapi({
+  date_to: dateString.openapi({
     description: "Publication date range end (YYYY-MM-DD)",
   }),
-  effective_date_from: z.string().optional(),
-  effective_date_to: z.string().optional(),
+  effective_date_from: dateString,
+  effective_date_to: dateString,
   sort: z.string().optional().default("-publication_date"),
   fields: z.string().optional(),
 });

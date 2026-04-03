@@ -13,12 +13,16 @@ export const searchQuerySchema = z.object({
   document_type: z.enum(["rule", "proposed_rule", "notice", "presidential_document"]).optional(),
   agency: z.string().optional(),
   status: z.string().optional(),
-  date_from: z.string().optional().openapi({
-    description: "Publication date range start (YYYY-MM-DD, FR only)",
-  }),
-  date_to: z.string().optional().openapi({
-    description: "Publication date range end (YYYY-MM-DD, FR only)",
-  }),
+  date_from: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD format")
+    .optional()
+    .openapi({ description: "Publication date range start (YYYY-MM-DD, FR only)" }),
+  date_to: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD format")
+    .optional()
+    .openapi({ description: "Publication date range end (YYYY-MM-DD, FR only)" }),
   sort: z.string().optional().openapi({
     description:
       "Sort field. Options: relevance (default), publication_date, -publication_date, title_number, identifier",

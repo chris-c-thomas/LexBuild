@@ -1,5 +1,6 @@
 import type { QueryResult } from "../db/queries.js";
 import { FORMAT_VERSION } from "@lexbuild/core";
+import { toApiSource } from "./source-registry.js";
 
 /** Shape returned by buildListingResponse for the handler to pass to c.json(). */
 export interface ListingResponseBody {
@@ -35,7 +36,7 @@ export function buildListingResponse(
   const data = result.rows.map((row) => ({
     id: row.id as string,
     identifier: row.identifier as string,
-    source: row.source === "ecfr" ? "cfr" : (row.source as string),
+    source: toApiSource(row.source as string),
     metadata: buildListingMetadata(row),
   }));
 

@@ -12,7 +12,11 @@ export function errorHandler(): MiddlewareHandler {
       const message = err instanceof Error ? err.message : "Internal server error";
       const requestId = c.get("requestId") as string | undefined;
 
-      console.error(`[${requestId ?? "?"}] ${status} ${c.req.method} ${c.req.path}: ${message}`);
+      if (status === 500 && err instanceof Error) {
+        console.error(`[${requestId ?? "?"}] ${c.req.method} ${c.req.path}:`, err);
+      } else {
+        console.error(`[${requestId ?? "?"}] ${status} ${c.req.method} ${c.req.path}: ${message}`);
+      }
 
       return c.json(
         {

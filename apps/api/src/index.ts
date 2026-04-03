@@ -8,6 +8,9 @@ const dbPath = process.env.LEXBUILD_DB_PATH ?? "./lexbuild.db";
 const keysDbPath = process.env.LEXBUILD_KEYS_DB_PATH ?? "./lexbuild-keys.db";
 const meiliUrl = process.env.MEILI_URL ?? "http://127.0.0.1:7700";
 const meiliKey = process.env.MEILI_SEARCH_KEY ?? process.env.MEILI_MASTER_KEY ?? "";
+if (!meiliKey) {
+  console.warn("WARNING: No MEILI_SEARCH_KEY or MEILI_MASTER_KEY set. Search endpoint will fail.");
+}
 
 const app = createApp({ dbPath, keysDbPath, meiliUrl, meiliKey });
 

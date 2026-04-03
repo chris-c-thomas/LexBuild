@@ -12,19 +12,22 @@ export function createDatabase(dbPath: string): Database.Database {
 
   const db = new Database(dbPath, { readonly: true });
 
-  // Performance pragmas for read-heavy workload
-  db.pragma("journal_mode = WAL");
-  db.pragma("synchronous = NORMAL");
+  // Read-only performance pragmas (WAL + synchronous are set by the ingest command)
   db.pragma("cache_size = -64000"); // 64MB
   db.pragma("mmap_size = 268435456"); // 256MB memory-mapped I/O
 
   // Validate schema version
-  const row = db.prepare("SELECT value FROM schema_meta WHERE key = 'schema_version'").get() as
-    | { value: string }
-    | undefined;
+  let row: { value: string } | undefined;
+  try {
+    row = db.prepare("SELECT value FROM schema_meta WHERE key = 'schema_version'").get() as
+      | { value: string }
+      | undefined;
+  } catch (err: unknown) {
+    throw new Error(`Database at ${dbPath} has no schema_meta table. Run 'lexbuild ingest' first.`, { cause: err });
+  }
 
   if (!row) {
-    throw new Error(`Database at ${dbPath} has no schema_meta table. Run 'lexbuild ingest' first.`);
+    throw new Error(`Database at ${dbPath} has no schema version. Run 'lexbuild ingest' first.`);
   }
 
   const dbVersion = parseInt(row.value, 10);

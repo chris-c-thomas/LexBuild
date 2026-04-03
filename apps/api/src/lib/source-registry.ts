@@ -1,7 +1,13 @@
+/** API-facing source identifier (used in URLs). */
+export type ApiSourceId = "usc" | "cfr" | "fr";
+
+/** Database-facing source value (stored in the documents table). */
+export type DbSource = "usc" | "ecfr" | "fr";
+
 /** Configuration for a content source exposed via the API. */
 export interface ApiSourceConfig {
   /** Source identifier used in URLs and database queries */
-  id: string;
+  id: ApiSourceId;
   /** Human-readable name */
   name: string;
   /** Short name for compact display */
@@ -21,7 +27,7 @@ export interface ApiSourceConfig {
 }
 
 /** Static metadata for all content sources. */
-export const API_SOURCES: Record<string, ApiSourceConfig> = {
+export const API_SOURCES: Record<ApiSourceId, ApiSourceConfig> = {
   usc: {
     id: "usc",
     name: "United States Code",
@@ -61,8 +67,29 @@ export const API_SOURCES: Record<string, ApiSourceConfig> = {
  * Maps API URL source identifiers to database source values.
  * The API uses `/cfr/` (content type) but the database stores `source = "ecfr"` (data source).
  */
-export const URL_TO_DB_SOURCE: Record<string, string> = {
+const URL_TO_DB: Record<ApiSourceId, DbSource> = {
   usc: "usc",
   cfr: "ecfr",
   fr: "fr",
 };
+
+const DB_TO_API: Record<DbSource, ApiSourceId> = {
+  usc: "usc",
+  ecfr: "cfr",
+  fr: "fr",
+};
+
+/** Convert an API source ID to its database source value. */
+export function toDbSource(apiSource: ApiSourceId): DbSource {
+  return URL_TO_DB[apiSource];
+}
+
+/** Convert a database source value to the API-facing source ID. */
+export function toApiSource(dbSource: string): string {
+  return (DB_TO_API as Record<string, string>)[dbSource] ?? dbSource;
+}
+
+/**
+ * @deprecated Use toDbSource() instead. Kept for backward compatibility during migration.
+ */
+export const URL_TO_DB_SOURCE: Record<string, string> = URL_TO_DB;

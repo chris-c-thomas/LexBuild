@@ -81,20 +81,31 @@ export function rateLimitMiddleware(keysDb: Database.Database): MiddlewareHandle
     let keyId: string | null = null;
 
     if (apiKey) {
-      const keyData = validateApiKey(keysDb, apiKey);
-      if (keyData) {
-        if (keyData.tier === "unlimited") {
-          c.header("X-RateLimit-Policy", "unlimited");
-          await next();
-          trackUsage(keysDb, keyData.id);
-          return;
+      try {
+        const keyData = validateApiKey(keysDb, apiKey);
+        if (keyData) {
+          if (keyData.tier === "unlimited") {
+            c.header("X-RateLimit-Policy", "unlimited");
+            await next();
+            try {
+              trackUsage(keysDb, keyData.id);
+            } catch (trackErr: unknown) {
+              const msg = trackErr instanceof Error ? trackErr.message : String(trackErr);
+              console.error(`[rate-limit] Usage tracking failed: ${msg}`);
+            }
+            return;
+          }
+          limit = keyData.rate_limit;
+          windowSeconds = keyData.rate_window;
+          policy = keyData.tier;
+          keyId = keyData.id;
         }
-        limit = keyData.rate_limit;
-        windowSeconds = keyData.rate_window;
-        policy = keyData.tier;
-        keyId = keyData.id;
+        // Invalid/expired/revoked key: treat as anonymous (don't reveal key validity)
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(`[rate-limit] API key validation failed, falling back to anonymous: ${msg}`);
+        // Fall through to anonymous tier
       }
-      // Invalid/expired/revoked key: treat as anonymous (don't reveal key validity)
     }
 
     const rateLimitKey = keyId ?? getClientIp(c);
@@ -124,9 +135,14 @@ export function rateLimitMiddleware(keysDb: Database.Database): MiddlewareHandle
 
     await next();
 
-    // Track usage for authenticated requests (after response sent)
+    // Track usage for authenticated requests (non-critical, don't fail the request)
     if (keyId) {
-      trackUsage(keysDb, keyId);
+      try {
+        trackUsage(keysDb, keyId);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(`[rate-limit] Usage tracking failed for key ${keyId}: ${msg}`);
+      }
     }
 
     return;

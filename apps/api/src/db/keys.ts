@@ -8,6 +8,9 @@ const API_KEY_PBKDF2_DIGEST = "sha256";
 // Not a secret — fixed application-level salt for deterministic key derivation
 const API_KEY_PBKDF2_SALT = "lexbuild-api-key-derivation-v1";
 
+/** Rate limit tier for API keys. */
+export type Tier = "standard" | "elevated" | "unlimited";
+
 /** SQL to create the api_keys table. */
 const API_KEYS_TABLE_SQL = `
 CREATE TABLE IF NOT EXISTS api_keys (
@@ -83,7 +86,7 @@ export function hashApiKey(key: string): string {
 /** Data returned when validating an API key. */
 export interface ApiKeyData {
   id: string;
-  tier: string;
+  tier: Tier;
   rate_limit: number;
   rate_window: number;
 }
@@ -116,7 +119,7 @@ export function trackUsage(keysDb: Database.Database, keyId: string): void {
 }
 
 /** Default rate limits per tier. */
-export const TIER_DEFAULTS: Record<string, { rate_limit: number; rate_window: number }> = {
+export const TIER_DEFAULTS: Record<Tier, { rate_limit: number; rate_window: number }> = {
   standard: { rate_limit: 1000, rate_window: 60 },
   elevated: { rate_limit: 5000, rate_window: 60 },
   unlimited: { rate_limit: 0, rate_window: 0 },

@@ -52,8 +52,9 @@ export function registerSourceRoutes(app: OpenAPIHono, db: Database.Database): v
       for (const row of rows) {
         counts.set(row.source, row.count);
       }
-    } catch {
-      // Database unavailable — counts stay at 0
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`[sources] Failed to query document counts: ${msg}`);
     }
 
     const data = Object.values(API_SOURCES).map((source) => {

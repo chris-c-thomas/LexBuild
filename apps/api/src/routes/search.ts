@@ -5,6 +5,7 @@ import { Meilisearch } from "meilisearch";
 import { HTTPException } from "hono/http-exception";
 import { searchQuerySchema, searchResultSchema } from "../schemas/search.js";
 import { cacheHeaders } from "../middleware/cache-headers.js";
+import { toApiSource } from "../lib/source-registry.js";
 
 const INDEX_NAME = "lexbuild";
 
@@ -56,13 +57,13 @@ function buildMeiliFilter(params: z.infer<typeof searchQuerySchema>): string | u
   }
 
   if (params.agency) {
-    // Sanitize: remove unmatched quotes to prevent filter injection
-    const sanitized = params.agency.replace(/"/g, "");
+    // Strip quotes, backslashes, and control chars to prevent filter injection
+    const sanitized = params.agency.replace(/["\\\n\r]/g, "");
     filters.push(`agency = "${sanitized}"`);
   }
 
   if (params.status) {
-    const sanitized = params.status.replace(/"/g, "");
+    const sanitized = params.status.replace(/["\\\n\r]/g, "");
     filters.push(`status = "${sanitized}"`);
   }
 
@@ -146,7 +147,8 @@ export function registerSearchRoutes(app: OpenAPIHono, meiliUrl: string, meiliKe
       result = await client.index(INDEX_NAME).search(params.q, searchOptions);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Search service unavailable";
-      throw new HTTPException(503, { message });
+      console.error("[search] Meilisearch query failed:", err);
+      throw new HTTPException(503, { message: `Search service unavailable: ${message}` });
     }
 
     const estimatedTotal = result.estimatedTotalHits ?? 0;
@@ -157,7 +159,7 @@ export function registerSearchRoutes(app: OpenAPIHono, meiliUrl: string, meiliKe
 
       return {
         id: hit.id,
-        source: hit.source === "ecfr" ? "cfr" : hit.source,
+        source: toApiSource(hit.source),
         identifier: hit.identifier,
         heading: hit.heading,
         title_number: hit.title_number ?? null,

@@ -2,6 +2,18 @@ import type { Context } from "hono";
 import type { DocumentRow } from "@lexbuild/core";
 import { resolveFormat } from "./content-negotiation.js";
 import { stripMarkdown } from "./markdown-strip.js";
+import { toApiSource } from "./source-registry.js";
+
+/** Safely parse a JSON column value, returning null on malformed data. */
+function safeJsonParse(value: string | null, field: string, identifier: string): unknown {
+  if (!value) return null;
+  try {
+    return JSON.parse(value);
+  } catch {
+    console.warn(`[documents] Malformed JSON in ${field} for ${identifier}: ${value.slice(0, 100)}`);
+    return null;
+  }
+}
 
 /**
  * Resolve a URL path parameter to a canonical identifier.
@@ -20,7 +32,7 @@ export function resolveIdentifier(source: string, raw: string): string {
 export function buildMetadata(row: DocumentRow): Record<string, unknown> {
   const meta: Record<string, unknown> = {
     identifier: row.identifier,
-    source: row.source === "ecfr" ? "cfr" : row.source,
+    source: toApiSource(row.source),
     legal_status: row.legal_status,
     display_title: row.display_title,
     title_number: row.title_number,
@@ -57,14 +69,14 @@ export function buildMetadata(row: DocumentRow): Record<string, unknown> {
     meta.document_type = row.document_type;
     meta.publication_date = row.publication_date;
     meta.agency = row.agency;
-    meta.agencies = row.agencies ? JSON.parse(row.agencies) : null;
+    meta.agencies = safeJsonParse(row.agencies, "agencies", row.identifier);
     meta.fr_citation = row.fr_citation;
     meta.fr_volume = row.fr_volume;
     meta.effective_date = row.effective_date;
     meta.comments_close_date = row.comments_close_date;
     meta.fr_action = row.fr_action;
-    meta.docket_ids = row.docket_ids ? JSON.parse(row.docket_ids) : null;
-    meta.cfr_references = row.cfr_references ? JSON.parse(row.cfr_references) : null;
+    meta.docket_ids = safeJsonParse(row.docket_ids, "docket_ids", row.identifier);
+    meta.cfr_references = safeJsonParse(row.cfr_references, "cfr_references", row.identifier);
   }
 
   return meta;
@@ -98,7 +110,7 @@ export function selectFields(
 
   // Always include identifier and source
   filtered.identifier = row.identifier;
-  filtered.source = row.source === "ecfr" ? "cfr" : row.source;
+  filtered.source = toApiSource(row.source);
 
   for (const [key, value] of Object.entries(allMetadata)) {
     if (requested.has(key)) {
@@ -142,7 +154,7 @@ export function renderDocumentResponse(c: Context, row: DocumentRow): Response {
     data: {
       id: row.id,
       identifier: row.identifier,
-      source: row.source === "ecfr" ? "cfr" : row.source,
+      source: toApiSource(row.source),
       metadata,
       ...(includeBody ? { body: row.markdown_body } : {}),
     },

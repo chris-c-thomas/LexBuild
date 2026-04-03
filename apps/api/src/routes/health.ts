@@ -44,8 +44,9 @@ export function registerHealthRoutes(app: OpenAPIHono, db: Database.Database): v
         documents: count.count,
         schema_version: parseInt(version.value, 10),
       };
-    } catch {
-      // Database unavailable — status remains error
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`[health] Database check failed: ${msg}`);
     }
 
     return c.json({

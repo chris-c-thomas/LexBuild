@@ -679,26 +679,28 @@ Astro.response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-
       </div>
 
       <div class="pipeline-consumer-flow">
-        <div class="pipeline-consumer pipeline-consumer-web">
-          <div class="pipeline-consumer-icon">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.75"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="h-4 w-4">
-              <circle cx="12" cy="12" r="10"></circle>
-              <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path>
-              <path d="M2 12h20"></path>
-            </svg>
-          </div>
-          <div>
-            <div class="pipeline-consumer-title">Web Resource</div>
-            <div class="pipeline-consumer-pkg">@lexbuild/astro</div>
-            <div class="pipeline-consumer-sub">
-              <a class="hover:underline" href="https://lexbuild.dev">lexbuild.dev</a>
+        <div class="pipeline-consumer-stage">
+          <div class="pipeline-stage-label">Web Resource</div>
+          <div class="pipeline-consumer pipeline-consumer-web">
+            <div class="pipeline-consumer-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.75"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="h-4 w-4">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path>
+                <path d="M2 12h20"></path>
+              </svg>
+            </div>
+            <div>
+              <div class="pipeline-consumer-pkg">@lexbuild/astro</div>
+              <div class="pipeline-consumer-sub">
+                <a class="hover:underline" href="https://lexbuild.dev">lexbuild.dev</a>
+              </div>
             </div>
           </div>
         </div>
@@ -707,23 +709,26 @@ Astro.response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-
           <span class="pipeline-connector-line"></span>
         </div>
 
-        <div class="pipeline-consumer pipeline-consumer-search">
-          <div class="pipeline-consumer-icon">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.75"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="h-4 w-4">
-              <circle cx="11" cy="11" r="8"></circle>
-              <path d="m21 21-4.3-4.3"></path>
-            </svg>
-          </div>
-          <div>
-            <div class="pipeline-consumer-title">Meilisearch</div>
-            <div class="pipeline-consumer-sub">Full-text search index</div>
+        <div class="pipeline-consumer-stage">
+          <div class="pipeline-stage-label">Search Service</div>
+          <div class="pipeline-consumer pipeline-consumer-search">
+            <div class="pipeline-consumer-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.75"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="h-4 w-4">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.3-4.3"></path>
+              </svg>
+            </div>
+            <div>
+              <div class="pipeline-consumer-pkg">Meilisearch</div>
+              <div class="pipeline-consumer-sub">Full-text search index</div>
+            </div>
           </div>
         </div>
 
@@ -731,25 +736,27 @@ Astro.response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-
           <span class="pipeline-connector-line"></span>
         </div>
 
-        <div class="pipeline-consumer pipeline-consumer-api">
-          <div class="pipeline-consumer-icon">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.75"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="h-4 w-4">
-              <path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5c0 1.1.9 2 2 2h1"></path>
-              <path d="M16 21h1a2 2 0 0 0 2-2v-5a2 2 0 0 1 2-2 2 2 0 0 1-2-2V5a2 2 0 0 0-2-2h-1"></path>
-            </svg>
-          </div>
-          <div>
-            <div class="pipeline-consumer-title">Data API</div>
-            <div class="pipeline-consumer-pkg">@lexbuild/api</div>
-            <div class="pipeline-consumer-sub">
-              <a class="hover:underline" href="https://lexbuild.dev/api/">lexbuild.dev/api/</a>
+        <div class="pipeline-consumer-stage">
+          <div class="pipeline-stage-label">Data API</div>
+          <div class="pipeline-consumer pipeline-consumer-api">
+            <div class="pipeline-consumer-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.75"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="h-4 w-4">
+                <path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5c0 1.1.9 2 2 2h1"></path>
+                <path d="M16 21h1a2 2 0 0 0 2-2v-5a2 2 0 0 1 2-2 2 2 0 0 1-2-2V5a2 2 0 0 0-2-2h-1"></path>
+              </svg>
+            </div>
+            <div>
+              <div class="pipeline-consumer-pkg">@lexbuild/api</div>
+              <div class="pipeline-consumer-sub">
+                <a class="hover:underline" href="https://lexbuild.dev/api/">lexbuild.dev/api/</a>
+              </div>
             </div>
           </div>
         </div>
@@ -2097,12 +2104,12 @@ Astro.response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-
     color: var(--color-summer-green-300, #b8d1c5);
   }
 
-  .pipeline-consumer-title {
-    font-size: 0.8125rem;
-    font-weight: 600;
-    color: var(--foreground);
-    line-height: 1.2;
-    margin-bottom: 0.3125rem;
+  .pipeline-consumer-stage {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
   }
 
   .pipeline-consumer-pkg {

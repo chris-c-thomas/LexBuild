@@ -68,7 +68,7 @@ NAV_DEST="${NAV_DEST:-/srv/lexbuild/nav}"
 # --- Parse arguments ---
 
 MODE="code" # code | content | content-only | nav-only | sitemaps-only | remote | api | api-db | api-full | search-vps | search-docker
-SEARCH_SOURCE=""  # optional --source filter for --search-docker
+SEARCH_SOURCE=""  # optional --source filter for --search-docker and --search-vps
 MEILI_PROFILE="full"  # full | dev — selects which Docker volume to use
 DATA_DEST="${DATA_DEST:-/srv/lexbuild/data}"
 
@@ -478,10 +478,12 @@ deploy_search_vps() {
     echo ""
   fi
 
-  SCRIPT_CMD="index-search-incremental.ts"
-  SOURCE_ARG=""
   if [ -n "$SEARCH_SOURCE" ]; then
+    SCRIPT_CMD="index-search-incremental.ts"
     SOURCE_ARG="--source $SEARCH_SOURCE"
+  else
+    SCRIPT_CMD="index-search.ts"
+    SOURCE_ARG=""
   fi
 
   ssh "$VPS_HOST" << REMOTE

@@ -1,6 +1,6 @@
 # LexBuild Documentation
 
-LexBuild is an open-source platform that converts U.S. legal XML into structured Markdown optimized for AI ingestion, RAG pipelines, and semantic search. It currently processes three major federal legal corpora — the U.S. Code (54 titles, ~60,000 sections), the electronic Code of Federal Regulations (49 titles, ~227,000 sections), and the Federal Register (~30,000 documents/year) — producing structured Markdown files with YAML frontmatter and JSON sidecar indexes. Additional sources are planned.
+LexBuild is an open-source platform that converts U.S. legal XML into structured Markdown optimized for AI ingestion, RAG pipelines, and semantic search. It currently processes three major federal legal corpora — the U.S. Code (54 titles, ~60,000 sections), the electronic Code of Federal Regulations (50 titles, ~227,000 sections), and the Federal Register (~30,000 documents/year) — producing structured Markdown files with YAML frontmatter and JSON sidecar indexes. Additional sources are planned.
 
 The project is organized as a TypeScript monorepo with five published npm packages, a server-rendered web application, and a REST API.
 

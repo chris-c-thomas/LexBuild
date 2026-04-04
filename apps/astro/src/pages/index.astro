@@ -694,6 +694,7 @@ Astro.response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-
             </svg>
           </div>
           <div>
+            <div class="pipeline-consumer-pkg">@lexbuild/astro</div>
             <div class="pipeline-consumer-title">Web Resource</div>
             <div class="pipeline-consumer-sub">
               <a class="hover:underline" href="https://lexbuild.dev">lexbuild.dev</a>
@@ -744,6 +745,7 @@ Astro.response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-
             </svg>
           </div>
           <div>
+            <div class="pipeline-consumer-pkg">@lexbuild/api</div>
             <div class="pipeline-consumer-title">Data API</div>
             <div class="pipeline-consumer-sub">
               <a class="hover:underline" href="https://lexbuild.dev/api/">lexbuild.dev/api/</a>
@@ -2027,6 +2029,19 @@ Astro.response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-
   :global(.dark) .pipeline-consumer-api .pipeline-consumer-icon {
     background: var(--color-summer-green-900, #354b43);
     color: var(--color-summer-green-300, #b8d1c5);
+  }
+
+  .pipeline-consumer-pkg {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--color-slate-blue-700, #476c85);
+    line-height: 1.2;
+    margin-bottom: 0.125rem;
+  }
+
+  :global(.dark) .pipeline-consumer-pkg {
+    color: var(--color-slate-blue-300, #b4cfda);
   }
 
   .pipeline-consumer-title {

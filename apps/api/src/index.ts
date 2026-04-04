@@ -1,15 +1,29 @@
+import { existsSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { serve } from "@hono/node-server";
 import { createApp } from "./app.js";
 import { closeDatabase } from "./db/client.js";
 import { closeKeysDatabase } from "./db/keys.js";
 
+/** Walk up from the current file to find the monorepo root (contains pnpm-workspace.yaml). */
+function findMonorepoRoot(): string {
+  let dir = dirname(fileURLToPath(import.meta.url));
+  while (dir !== dirname(dir)) {
+    if (existsSync(join(dir, "pnpm-workspace.yaml"))) return dir;
+    dir = dirname(dir);
+  }
+  return process.cwd();
+}
+
+const monorepoRoot = findMonorepoRoot();
 const port = parseInt(process.env.API_PORT ?? "4322", 10);
-const dbPath = process.env.LEXBUILD_DB_PATH ?? "./lexbuild.db";
-const keysDbPath = process.env.LEXBUILD_KEYS_DB_PATH ?? "./lexbuild-keys.db";
+const dbPath = process.env.LEXBUILD_DB_PATH ?? resolve(monorepoRoot, "lexbuild.db");
+const keysDbPath = process.env.LEXBUILD_KEYS_DB_PATH ?? resolve(monorepoRoot, "lexbuild-keys.db");
 const meiliUrl = process.env.MEILI_URL ?? "http://127.0.0.1:7700";
 const meiliKey = process.env.MEILI_SEARCH_KEY ?? process.env.MEILI_MASTER_KEY ?? "";
 if (!meiliKey) {
-  console.warn("WARNING: No MEILI_SEARCH_KEY or MEILI_MASTER_KEY set. Search endpoint will fail.");
+  console.log("No Meilisearch key configured. Search endpoint will return 503.");
 }
 
 const app = createApp({ dbPath, keysDbPath, meiliUrl, meiliKey });

@@ -139,7 +139,7 @@ Keys use the `lxb_` prefix followed by 40 hex characters. The plaintext key is d
 pnpm turbo build
 node packages/cli/dist/index.js convert-usc --titles 1
 node packages/cli/dist/index.js ingest ./output --db ./lexbuild.db
-LEXBUILD_DB_PATH=./lexbuild.db pnpm turbo dev:api --filter=@lexbuild/api
+pnpm turbo dev:api --filter=@lexbuild/api
 ```
 
 Open [http://localhost:4322/api/docs](http://localhost:4322/api/docs) for the interactive API reference.
@@ -158,8 +158,8 @@ The app uses `build:api` (not `build`) to prevent inclusion in the default Turbo
 | Variable | Default | Description |
 |---|---|---|
 | `API_PORT` | `4322` | HTTP server port |
-| `LEXBUILD_DB_PATH` | `./lexbuild.db` | Path to content database |
-| `LEXBUILD_KEYS_DB_PATH` | `./lexbuild-keys.db` | Path to API keys database |
+| `LEXBUILD_DB_PATH` | `<monorepo-root>/lexbuild.db` | Path to content database (auto-detected) |
+| `LEXBUILD_KEYS_DB_PATH` | `<monorepo-root>/lexbuild-keys.db` | Path to API keys database (auto-detected) |
 | `MEILI_URL` | `http://127.0.0.1:7700` | Meilisearch endpoint |
 | `MEILI_MASTER_KEY` | — | Meilisearch master key |
 | `MEILI_SEARCH_KEY` | — | Meilisearch search-only key |

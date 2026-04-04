@@ -55,8 +55,8 @@ src/
 | Variable | Default | Description |
 |---|---|---|
 | `API_PORT` | `4322` | HTTP server port |
-| `LEXBUILD_DB_PATH` | `./lexbuild.db` | Path to SQLite content database |
-| `LEXBUILD_KEYS_DB_PATH` | `./lexbuild-keys.db` | Path to API keys database |
+| `LEXBUILD_DB_PATH` | `<monorepo-root>/lexbuild.db` | Path to SQLite content database (auto-detected) |
+| `LEXBUILD_KEYS_DB_PATH` | `<monorepo-root>/lexbuild-keys.db` | Path to API keys database (auto-detected) |
 | `MEILI_URL` | `http://127.0.0.1:7700` | Meilisearch endpoint for search proxy |
 | `MEILI_MASTER_KEY` | — | Meilisearch master key |
 | `MEILI_SEARCH_KEY` | — | Meilisearch search-only API key |
@@ -156,5 +156,5 @@ All endpoints: API key auth (optional), tiered rate limiting, X-RateLimit header
 - **Keys DB is separate from content DB**: Never put in the same directory as content DB if content is rebuilt/replaced. Keys must persist.
 - **VPS needs `build-essential`**: `better-sqlite3` has no prebuilt binaries for Node 25. `sudo apt-get install -y build-essential` is required once on the VPS.
 - **First PM2 deploy uses `pm2 start`, not `pm2 reload`**: The deploy script's `--api` mode uses `pm2 reload` which fails for new processes. First deploy: `pm2 start apps/astro/ecosystem.config.cjs --only lexbuild-api && pm2 save`.
-- **Running dev locally needs explicit DB path**: `LEXBUILD_DB_PATH=./lexbuild.db pnpm dev:api` from monorepo root (default `./lexbuild.db` resolves relative to `apps/api/`).
+- **DB paths auto-resolve from monorepo root**: The entry point walks up from its own location to find `pnpm-workspace.yaml` and resolves `LEXBUILD_DB_PATH` and `LEXBUILD_KEYS_DB_PATH` defaults relative to that root. No inline env var needed for local dev.
 - **API routes use `/api/` not `/api/v1/`**: Versioned prefix was removed since new sources are additive, not breaking.

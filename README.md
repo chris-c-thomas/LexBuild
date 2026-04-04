@@ -677,8 +677,8 @@ pnpm turbo build
 # Ingest converted content into SQLite
 node packages/cli/dist/index.js ingest ./output --db ./lexbuild.db
 
-# Start the API dev server
-LEXBUILD_DB_PATH=./lexbuild.db pnpm turbo dev:api --filter=@lexbuild/api
+# Start the API dev server (DB path auto-detected from monorepo root)
+pnpm turbo dev:api --filter=@lexbuild/api
 # → http://localhost:4322/api/docs
 ```
 

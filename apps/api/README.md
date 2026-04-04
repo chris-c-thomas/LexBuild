@@ -47,7 +47,7 @@ This walks all `.md` files in `output/`, parses their YAML frontmatter, and popu
 ### 3. Start the Dev Server
 
 ```bash
-LEXBUILD_DB_PATH=./lexbuild.db pnpm turbo dev:api --filter=@lexbuild/api
+pnpm turbo dev:api --filter=@lexbuild/api
 ```
 
 ### 4. Open the API Reference
@@ -59,8 +59,8 @@ Navigate to [http://localhost:4322/api/docs](http://localhost:4322/api/docs) for
 | Variable | Default | Description |
 |---|---|---|
 | `API_PORT` | `4322` | HTTP server port |
-| `LEXBUILD_DB_PATH` | `./lexbuild.db` | Path to SQLite content database |
-| `LEXBUILD_KEYS_DB_PATH` | `./lexbuild-keys.db` | Path to API keys database |
+| `LEXBUILD_DB_PATH` | `<monorepo-root>/lexbuild.db` | Path to SQLite content database (auto-detected) |
+| `LEXBUILD_KEYS_DB_PATH` | `<monorepo-root>/lexbuild-keys.db` | Path to API keys database (auto-detected) |
 | `MEILI_URL` | `http://127.0.0.1:7700` | Meilisearch endpoint for search proxy |
 | `MEILI_MASTER_KEY` | — | Meilisearch master key |
 | `MEILI_SEARCH_KEY` | — | Meilisearch search-only API key |

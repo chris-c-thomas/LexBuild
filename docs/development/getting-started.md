@@ -110,7 +110,7 @@ MEILI_PROFILE=dev docker compose -f docker-compose.meili.yml up -d
 curl -s http://localhost:7711/health
 ```
 
-Enable in `apps/astro/.env.local`:
+Enable in `apps/astro/.env.local` (override the default port 7700 to match Docker on 7711):
 
 ```
 ENABLE_SEARCH=true
@@ -133,8 +133,8 @@ node packages/cli/dist/index.js convert-usc --titles 1 -o ./output
 # Ingest converted content into SQLite
 node packages/cli/dist/index.js ingest ./output --db ./lexbuild.db
 
-# Start the API dev server
-LEXBUILD_DB_PATH=./lexbuild.db pnpm turbo dev:api --filter=@lexbuild/api
+# Start the API dev server (DB path auto-detected from monorepo root)
+pnpm turbo dev:api --filter=@lexbuild/api
 ```
 
 The dev server runs at `http://localhost:4322`. Interactive API documentation is at `http://localhost:4322/api/docs`. The search endpoint requires a running Meilisearch instance (see Local Search above).

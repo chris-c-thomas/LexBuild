@@ -144,7 +144,8 @@ All endpoints: API key auth (optional), tiered rate limiting, X-RateLimit header
 
 - **`better-sqlite3` requires build approval**: Must be listed in root `package.json` under `pnpm.onlyBuiltDependencies`. Without it, `pnpm install` skips native compilation and the module fails at runtime.
 - **`better-sqlite3` is platform-specific**: macOS binaries won't work on Linux. The VPS must run `pnpm install` or `pnpm rebuild better-sqlite3` after deployment.
-- **`@lexbuild/core` must be external in tsup**: The bundler can't resolve workspace deps with `noExternal: [/(.*)/]`. Both `better-sqlite3` and `@lexbuild/core` are listed in `external`.
+- **tsup `noExternal` regex overrides `external` array**: `noExternal: [/(.*)/]` with `external: ["better-sqlite3"]` does NOT work. Use a negative lookahead: `noExternal: [/^(?!better-sqlite3|bindings|file-uri-to-path|@lexbuild\/)/]`.
+- **ESM bundle needs CJS shims for native modules**: The bundled ESM output needs `createRequire`, `__filename`, and `__dirname` provided via tsup `banner` for `better-sqlite3` and its `bindings` dependency to resolve native `.node` files.
 - **`@scalar/hono-api-reference` API changed**: Use `url` (not `spec: { url }`) and `title` (not `pageTitle`) in the config object. The `spec` property is deprecated.
 - **Hono `createMiddleware` + `noImplicitReturns`**: If the middleware catch block returns a Response, the try block must also have an explicit `return`. Use a named function returning `MiddlewareHandler` instead of arrow + `createMiddleware` to avoid this.
 - **CFR source mapping**: API URL uses `/cfr/` but database stores `source = "ecfr"`. `URL_TO_DB_SOURCE` in `lib/source-registry.ts` handles this translation. Always use it for DB queries.
@@ -153,3 +154,7 @@ All endpoints: API key auth (optional), tiered rate limiting, X-RateLimit header
 - **OpenAPIHono 404 return type unions**: `c.json(data, 404)` in a handler that also returns `c.json(data, 200)` creates `_status: 200 | 404` which fails type checking. Fix: throw `HTTPException(404)` instead (caught by error handler middleware), or pass explicit `200` status to `c.json()` on the success path.
 - **Zod `.default()` doesn't narrow destructured type**: `sort: z.string().optional().default("identifier")` still types as `string | undefined` when destructured from `c.req.valid("query")`. Use `sort = "identifier"` in destructuring AND `sort ?? "identifier"` when passing to typed functions.
 - **Keys DB is separate from content DB**: Never put in the same directory as content DB if content is rebuilt/replaced. Keys must persist.
+- **VPS needs `build-essential`**: `better-sqlite3` has no prebuilt binaries for Node 25. `sudo apt-get install -y build-essential` is required once on the VPS.
+- **First PM2 deploy uses `pm2 start`, not `pm2 reload`**: The deploy script's `--api` mode uses `pm2 reload` which fails for new processes. First deploy: `pm2 start apps/astro/ecosystem.config.cjs --only lexbuild-api && pm2 save`.
+- **Running dev locally needs explicit DB path**: `LEXBUILD_DB_PATH=./lexbuild.db pnpm dev:api` from monorepo root (default `./lexbuild.db` resolves relative to `apps/api/`).
+- **API routes use `/api/` not `/api/v1/`**: Versioned prefix was removed since new sources are additive, not breaking.

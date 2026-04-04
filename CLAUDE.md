@@ -134,6 +134,7 @@ The Data API (`apps/api/`) serves legal content programmatically at `https://lex
 - **Two SQLite databases**: `lexbuild.db` (content, read-only, rebuilt by `lexbuild ingest`) and `lexbuild-keys.db` (API keys, read-write, persists across re-ingestion)
 - **`better-sqlite3` native bindings are platform-specific** — macOS binaries don't work on Linux. Run `pnpm install` on the VPS after code deployment.
 - **API port 4322 is not exposed in the Lightsail firewall** — traffic reaches the API through Caddy (ports 80/443). Same pattern as Meilisearch on 7700.
+- **VPS needs `build-essential` for `better-sqlite3`** — `sudo apt-get install -y build-essential`. Required once for native addon compilation.
 
 ## Code Conventions
 

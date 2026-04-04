@@ -9,6 +9,8 @@
 #   ./scripts/deploy.sh --api          # Deploy API code only (git pull, build:api, pm2 reload)
 #   ./scripts/deploy.sh --api-db       # Sync lexbuild.db to VPS + reload API
 #   ./scripts/deploy.sh --api-full     # API code + database sync + reload
+#   ./scripts/deploy.sh --search-vps                   # Incremental reindex directly on VPS
+#   ./scripts/deploy.sh --search-vps --source fr       # Reindex one source on VPS
 #   ./scripts/deploy.sh --search-docker                # Full reindex in Docker, transfer to VPS
 #   ./scripts/deploy.sh --search-docker --source fr    # Incremental: add/update one source only
 #   ./scripts/deploy.sh --search-docker-seed           # Seed Docker volume from VPS data
@@ -65,8 +67,8 @@ NAV_DEST="${NAV_DEST:-/srv/lexbuild/nav}"
 
 # --- Parse arguments ---
 
-MODE="code" # code | content | content-only | nav-only | sitemaps-only | remote | api | api-db | api-full | search-docker
-SEARCH_SOURCE=""  # optional --source filter for --search-docker
+MODE="code" # code | content | content-only | nav-only | sitemaps-only | remote | api | api-db | api-full | search-vps | search-docker
+SEARCH_SOURCE=""  # optional --source filter for --search-docker and --search-vps
 MEILI_PROFILE="full"  # full | dev — selects which Docker volume to use
 DATA_DEST="${DATA_DEST:-/srv/lexbuild/data}"
 
@@ -106,6 +108,16 @@ case "${1:-}" in
       fi
     fi
     ;;
+  --search-vps)
+    MODE="search-vps"
+    if [ "${2:-}" = "--source" ] && [ -n "${3:-}" ]; then
+      SEARCH_SOURCE="$3"
+      if [[ ! "$SEARCH_SOURCE" =~ ^(usc|ecfr|fr)$ ]]; then
+        echo "Error: --source must be usc, ecfr, or fr (got: $SEARCH_SOURCE)"
+        exit 1
+      fi
+    fi
+    ;;
   --search-docker-seed)
     MODE="search-docker-seed"
     if [ "${2:-}" = "--profile" ] && [ -n "${3:-}" ]; then
@@ -124,7 +136,7 @@ case "${1:-}" in
     ;; # default: code only
   *)
     echo "Unknown option: $1"
-    echo "Usage: ./scripts/deploy.sh [--content | --content-only | --nav-only | --sitemaps-only | --remote | --api | --api-db | --api-full | --search-docker [--source <name>] | --search-docker-seed | --help]"
+    echo "Usage: ./scripts/deploy.sh [--content | --content-only | --nav-only | --sitemaps-only | --remote | --api | --api-db | --api-full | --search-vps [--source <name>] | --search-docker [--source <name>] | --search-docker-seed | --help]"
     exit 1
     ;;
 esac
@@ -451,6 +463,41 @@ deploy_api_db() {
     pm2 start lexbuild-api --update-env
 
     echo "==> Database swap complete"
+REMOTE
+}
+
+# --- Search VPS: incremental reindex directly on VPS (used by: search-vps) ---
+
+deploy_search_vps() {
+  if [ -n "$SEARCH_SOURCE" ]; then
+    echo "==> Incremental search reindex on VPS: source=$SEARCH_SOURCE"
+  else
+    echo "==> Full search reindex on VPS (all sources)"
+    echo "    WARNING: Full reindex on VPS may use significant memory."
+    echo "    For large corpus rebuilds, prefer --search-docker instead."
+    echo ""
+  fi
+
+  if [ -n "$SEARCH_SOURCE" ]; then
+    SCRIPT_CMD="index-search-incremental.ts"
+    SOURCE_ARG="--source $SEARCH_SOURCE"
+  else
+    SCRIPT_CMD="index-search.ts"
+    SOURCE_ARG=""
+  fi
+
+  ssh "$VPS_HOST" << REMOTE
+    set -euo pipefail
+    cd ~/lexbuild/apps/astro
+
+    source ~/.lexbuild-secrets
+
+    echo "--- Running search indexer on VPS"
+    MEILI_URL=http://127.0.0.1:7700 \
+    MEILI_MASTER_KEY=\$MEILI_MASTER_KEY \
+      npx tsx scripts/${SCRIPT_CMD} /srv/lexbuild/content ${SOURCE_ARG}
+
+    echo "==> Search reindex complete"
 REMOTE
 }
 
@@ -834,6 +881,9 @@ case "$MODE" in
   api-full)
     deploy_api
     deploy_api_db
+    ;;
+  search-vps)
+    deploy_search_vps
     ;;
   search-docker)
     deploy_search_docker

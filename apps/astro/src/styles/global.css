@@ -341,3 +341,84 @@
     linear-gradient(rgba(82, 133, 163, 0.12) 1px, transparent 1px),
     linear-gradient(90deg, rgba(82, 133, 163, 0.12) 1px, transparent 1px);
 }
+
+/* ── Docs prose overrides ── */
+
+.docs-prose {
+  --tw-prose-headings: var(--color-slate-blue-900);
+}
+
+.dark .docs-prose {
+  --tw-prose-headings: var(--color-slate-blue-200);
+}
+
+.docs-prose :is(h1, h2, h3, h4) {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+.docs-prose :is(h2, h3, h4) {
+  scroll-margin-top: 5rem;
+}
+
+.docs-prose :is(h1, h2, h3, h4) a {
+  text-decoration: none;
+  color: inherit;
+  font-weight: inherit;
+}
+
+.docs-prose :not(pre) > code {
+  background-color: var(--surface);
+  border: 1px solid var(--border-base);
+  border-radius: calc(var(--radius) * 0.4);
+  padding: 0.15em 0.35em;
+  font-size: 0.875em;
+}
+
+.docs-prose pre {
+  border-radius: var(--radius);
+  border: 1px solid var(--border-base);
+}
+
+/* ── Callout/admonition styles ── */
+
+.docs-prose blockquote[data-callout] {
+  border-left-width: 3px;
+  padding: 0.75rem 1rem;
+  border-radius: calc(var(--radius) - 2px);
+}
+
+.docs-prose blockquote[data-callout] p:first-child {
+  font-weight: 500;
+}
+
+.docs-prose blockquote[data-callout="note"] {
+  border-left-color: var(--color-slate-blue-500);
+  background-color: var(--color-slate-blue-50);
+}
+
+.dark .docs-prose blockquote[data-callout="note"] {
+  background-color: color-mix(in oklch, var(--color-slate-blue-950) 50%, transparent);
+}
+
+.docs-prose blockquote[data-callout="warning"],
+.docs-prose blockquote[data-callout="caution"] {
+  border-left-color: var(--color-putty-500);
+  background-color: var(--color-putty-50);
+}
+
+.dark .docs-prose blockquote[data-callout="warning"],
+.dark .docs-prose blockquote[data-callout="caution"] {
+  background-color: color-mix(in oklch, var(--color-putty-950) 50%, transparent);
+}
+
+.docs-prose blockquote[data-callout="tip"],
+.docs-prose blockquote[data-callout="important"] {
+  border-left-color: var(--color-summer-green-500);
+  background-color: var(--color-summer-green-50);
+}
+
+.dark .docs-prose blockquote[data-callout="tip"],
+.dark .docs-prose blockquote[data-callout="important"] {
+  background-color: color-mix(in oklch, var(--color-summer-green-950) 50%, transparent);
+}

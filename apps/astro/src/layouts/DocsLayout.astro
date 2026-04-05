@@ -1,0 +1,125 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import DocsSidebar from "@/components/docs/DocsSidebar";
+import TableOfContents from "@/components/docs/TableOfContents";
+import DocsPagination from "@/components/docs/DocsPagination.astro";
+import BreadcrumbNav from "@/components/content/BreadcrumbNav.astro";
+import type { PageSEO, Breadcrumb } from "@/lib/types";
+import { getSectionForSlug } from "@/lib/docs-nav";
+
+interface Props {
+  seo: PageSEO;
+  headings: Array<{ depth: number; slug: string; text: string }>;
+  slug: string;
+}
+
+const { seo, headings, slug } = Astro.props;
+const currentPath = Astro.url.pathname;
+const section = getSectionForSlug(slug);
+
+const breadcrumbs: Breadcrumb[] = [
+  { label: "Home", href: "/" },
+  { label: "Docs", href: "/docs/" },
+  ...(section ? [{ label: section, href: currentPath }] : []),
+];
+---
+
+<BaseLayout seo={seo}>
+  <div class="flex">
+    <!-- Left sidebar -->
+    <aside class="bg-sidebar hidden w-72 shrink-0 lg:sticky lg:top-14 lg:block lg:h-[calc(100vh-3.5rem)]">
+      <div class="border-sidebar-border h-full overflow-y-auto border-r">
+        <DocsSidebar client:load currentPath={currentPath} />
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <div class="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8">
+      <BreadcrumbNav breadcrumbs={breadcrumbs} />
+
+      <!-- Mobile TOC disclosure -->
+      <details class="border-border mb-6 rounded-sm border p-3 xl:hidden">
+        <summary class="text-muted-foreground cursor-pointer text-sm font-medium">On this page</summary>
+        <ul class="mt-2 space-y-1 text-sm">
+          {
+            headings
+              .filter((h) => h.depth === 2 || h.depth === 3)
+              .map((h) => (
+                <li>
+                  <a
+                    href={`#${h.slug}`}
+                    class={`text-muted-foreground hover:text-foreground block py-0.5 transition-colors ${h.depth === 3 ? "pl-4" : "pl-2"}`}>
+                    {h.text}
+                  </a>
+                </li>
+              ))
+          }
+        </ul>
+      </details>
+
+      <article class="docs-prose prose prose-zinc dark:prose-invert max-w-3xl">
+        <slot />
+      </article>
+
+      <DocsPagination slug={slug} />
+    </div>
+
+    <!-- Right TOC -->
+    <aside
+      class="border-border hidden w-52 shrink-0 border-l xl:sticky xl:top-14 xl:block xl:h-[calc(100vh-3.5rem)] xl:overflow-y-auto">
+      <TableOfContents client:load headings={headings} />
+    </aside>
+  </div>
+</BaseLayout>
+
+<script>
+  // Code copy button for code blocks
+  document.querySelectorAll(".docs-prose pre").forEach(function (pre) {
+    if (!pre.parentNode) return;
+    var wrapper = document.createElement("div");
+    wrapper.className = "relative group";
+    pre.parentNode.insertBefore(wrapper, pre);
+    wrapper.appendChild(pre);
+
+    var btn = document.createElement("button");
+    btn.className =
+      "absolute top-2 right-2 rounded-md bg-background/80 border border-border px-2 py-1 text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:text-foreground cursor-pointer";
+    btn.textContent = "Copy";
+    btn.setAttribute("aria-label", "Copy code to clipboard");
+    btn.addEventListener("click", function () {
+      var code = pre.querySelector("code");
+      var text = code ? code.textContent : pre.textContent;
+      if (!navigator.clipboard) return;
+      navigator.clipboard
+        .writeText(text || "")
+        .then(function () {
+          btn.textContent = "Copied!";
+          setTimeout(function () {
+            btn.textContent = "Copy";
+          }, 2000);
+        })
+        .catch(function () {
+          btn.textContent = "Failed";
+          setTimeout(function () {
+            btn.textContent = "Copy";
+          }, 2000);
+        });
+    });
+    wrapper.appendChild(btn);
+  });
+
+  // Callout/admonition detection — strips [!TYPE] marker from blockquotes
+  document.querySelectorAll(".docs-prose blockquote").forEach(function (bq) {
+    var firstP = bq.querySelector("p:first-child");
+    if (!firstP || !firstP.textContent) return;
+    var match = firstP.textContent.match(/^\[!(NOTE|WARNING|TIP|CAUTION|IMPORTANT)\]\s*/);
+    if (!match) return;
+    bq.setAttribute("data-callout", match[1].toLowerCase());
+    // Remove the marker text from the first text node
+    var walker = document.createTreeWalker(firstP, NodeFilter.SHOW_TEXT);
+    var node = walker.nextNode();
+    if (node) {
+      node.textContent = node.textContent.replace(/^\[!(NOTE|WARNING|TIP|CAUTION|IMPORTANT)\]\s*/, "");
+    }
+  });
+</script>

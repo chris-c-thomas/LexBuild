@@ -1,0 +1,37 @@
+---
+import { getPrevNext } from "@/lib/docs-nav";
+
+interface Props {
+  slug: string;
+}
+
+const { slug } = Astro.props;
+const { prev, next } = getPrevNext(slug);
+---
+
+{
+  (prev || next) && (
+    <nav class="mt-12 flex gap-4" aria-label="Pagination">
+      {prev ? (
+        <a
+          href={`/docs/${prev.slug}`}
+          class="border-border hover:border-slate-blue-400 dark:bg-card dark:hover:border-slate-blue-600 flex-1 rounded-sm border bg-white p-4 transition-colors">
+          <span class="text-muted-foreground text-xs">Previous</span>
+          <span class="text-foreground mt-1 block text-sm font-medium">&larr; {prev.title}</span>
+        </a>
+      ) : (
+        <div class="flex-1" />
+      )}
+      {next ? (
+        <a
+          href={`/docs/${next.slug}`}
+          class="border-border hover:border-slate-blue-400 dark:bg-card dark:hover:border-slate-blue-600 flex-1 rounded-sm border bg-white p-4 text-right transition-colors">
+          <span class="text-muted-foreground text-xs">Next</span>
+          <span class="text-foreground mt-1 block text-sm font-medium">{next.title} &rarr;</span>
+        </a>
+      ) : (
+        <div class="flex-1" />
+      )}
+    </nav>
+  )
+}

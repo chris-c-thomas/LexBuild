@@ -1,0 +1,43 @@
+---
+import { getEntry, render } from "astro:content";
+import DocsLayout from "@/layouts/DocsLayout.astro";
+import type { PageSEO } from "@/lib/types";
+
+const { slug } = Astro.params;
+
+if (!slug) {
+  return Astro.redirect("/docs/getting-started/introduction", 302);
+}
+
+const entry = await getEntry("docs", slug);
+
+if (!entry) {
+  return new Response(null, { status: 404, statusText: "Not found" });
+}
+
+const { Content, headings } = await render(entry);
+
+Astro.response.headers.set("Cache-Control", "public, s-maxage=86400, stale-while-revalidate=3600");
+
+const siteUrl = import.meta.env.SITE_URL ?? "https://lexbuild.dev";
+
+const seo: PageSEO = {
+  title: entry.data.title,
+  description: entry.data.description,
+  canonicalUrl: `${siteUrl}/docs/${slug}`,
+  ogType: "article",
+  ogImage: `${siteUrl}/og-image.png`,
+  jsonLd: [
+    {
+      "@type": "WebPage",
+      name: entry.data.title,
+      description: entry.data.description,
+      url: `${siteUrl}/docs/${slug}`,
+    },
+  ],
+};
+---
+
+<DocsLayout seo={seo} headings={headings} slug={slug}>
+  <Content />
+</DocsLayout>

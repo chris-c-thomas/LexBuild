@@ -104,14 +104,11 @@ export function MobileNav({ source, currentPath }: MobileNavProps) {
               className="text-sidebar-foreground/60 hover:text-sidebar-foreground text-xs font-medium transition-colors">
               GitHub
             </a>
-            <span
-              className="text-sidebar-foreground/30 inline-flex cursor-default items-center gap-1 text-xs font-medium select-none"
-              aria-disabled="true">
+            <a
+              href="/api/docs"
+              className="text-sidebar-foreground/60 hover:text-sidebar-foreground text-xs font-medium transition-colors">
               API
-              <span className="bg-sidebar-accent text-sidebar-foreground/50 rounded-full px-1.5 py-0.5 text-[10px] leading-none font-medium">
-                Soon
-              </span>
-            </span>
+            </a>
           </nav>
         </div>
       </SheetContent>

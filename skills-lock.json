@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "skills": {
+    "building-components": {
+      "source": "/Users/chris/Dev/LexBuild/.agents/skills",
+      "sourceType": "local",
+      "computedHash": "ca96444b70257eb3f4f4c76dfdd4a32312c835fe3c8755d2e3d75ac78d384bfd"
+    },
+    "shadcn": {
+      "source": "/Users/chris/Dev/LexBuild/.agents/skills",
+      "sourceType": "local",
+      "computedHash": "507f011a70e8b3ae242bdc0bb5b39fd91a1d4049a0f3c281991ccf84973d591c"
+    },
+    "turborepo": {
+      "source": "/Users/chris/Dev/LexBuild/.agents/skills",
+      "sourceType": "local",
+      "computedHash": "5aab0dfbc0d3fc4f31e6b9088fc34e2e2b176b30e6b8dc606a4235ba487ca89c"
+    },
+    "vercel-composition-patterns": {
+      "source": "/Users/chris/Dev/LexBuild/.agents/skills",
+      "sourceType": "local",
+      "computedHash": "f98931159fa9c7fed043bcd18a891a46dcf89ababa38df13a4c5b7b30dc0ce07"
+    },
+    "vercel-react-best-practices": {
+      "source": "/Users/chris/Dev/LexBuild/.agents/skills",
+      "sourceType": "local",
+      "computedHash": "1be892a3ea68b74654326ef836a58dd528d99ae0ab8d879764e2519c39068e67"
+    },
+    "web-design-guidelines": {
+      "source": "/Users/chris/Dev/LexBuild/.agents/skills",
+      "sourceType": "local",
+      "computedHash": "a6a44d5498f7e8f68289902f3dedfc6f38ae0cee1e96527c80724cf27f727c2a"
+    }
+  }
+}

@@ -15,9 +15,9 @@ const { prev, next } = getPrevNext(slug);
       {prev ? (
         <a
           href={`/docs/${prev.slug}`}
-          class="flex-1 rounded-sm border border-border bg-white p-4 transition-colors hover:border-slate-blue-400 dark:bg-card dark:hover:border-slate-blue-600">
-          <span class="text-xs text-muted-foreground">Previous</span>
-          <span class="mt-1 block text-sm font-medium text-foreground">&larr; {prev.title}</span>
+          class="border-border hover:border-slate-blue-400 dark:bg-card dark:hover:border-slate-blue-600 flex-1 rounded-sm border bg-white p-4 transition-colors">
+          <span class="text-muted-foreground text-xs">Previous</span>
+          <span class="text-foreground mt-1 block text-sm font-medium">&larr; {prev.title}</span>
         </a>
       ) : (
         <div class="flex-1" />
@@ -25,9 +25,9 @@ const { prev, next } = getPrevNext(slug);
       {next ? (
         <a
           href={`/docs/${next.slug}`}
-          class="flex-1 rounded-sm border border-border bg-white p-4 text-right transition-colors hover:border-slate-blue-400 dark:bg-card dark:hover:border-slate-blue-600">
-          <span class="text-xs text-muted-foreground">Next</span>
-          <span class="mt-1 block text-sm font-medium text-foreground">{next.title} &rarr;</span>
+          class="border-border hover:border-slate-blue-400 dark:bg-card dark:hover:border-slate-blue-600 flex-1 rounded-sm border bg-white p-4 text-right transition-colors">
+          <span class="text-muted-foreground text-xs">Next</span>
+          <span class="text-foreground mt-1 block text-sm font-medium">{next.title} &rarr;</span>
         </a>
       ) : (
         <div class="flex-1" />

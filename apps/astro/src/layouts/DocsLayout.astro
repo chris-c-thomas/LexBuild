@@ -27,10 +27,8 @@ const breadcrumbs: Breadcrumb[] = [
 <BaseLayout seo={seo}>
   <div class="flex">
     <!-- Left sidebar -->
-    <aside
-      class="bg-sidebar hidden w-72 shrink-0 lg:sticky lg:top-14 lg:block lg:h-[calc(100vh-3.5rem)]">
-      <div
-        class="border-sidebar-border h-full overflow-y-auto border-r">
+    <aside class="bg-sidebar hidden w-72 shrink-0 lg:sticky lg:top-14 lg:block lg:h-[calc(100vh-3.5rem)]">
+      <div class="border-sidebar-border h-full overflow-y-auto border-r">
         <DocsSidebar client:load currentPath={currentPath} />
       </div>
     </aside>
@@ -40,18 +38,22 @@ const breadcrumbs: Breadcrumb[] = [
       <BreadcrumbNav breadcrumbs={breadcrumbs} />
 
       <!-- Mobile TOC disclosure -->
-      <details class="mb-6 rounded-sm border border-border p-3 xl:hidden">
-        <summary class="cursor-pointer text-sm font-medium text-muted-foreground">On this page</summary>
+      <details class="border-border mb-6 rounded-sm border p-3 xl:hidden">
+        <summary class="text-muted-foreground cursor-pointer text-sm font-medium">On this page</summary>
         <ul class="mt-2 space-y-1 text-sm">
-          {headings.filter((h) => h.depth === 2 || h.depth === 3).map((h) => (
-            <li>
-              <a
-                href={`#${h.slug}`}
-                class={`block py-0.5 text-muted-foreground hover:text-foreground transition-colors ${h.depth === 3 ? "pl-4" : "pl-2"}`}>
-                {h.text}
-              </a>
-            </li>
-          ))}
+          {
+            headings
+              .filter((h) => h.depth === 2 || h.depth === 3)
+              .map((h) => (
+                <li>
+                  <a
+                    href={`#${h.slug}`}
+                    class={`text-muted-foreground hover:text-foreground block py-0.5 transition-colors ${h.depth === 3 ? "pl-4" : "pl-2"}`}>
+                    {h.text}
+                  </a>
+                </li>
+              ))
+          }
         </ul>
       </details>
 
@@ -64,7 +66,7 @@ const breadcrumbs: Breadcrumb[] = [
 
     <!-- Right TOC -->
     <aside
-      class="hidden w-52 shrink-0 border-l border-border xl:sticky xl:top-14 xl:block xl:h-[calc(100vh-3.5rem)] xl:overflow-y-auto">
+      class="border-border hidden w-52 shrink-0 border-l xl:sticky xl:top-14 xl:block xl:h-[calc(100vh-3.5rem)] xl:overflow-y-auto">
       <TableOfContents client:load headings={headings} />
     </aside>
   </div>
@@ -88,17 +90,20 @@ const breadcrumbs: Breadcrumb[] = [
       var code = pre.querySelector("code");
       var text = code ? code.textContent : pre.textContent;
       if (!navigator.clipboard) return;
-      navigator.clipboard.writeText(text || "").then(function () {
-        btn.textContent = "Copied!";
-        setTimeout(function () {
-          btn.textContent = "Copy";
-        }, 2000);
-      }).catch(function () {
-        btn.textContent = "Failed";
-        setTimeout(function () {
-          btn.textContent = "Copy";
-        }, 2000);
-      });
+      navigator.clipboard
+        .writeText(text || "")
+        .then(function () {
+          btn.textContent = "Copied!";
+          setTimeout(function () {
+            btn.textContent = "Copy";
+          }, 2000);
+        })
+        .catch(function () {
+          btn.textContent = "Failed";
+          setTimeout(function () {
+            btn.textContent = "Copy";
+          }, 2000);
+        });
     });
     wrapper.appendChild(btn);
   });

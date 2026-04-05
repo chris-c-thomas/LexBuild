@@ -11,10 +11,7 @@ interface Props {
 }
 
 export default function TableOfContents({ headings }: Props) {
-  const filtered = useMemo(
-    () => headings.filter((h) => h.depth === 2 || h.depth === 3),
-    [headings],
-  );
+  const filtered = useMemo(() => headings.filter((h) => h.depth === 2 || h.depth === 3), [headings]);
   const [activeSlug, setActiveSlug] = useState<string>("");
   const observerRef = useRef<IntersectionObserver | null>(null);
 
@@ -61,7 +58,7 @@ export default function TableOfContents({ headings }: Props) {
 
   return (
     <nav className="py-6 pl-4" aria-label="On this page">
-      <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-blue-600 dark:text-slate-blue-400">
+      <h3 className="text-slate-blue-600 dark:text-slate-blue-400 mb-3 text-xs font-semibold tracking-wider uppercase">
         On this page
       </h3>
       <ul className="space-y-1 text-sm">
@@ -72,12 +69,10 @@ export default function TableOfContents({ headings }: Props) {
               <a
                 href={`#${heading.slug}`}
                 onClick={(e) => handleClick(e, heading.slug)}
-                className={`block border-l-2 py-1 transition-colors ${
-                  heading.depth === 3 ? "pl-5" : "pl-3"
-                } ${
+                className={`block border-l-2 py-1 transition-colors ${heading.depth === 3 ? "pl-5" : "pl-3"} ${
                   isActive
                     ? "border-slate-blue-500 text-foreground font-medium"
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+                    : "text-muted-foreground hover:text-foreground hover:border-border border-transparent"
                 }`}>
                 {heading.text}
               </a>

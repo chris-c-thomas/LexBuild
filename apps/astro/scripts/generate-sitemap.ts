@@ -299,8 +299,7 @@ async function main(): Promise<void> {
     allFilenames.push(...(await writeChunkedSitemaps(ecfrUrls, "ecfr", outputDir, today, "weekly")));
   if (!sourceFilter || sourceFilter === "fr")
     allFilenames.push(...(await writeChunkedSitemaps(frUrls, "fr", outputDir, today, "daily")));
-  if (!sourceFilter)
-    allFilenames.push(...(await writeChunkedSitemaps(docsUrls, "docs", outputDir, today, "weekly")));
+  if (!sourceFilter) allFilenames.push(...(await writeChunkedSitemaps(docsUrls, "docs", outputDir, today, "weekly")));
 
   // Write sitemap index (only when generating all sources — partial index would break it)
   if (!sourceFilter) {

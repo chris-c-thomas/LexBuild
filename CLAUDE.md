@@ -30,7 +30,6 @@ lexbuild/
 ├── fixtures/
 │   ├── fragments/   # Small synthetic XML snippets for unit tests
 │   └── expected/    # Expected output snapshots for integration tests
-├── docs/            # Public-facing documentation (architecture, packages, development, reference)
 ├── turbo.json       # Turborepo pipeline config
 └── CLAUDE.md        # This file
 ```

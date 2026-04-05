@@ -17,10 +17,7 @@ if (!entry) {
 
 const { Content, headings } = await render(entry);
 
-Astro.response.headers.set(
-  "Cache-Control",
-  "public, s-maxage=86400, stale-while-revalidate=3600",
-);
+Astro.response.headers.set("Cache-Control", "public, s-maxage=86400, stale-while-revalidate=3600");
 
 const siteUrl = import.meta.env.SITE_URL ?? "https://lexbuild.dev";
 

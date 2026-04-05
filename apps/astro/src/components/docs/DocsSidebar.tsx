@@ -49,7 +49,7 @@ function SidebarSection({
     <div>
       <button
         onClick={onToggle}
-        className="flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-sm font-semibold transition-colors text-sidebar-foreground hover:bg-sidebar-accent/50">
+        className="text-sidebar-foreground hover:bg-sidebar-accent/50 flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-sm font-semibold transition-colors">
         <ChevronRight
           className={`text-sidebar-foreground/40 size-3.5 shrink-0 transition-transform duration-150 ${expanded ? "rotate-90" : ""}`}
         />
@@ -71,7 +71,7 @@ function SidebarSection({
                     }`}>
                     {item.title}
                     {item.badge ? (
-                      <span className="ml-1.5 inline-flex items-center rounded-full bg-slate-blue-100 dark:bg-slate-blue-900 px-1.5 py-0.5 text-[0.6rem] font-medium text-slate-blue-700 dark:text-slate-blue-300">
+                      <span className="bg-slate-blue-100 dark:bg-slate-blue-900 text-slate-blue-700 dark:text-slate-blue-300 ml-1.5 inline-flex items-center rounded-full px-1.5 py-0.5 text-[0.6rem] font-medium">
                         {item.badge}
                       </span>
                     ) : null}
@@ -130,7 +130,7 @@ export default function DocsSidebar({ currentPath }: Props) {
   const currentSlug = currentPath.replace(/^\/docs\//, "").replace(/\/$/, "");
 
   return (
-    <nav className="p-3 space-y-1" aria-label="Documentation">
+    <nav className="space-y-1 p-3" aria-label="Documentation">
       {DOCS_NAV.map((section) => (
         <SidebarSection
           key={section.title}

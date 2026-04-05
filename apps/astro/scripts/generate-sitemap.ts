@@ -182,10 +182,14 @@ async function collectFrUrls(contentDir: string): Promise<string[]> {
 // --- Docs URLs (from static nav tree, no filesystem scanning) ---
 
 async function collectDocsUrls(): Promise<string[]> {
-  // Dynamic import to load the ESM nav module from TypeScript source
-  const { flattenNav } = await import("../src/lib/docs-nav.js");
-  const items = flattenNav();
-  return ["/docs/", ...items.map((item: { slug: string }) => `/docs/${item.slug}`)];
+  try {
+    const { flattenNav } = await import("../src/lib/docs-nav.js");
+    const items = flattenNav();
+    return ["/docs/", ...items.map((item: { slug: string }) => `/docs/${item.slug}`)];
+  } catch (err) {
+    console.warn("Warning: Could not load docs nav for sitemap. Skipping docs URLs.", err);
+    return [];
+  }
 }
 
 // --- Sitemap XML generation ---

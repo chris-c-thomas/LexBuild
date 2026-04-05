@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 interface Heading {
   depth: number;
@@ -11,7 +11,10 @@ interface Props {
 }
 
 export default function TableOfContents({ headings }: Props) {
-  const filtered = headings.filter((h) => h.depth === 2 || h.depth === 3);
+  const filtered = useMemo(
+    () => headings.filter((h) => h.depth === 2 || h.depth === 3),
+    [headings],
+  );
   const [activeSlug, setActiveSlug] = useState<string>("");
   const observerRef = useRef<IntersectionObserver | null>(null);
 

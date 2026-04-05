@@ -74,6 +74,7 @@ const breadcrumbs: Breadcrumb[] = [
 <script>
   // Code copy button for code blocks
   document.querySelectorAll(".docs-prose pre").forEach(function (pre) {
+    if (!pre.parentNode) return;
     var wrapper = document.createElement("div");
     wrapper.className = "relative group";
     pre.parentNode.insertBefore(wrapper, pre);
@@ -89,6 +90,11 @@ const breadcrumbs: Breadcrumb[] = [
       var text = code ? code.textContent : pre.textContent;
       navigator.clipboard.writeText(text || "").then(function () {
         btn.textContent = "Copied!";
+        setTimeout(function () {
+          btn.textContent = "Copy";
+        }, 2000);
+      }).catch(function () {
+        btn.textContent = "Failed";
         setTimeout(function () {
           btn.textContent = "Copy";
         }, 2000);

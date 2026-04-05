@@ -25,13 +25,12 @@ const breadcrumbs: Breadcrumb[] = [
 ---
 
 <BaseLayout seo={seo}>
-  <div class="mx-auto flex max-w-[90rem]">
+  <div class="flex">
     <!-- Left sidebar -->
     <aside
       class="bg-sidebar hidden w-72 shrink-0 lg:sticky lg:top-14 lg:block lg:h-[calc(100vh-3.5rem)]">
       <div
-        class="border-sidebar-border h-full overflow-y-auto border-r"
-        style="scrollbar-gutter: stable;">
+        class="border-sidebar-border h-full overflow-y-auto border-r">
         <DocsSidebar client:load currentPath={currentPath} />
       </div>
     </aside>

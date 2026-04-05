@@ -231,6 +231,24 @@ Initialized with radix-nova preset, zinc theme. Components in `src/components/ui
 - **`fetch()` must check `res.ok`**: `fetch` does not reject on HTTP errors. Always check `res.ok` before calling `res.json()`, otherwise a 404 produces a cryptic JSON parse error.
 - **Homepage sample output has three copies**: The `sampleYaml` and `sampleMarkdown` template literals drive the Shiki-highlighted tabs, but the "Preview" tabs use hardcoded HTML. When changing the sample section, update all three: frontmatter data, markdown data, AND the rendered HTML preview grids.
 - **Homepage residual CSS is minimal (~50 lines)**: Only `color-mix()` backgrounds, JS-toggled `.active` tab states, `:global()` Shiki overrides, `auto-fit minmax` grid, and adjacent sibling combinators remain as scoped CSS. Everything else uses Tailwind utilities on the markup. The `sample-tab` class is kept as a JS hook (queried by the tab `<script>`) and CSS anchor for hover/active rules.
+- **Content Collections markdown rendering is separate from `lib/markdown.ts`**: Uses Astro's built-in pipeline configured in `astro.config.ts` (`markdown.shikiConfig` + `rehypePlugins`). The existing `lib/markdown.ts` unified pipeline is for legal content only. Do not mix them.
+- **`vite.ssr.external: ["shiki"]` coexists with Content Collections Shiki**: The external is for the runtime Shiki singleton (`lib/shiki.ts`). Astro's built-in markdown Shiki (Content Collections) uses a separate code path. Both work simultaneously.
+
+## Documentation Site
+
+The docs site at `/docs/` uses Astro 6 Content Collections — separate from the legal content `fs.readFile()` pipeline.
+
+- **Content Collections use `glob` loader** (Astro 6 pattern), NOT `type: "content"`. Config at `src/content.config.ts`. Schema validates `title`, `description`, `order`, `badge`, `hidden`.
+- **`render()` is a standalone import**: `import { getEntry, render } from "astro:content"` — NOT `entry.render()`. Returns `{ Content, headings }`.
+- **`src/content/docs/` is checked into git** — completely separate from root `content/` (gitignored symlinked legal data). No collision.
+- **DocsLayout wraps BaseLayout with no `source` prop** — gets the bare `<main><slot /></main>` render path. The 3-column layout (sidebar, content, TOC) is rendered inside the slot.
+- **Docs pages construct `PageSEO` directly** — `buildPageSEO()` requires `source`/`granularity`/`frontmatter` and is for legal content only.
+- **Docs sidebar uses `sidebar-*` design tokens** (`bg-sidebar`, `border-sidebar-border`, `text-sidebar-foreground`, `bg-sidebar-accent`) to match the source browsing sidebar. `p-3` wrapper, `rounded-md` items.
+- **MobileNav renders `DocsSidebar`** when `currentPath.startsWith("/docs")`, replacing the source switcher and source sidebar tree.
+- **Navigation is a static tree** in `src/lib/docs-nav.ts` — not filesystem-derived. Exports `flattenNav()`, `getPrevNext()`, `getSectionForSlug()`.
+- **`rehype-autolink-headings` with `behavior: "wrap"`** wraps heading text in `<a>` tags. The `.docs-prose` CSS must override prose link styles on headings (`text-decoration: none; color: inherit; font-weight: inherit`) or the h1 renders as a black underlined link.
+- **Prose heading color uses `--tw-prose-headings` variable** — setting `color` directly on `.docs-prose h1` doesn't work because `prose`'s CSS variable takes precedence. Override the variable instead.
+- **Sitemap includes docs URLs** via `collectDocsUrls()` in `generate-sitemap.ts`, which imports `flattenNav()` from `docs-nav.ts`.
 
 ## SEO
 

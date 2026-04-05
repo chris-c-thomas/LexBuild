@@ -88,6 +88,7 @@ const breadcrumbs: Breadcrumb[] = [
     btn.addEventListener("click", function () {
       var code = pre.querySelector("code");
       var text = code ? code.textContent : pre.textContent;
+      if (!navigator.clipboard) return;
       navigator.clipboard.writeText(text || "").then(function () {
         btn.textContent = "Copied!";
         setTimeout(function () {

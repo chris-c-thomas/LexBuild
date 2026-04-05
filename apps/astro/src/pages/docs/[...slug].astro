@@ -15,10 +15,6 @@ if (!entry) {
   return new Response(null, { status: 404, statusText: "Not found" });
 }
 
-if (entry.data.hidden) {
-  return new Response(null, { status: 404, statusText: "Not found" });
-}
-
 const { Content, headings } = await render(entry);
 
 Astro.response.headers.set(

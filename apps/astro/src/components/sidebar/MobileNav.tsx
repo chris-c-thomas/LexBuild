@@ -91,9 +91,7 @@ export function MobileNav({ source, currentPath }: MobileNavProps) {
               CLI
             </a>
             <a
-              href="https://github.com/chris-c-thomas/LexBuild/tree/main/docs"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="/docs/"
               className="text-sidebar-foreground/60 hover:text-sidebar-foreground text-xs font-medium transition-colors">
               Docs
             </a>

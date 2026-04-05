@@ -340,8 +340,8 @@ Astro.response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-
           How It Works
         </h2>
         <p class="text-ink-muted text-[15px]">
-          The CLI downloads source data, routes it through source-specific parsers and a shared core engine, and writes
-          structured Markdown.
+          The CLI toolchain converts source data to structured Markdown. The web resource and data API make it
+          browsable, searchable, and programmatically accessible.
         </p>
       </div>
 
@@ -403,7 +403,7 @@ Astro.response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-
           <div class="pipeline-flow">
             <!-- Source XML column -->
             <div class="pipeline-stage">
-              <div class="pipeline-stage-label">Source XML</div>
+              <div class="pipeline-stage-label">Source</div>
               <div class="pipeline-source-stack">
                 <div class="pipeline-source pipeline-source-usc">
                   <div class="pipeline-source-icon">
@@ -427,8 +427,8 @@ Astro.response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-
                   </div>
                   <div>
                     <div class="pipeline-source-title">USLM 1.0 XML</div>
-                    <div class="pipeline-source-sub font-semibold">
-                      OLRC - <a class="font-normal hover:underline" href="https://uscode.house.gov">uscode.house.gov</a>
+                    <div class="pipeline-source-meta">
+                      <a class="pipeline-source-url hover:underline" href="https://uscode.house.gov">uscode.house.gov</a>
                     </div>
                   </div>
                 </div>
@@ -453,9 +453,9 @@ Astro.response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-
                     </svg>
                   </div>
                   <div>
-                    <div class="pipeline-source-title pb-1">eCFR GPO/SGML</div>
-                    <div class="pipeline-source-sub font-semibold">
-                      eCFR - <a class="font-normal hover:underline" href="https://www.ecfr.gov">ecfr.gov</a>
+                    <div class="pipeline-source-title">eCFR XML</div>
+                    <div class="pipeline-source-meta">
+                      <a class="pipeline-source-url hover:underline" href="https://www.ecfr.gov">ecfr.gov</a>
                     </div>
                   </div>
                 </div>
@@ -480,11 +480,9 @@ Astro.response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-
                     </svg>
                   </div>
                   <div>
-                    <div class="pipeline-source-title pb-1">FR GPO/SGML</div>
-                    <div class="pipeline-source-sub font-semibold">
-                      FR - <a class="font-normal hover:underline" href="https://www.federalregister.gov">
-                        federalregister.gov
-                      </a>
+                    <div class="pipeline-source-title">FR XML</div>
+                    <div class="pipeline-source-meta">
+                      <a class="pipeline-source-url hover:underline" href="https://www.federalregister.gov">federalregister.gov</a>
                     </div>
                   </div>
                 </div>
@@ -502,8 +500,8 @@ Astro.response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-
                     </svg>
                   </div>
                   <div>
-                    <div class="pipeline-source-title pb-1">Any Legal Schema</div>
-                    <div class="pipeline-source-sub">Annual CFR, state statutes, etc.</div>
+                    <div class="pipeline-source-title">Any Legal Schema</div>
+                    <div class="pipeline-source-sub"></div>
                   </div>
                 </div>
               </div>
@@ -580,20 +578,20 @@ Astro.response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-
               <div class="pipeline-stage-label">Source Parsers</div>
               <div class="pipeline-source-stack">
                 <div class="pipeline-parser pipeline-parser-usc">
-                  <div class="pipeline-parser-name pb-1">@lexbuild/usc</div>
-                  <div class="pipeline-parser-desc">USLM schema → AST builder</div>
+                  <div class="pipeline-parser-name">@lexbuild/usc</div>
+                  <div class="pipeline-parser-desc">USLM XML → AST builder</div>
                 </div>
                 <div class="pipeline-parser pipeline-parser-ecfr">
-                  <div class="pipeline-parser-name pb-1">@lexbuild/ecfr</div>
-                  <div class="pipeline-parser-desc">eCFR GPO/SGML → AST builder</div>
+                  <div class="pipeline-parser-name">@lexbuild/ecfr</div>
+                  <div class="pipeline-parser-desc">eCFR XML → AST builder</div>
                 </div>
                 <div class="pipeline-parser pipeline-parser-fr">
-                  <div class="pipeline-parser-name pb-1">@lexbuild/fr</div>
-                  <div class="pipeline-parser-desc">FR GPO/SGML → AST builder</div>
+                  <div class="pipeline-parser-name">@lexbuild/fr</div>
+                  <div class="pipeline-parser-desc">FR XML → AST builder</div>
                 </div>
                 <div class="pipeline-parser pipeline-parser-future">
-                  <div class="pipeline-parser-name pb-1">@lexbuild/&lt;source&gt;</div>
-                  <div class="pipeline-parser-desc">New schema → AST builder</div>
+                  <div class="pipeline-parser-name">@lexbuild/&lt;source&gt;</div>
+                  <div class="pipeline-parser-desc">Source data → AST builder</div>
                 </div>
               </div>
             </div>
@@ -641,11 +639,171 @@ Astro.response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-
                   </svg>
                 </div>
                 <div>
-                  <div class="pipeline-output-title pb-1">Structured Markdown</div>
+                  <div class="pipeline-output-title">Structured Markdown</div>
                   <div class="pipeline-output-sub">
                     YAML frontmatter + <br />per-section .md files
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ingestion layer — output feeds into document store -->
+      <div class="pipeline-depends pipeline-serves" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="pipeline-depends-arrow">
+          <path d="M12 5v14"></path><path d="m19 12-7 7-7-7"></path>
+        </svg>
+        <span class="pipeline-depends-label">ingested into</span>
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="pipeline-depends-arrow">
+          <path d="M12 5v14"></path><path d="m19 12-7 7-7-7"></path>
+        </svg>
+      </div>
+
+      <!-- SQLite document store -->
+      <div class="pipeline-store-stage">
+        <div class="pipeline-stage-label">Database</div>
+        <div class="pipeline-store">
+          <div class="pipeline-store-icon">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="h-5 w-5">
+              <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+              <path d="M3 5V19A9 3 0 0 0 21 19V5"></path>
+              <path d="M3 12A9 3 0 0 0 21 12"></path>
+            </svg>
+          </div>
+          <div>
+            <div class="pipeline-store-title">SQLite</div>
+            <div class="pipeline-store-sub">Document store with SHA-256 content hashing</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Store serves consumer apps -->
+      <div class="pipeline-depends pipeline-serves" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="pipeline-depends-arrow">
+          <path d="M12 5v14"></path><path d="m19 12-7 7-7-7"></path>
+        </svg>
+        <span class="pipeline-depends-label">serves</span>
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="pipeline-depends-arrow">
+          <path d="M12 5v14"></path><path d="m19 12-7 7-7-7"></path>
+        </svg>
+      </div>
+
+      <!-- Consumer apps — web resource, search, and data API -->
+      <div class="pipeline-consumer-flow">
+        <div class="pipeline-consumer-stage">
+          <div class="pipeline-stage-label">Web Resource</div>
+          <div class="pipeline-consumer pipeline-consumer-web">
+            <div class="pipeline-consumer-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.75"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="h-4 w-4">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path>
+                <path d="M2 12h20"></path>
+              </svg>
+            </div>
+            <div>
+              <div class="pipeline-consumer-pkg">@lexbuild/astro</div>
+              <div class="pipeline-consumer-sub">
+                <a class="hover:underline" href="https://lexbuild.dev">lexbuild.dev</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pipeline-consumer-connector" aria-hidden="true">
+          <span class="pipeline-connector-line"></span>
+        </div>
+
+        <div class="pipeline-consumer-stage">
+          <div class="pipeline-stage-label">Search Service</div>
+          <div class="pipeline-consumer pipeline-consumer-search">
+            <div class="pipeline-consumer-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.75"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="h-4 w-4">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.3-4.3"></path>
+              </svg>
+            </div>
+            <div>
+              <div class="pipeline-consumer-pkg">Meilisearch</div>
+              <div class="pipeline-consumer-sub">Full-text search index</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pipeline-consumer-connector" aria-hidden="true">
+          <span class="pipeline-connector-line"></span>
+        </div>
+
+        <div class="pipeline-consumer-stage">
+          <div class="pipeline-stage-label">Data API</div>
+          <div class="pipeline-consumer pipeline-consumer-api">
+            <div class="pipeline-consumer-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.75"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="h-4 w-4">
+                <path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5c0 1.1.9 2 2 2h1"></path>
+                <path d="M16 21h1a2 2 0 0 0 2-2v-5a2 2 0 0 1 2-2 2 2 0 0 1-2-2V5a2 2 0 0 0-2-2h-1"></path>
+              </svg>
+            </div>
+            <div>
+              <div class="pipeline-consumer-pkg">@lexbuild/api</div>
+              <div class="pipeline-consumer-sub">
+                <a class="hover:underline" href="https://lexbuild.dev/api">lexbuild.dev/api</a>
               </div>
             </div>
           </div>
@@ -1418,12 +1576,28 @@ Astro.response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-
     font-weight: 600;
     color: var(--foreground);
     line-height: 1.2;
+    margin-bottom: 0.3125rem;
+  }
+
+  .pipeline-source-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+
+  .pipeline-source-url {
+    font-size: 0.6875rem;
+    color: var(--color-slate-blue-600, #5285a3);
+  }
+
+  :global(.dark) .pipeline-source-url {
+    color: var(--color-slate-blue-400, #94b7c7);
   }
 
   .pipeline-source-sub {
     font-size: 0.6875rem;
     color: var(--color-slate-blue-600, #5285a3);
-    margin-top: 0.0625rem;
+    margin-top: 0.1875rem;
   }
 
   .pipeline-source-sub a {
@@ -1500,13 +1674,15 @@ Astro.response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-
 
   .pipeline-parser-name {
     font-family: var(--font-mono);
-    font-size: 0.75rem;
+    font-size: 0.875rem;
     font-weight: 600;
-    color: var(--color-slate-blue-700, #476c85);
+    color: var(--color-slate-blue-900, #354754);
+    line-height: 1.2;
+    margin-bottom: 0.1875rem;
   }
 
   :global(.dark) .pipeline-parser-name {
-    color: var(--color-slate-blue-300, #b4cfda);
+    color: white;
   }
 
   .pipeline-parser-desc {
@@ -1533,13 +1709,14 @@ Astro.response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-
 
   .pipeline-core-name {
     font-family: var(--font-mono);
-    font-size: 0.75rem;
+    font-size: 0.875rem;
     font-weight: 600;
-    color: var(--color-slate-blue-700, #476c85);
+    color: var(--color-slate-blue-900, #354754);
+    line-height: 1.2;
   }
 
   :global(.dark) .pipeline-core-name {
-    color: var(--color-slate-blue-300, #b4cfda);
+    color: white;
   }
 
   .pipeline-core-steps {
@@ -1637,6 +1814,7 @@ Astro.response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-
     font-weight: 600;
     color: var(--foreground);
     line-height: 1.2;
+    margin-bottom: 0.1875rem;
   }
 
   .pipeline-output-sub {
@@ -1775,7 +1953,7 @@ Astro.response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-
   .pipeline-cli-name {
     font-family: var(--font-mono);
     font-size: 0.875rem;
-    font-weight: 700;
+    font-weight: 600;
     color: var(--color-slate-blue-900, #354754);
     line-height: 1.2;
   }
@@ -1837,6 +2015,212 @@ Astro.response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-
     color: var(--color-slate-blue-400, #94b7c7);
   }
 
+  /* ── Consumer apps (web resource, search, data API) ── */
+
+  .pipeline-serves {
+    margin-top: 0.125rem;
+  }
+
+  .pipeline-store-stage {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-width: 24rem;
+    margin: 0 auto;
+  }
+
+  .pipeline-store {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.625rem 1rem;
+    border-radius: calc(var(--radius) - 2px);
+    border: 1.5px solid var(--color-slate-blue-300, #b4cfda);
+    background: var(--color-slate-blue-50, #f5f9fa);
+  }
+
+  :global(.dark) .pipeline-store {
+    background: var(--color-slate-blue-950, #1f2c38);
+    border-color: var(--color-slate-blue-700, #476c85);
+  }
+
+  .pipeline-store-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.375rem;
+    background: var(--color-slate-blue-200, #d3e3e9);
+    color: var(--color-slate-blue-700, #476c85);
+    flex-shrink: 0;
+  }
+
+  :global(.dark) .pipeline-store-icon {
+    background: var(--color-slate-blue-800, #3f5869);
+    color: var(--color-slate-blue-300, #b4cfda);
+  }
+
+  .pipeline-store-title {
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-slate-blue-900, #354754);
+    line-height: 1.2;
+  }
+
+  :global(.dark) .pipeline-store-title {
+    color: white;
+  }
+
+  .pipeline-store-sub {
+    font-size: 0.6875rem;
+    color: var(--color-slate-blue-600, #5285a3);
+    margin-top: 0.125rem;
+  }
+
+  :global(.dark) .pipeline-store-sub {
+    color: var(--color-slate-blue-400, #94b7c7);
+  }
+
+  .pipeline-consumer-flow {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  .pipeline-consumer {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.625rem 0.75rem;
+    border-radius: calc(var(--radius) - 2px);
+    border: 1px solid;
+    background: white;
+    flex: 1;
+    min-width: 0;
+  }
+
+  :global(.dark) .pipeline-consumer {
+    background: var(--card);
+  }
+
+  .pipeline-consumer-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.375rem;
+    flex-shrink: 0;
+  }
+
+  .pipeline-consumer-web {
+    border-color: var(--color-chestnut-300, #e6bdbb);
+  }
+
+  :global(.dark) .pipeline-consumer-web {
+    border-color: var(--color-chestnut-700, #923e44);
+  }
+
+  .pipeline-consumer-web .pipeline-consumer-icon {
+    background: var(--color-chestnut-100, #f8eceb);
+    color: var(--color-chestnut-700, #923e44);
+  }
+
+  :global(.dark) .pipeline-consumer-web .pipeline-consumer-icon {
+    background: var(--color-chestnut-900, #6a3138);
+    color: var(--color-chestnut-300, #e6bdbb);
+  }
+
+  .pipeline-consumer-search {
+    border-color: var(--color-lavender-300, #d0d0e2);
+  }
+
+  :global(.dark) .pipeline-consumer-search {
+    border-color: var(--color-lavender-700, #736b96);
+  }
+
+  .pipeline-consumer-search .pipeline-consumer-icon {
+    background: var(--color-lavender-100, #f1f1f6);
+    color: var(--color-lavender-700, #736b96);
+  }
+
+  :global(.dark) .pipeline-consumer-search .pipeline-consumer-icon {
+    background: var(--color-lavender-900, #504b67);
+    color: var(--color-lavender-400, #b6b5d0);
+  }
+
+  .pipeline-consumer-api {
+    border-color: var(--color-summer-green-300, #b8d1c5);
+  }
+
+  :global(.dark) .pipeline-consumer-api {
+    border-color: var(--color-summer-green-700, #487061);
+  }
+
+  .pipeline-consumer-api .pipeline-consumer-icon {
+    background: var(--color-summer-green-100, #e9f1ed);
+    color: var(--color-summer-green-700, #487061);
+  }
+
+  :global(.dark) .pipeline-consumer-api .pipeline-consumer-icon {
+    background: var(--color-summer-green-900, #354b43);
+    color: var(--color-summer-green-300, #b8d1c5);
+  }
+
+  .pipeline-consumer-stage {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .pipeline-consumer-pkg {
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-slate-blue-900, #354754);
+    line-height: 1.2;
+  }
+
+  :global(.dark) .pipeline-consumer-pkg {
+    color: white;
+  }
+
+  .pipeline-consumer-sub {
+    font-size: 0.6875rem;
+    color: var(--color-slate-blue-600, #5285a3);
+    margin-top: 0.25rem;
+  }
+
+  .pipeline-consumer-sub a {
+    color: inherit;
+  }
+
+  :global(.dark) .pipeline-consumer-sub {
+    color: var(--color-slate-blue-400, #94b7c7);
+  }
+
+  .pipeline-consumer-connector {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0.375rem;
+    flex-shrink: 0;
+    align-self: center;
+  }
+
+  .pipeline-connector-line {
+    width: 1.25rem;
+    border-top: 1.5px dashed var(--color-slate-blue-300, #b4cfda);
+  }
+
+  :global(.dark) .pipeline-connector-line {
+    border-top-color: var(--color-slate-blue-600, #5285a3);
+  }
+
   /* ── Pipeline responsive: stack vertically on small screens ── */
 
   @media (max-width: 767px) {
@@ -1858,6 +2242,22 @@ Astro.response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-
       display: block;
       width: 1.125rem;
       height: 1.125rem;
+    }
+
+    .pipeline-consumer-flow {
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .pipeline-consumer-connector {
+      padding: 0.25rem 0;
+    }
+
+    .pipeline-connector-line {
+      width: 0;
+      height: 1.25rem;
+      border-top: none;
+      border-left: 1.5px dashed var(--color-slate-blue-300, #b4cfda);
     }
   }
 </style>

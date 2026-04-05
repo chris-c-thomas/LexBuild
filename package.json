@@ -54,9 +54,7 @@
   "changeset": "changeset",
   "version-packages": "changeset version",
   "release": "changeset publish",
-  "release:local": "turbo run build && changeset publish",
-  "agent:skills": "tsx scripts/link-skills.ts --force",
-  "agent:setup": "pnpm run agent:skills"
+  "release:local": "turbo run build && changeset publish"
 },
   "devDependencies": {
     "@changesets/changelog-github": "^0.5.2",

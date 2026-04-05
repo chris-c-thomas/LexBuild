@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
 
+## [1.18.0]
+
+### Added
+
+- Documentation site at `/docs/` with 41 pages across 8 sections (Getting Started, CLI, Web, API, Guides, Architecture, Reference, Project)
+- Astro Content Collections with glob loader for docs markdown rendering
+- DocsLayout with 3-column layout (sidebar, content, table of contents)
+- DocsSidebar React island with collapsible sections and sessionStorage persistence
+- TableOfContents React island with IntersectionObserver scroll spy
+- DocsPagination with prev/next navigation cards
+- Mobile docs navigation in MobileNav sheet drawer
+- Code copy button and callout/admonition styling for docs prose
+- Docs URLs in sitemap generation
+- Active state on header Docs link when on `/docs/` routes
+
+### Changed
+
+- Docs link in header, footer, and mobile nav changed from external GitHub URL to internal `/docs/`
+- Added markdown.shikiConfig with LexBuild brand themes and rehype plugins to astro.config.ts
+
 ## [1.17.3]
 
 ### Changed

@@ -9,11 +9,14 @@
 ```
 src/
 ├── index.ts                    # Entry point — Commander program setup, registers commands
+├── index.test.ts               # CLI integration tests
 ├── ui.ts                       # Terminal UI utilities (spinners, tables, formatters)
 ├── parse-titles.ts             # Title specification parser ("1-5,8,11" → number[])
+├── parse-titles.test.ts        # Parser unit tests
 └── commands/
     ├── download-usc.ts         # lexbuild download-usc command
     ├── convert-usc.ts          # lexbuild convert-usc command
+    ├── convert-usc.test.ts     # Convert USC command tests
     ├── list-release-points.ts  # lexbuild list-release-points command
     ├── download-ecfr.ts        # lexbuild download-ecfr command
     ├── convert-ecfr.ts         # lexbuild convert-ecfr command

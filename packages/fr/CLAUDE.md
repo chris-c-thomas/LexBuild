@@ -11,13 +11,13 @@ src/
 ├── index.ts                 # Barrel exports
 ├── fr-elements.ts           # FR XML element classification (~92 elements) + FrDocumentType
 ├── fr-builder.ts            # SAX → AST state machine for FR XML
-├── fr-builder.test.ts       # 16 unit tests
+├── fr-builder.test.ts       # 21 unit tests
 ├── fr-frontmatter.ts        # Build FrontmatterData from FR context + API JSON
 ├── fr-frontmatter.test.ts   # 27 unit tests
 ├── fr-path.ts               # Output path builder (date-based)
 ├── fr-path.test.ts          # 8 unit tests
 ├── converter.ts             # Conversion orchestrator
-├── converter.test.ts        # 6 integration tests
+├── converter.test.ts        # 9 integration tests
 ├── enricher.ts              # Frontmatter enricher (API metadata → existing .md files)
 ├── downloader.ts            # FederalRegister.gov API client
 └── govinfo-downloader.ts    # Govinfo bulk XML downloader (future backfill)

@@ -59,33 +59,43 @@ src/
 ├── layouts/BaseLayout.astro        # HTML shell, dark mode, sidebar, search
 ├── pages/
 │   ├── index.astro                 # Landing page
-│   ├── usc/[...slug].astro        # USC catch-all (3 slug segments)
-│   ├── ecfr/[...slug].astro       # eCFR catch-all (4 slug segments)
+│   ├── usc/                        # USC routes (index + [...slug] catch-all)
+│   ├── ecfr/                       # eCFR routes (index + [...slug] catch-all)
+│   ├── fr/                         # FR routes (index + [...slug] catch-all)
+│   ├── docs/                       # Docs routes (index + [...slug] catch-all)
 │   ├── 400–504.astro              # HTTP error pages (11 total, see Error Pages below)
 │   └── health.ts                  # Health check endpoint
 ├── components/
-│   ├── content/                    # ContentViewer, FrontmatterPanel, BreadcrumbNav
+│   ├── content/                    # ContentViewer, FrontmatterPanel, BreadcrumbNav, CopyButton, DownloadButton, HierarchyIndex
 │   ├── sidebar/                    # Sidebar, MobileNav, SidebarContent, SectionList
 │   ├── search/SearchDialog.tsx
-│   ├── ui/                         # shadcn/ui primitives
-│   └── landing/                    # SourceCard, HeroSection
+│   ├── nav/SourcesDropdown.tsx     # Source navigation dropdown
+│   ├── docs/                       # DocsPagination, DocsSidebar, TableOfContents
+│   ├── seo/                        # SEOHead, JsonLd
+│   └── ui/                         # shadcn/ui primitives
 ├── lib/
 │   ├── content.ts                  # fs.readFile + path traversal prevention
 │   ├── routes.ts                   # Slug → content path + granularity resolution
-│   ├── sources.ts                  # Source registry (USC, eCFR config)
+│   ├── sources.ts                  # Source registry (USC, eCFR, FR config)
 │   ├── types.ts                    # SourceId, Granularity, ContentFrontmatter, nav types
 │   ├── frontmatter.ts              # gray-matter wrapper
 │   ├── markdown.ts                 # unified/remark/rehype pipeline
 │   ├── highlight.ts                # Pre-rendered .highlighted.html loader
 │   ├── shiki.ts                    # Runtime Shiki singleton (dev fallback)
+│   ├── shiki-themes.ts             # LexBuild brand Shiki themes (single source of truth)
 │   ├── search.ts                   # Meilisearch client wrapper
-│   └── nav.ts                      # Nav JSON reader
+│   ├── nav.ts                      # Nav JSON reader
+│   ├── seo.ts                      # SEO metadata builders (pure functions)
+│   ├── docs-nav.ts                 # Docs sidebar navigation tree
+│   └── utils.ts                    # cn() utility, title case helper
+├── content/docs/                    # Documentation markdown (Content Collections, checked into git)
 └── styles/global.css               # Tailwind base, theme tokens, Shiki overrides
 scripts/
 ├── link-content.sh                 # Symlink CLI output → content/
 ├── generate-nav.ts                 # _meta.json → public/nav/ JSON
 ├── generate-highlights.ts          # Batch Shiki pre-rendering
 ├── generate-sitemap.ts             # Sitemap index + chunks
+├── og-template.html                # OG image template
 ├── index-search.ts                 # Full Meilisearch reindex (~1M docs)
 └── index-search-incremental.ts     # Incremental upsert
 ```

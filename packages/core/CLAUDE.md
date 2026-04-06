@@ -16,8 +16,11 @@ src/
 ├── ast/
 │   ├── types.ts                 # AST node type definitions, FrontmatterData, SourceType, LegalStatus
 │   └── uslm-builder.ts         # USLM XML SAX events → AST conversion (core state machine)
+├── db/
+│   ├── schema.ts                # Shared SQLite schema constants (DocumentRow, SQL)
+│   └── keys-schema.ts           # API keys SQLite schema
 └── markdown/
-    ├── renderer.ts              # AST → Markdown conversion (~585 lines)
+    ├── renderer.ts              # AST → Markdown conversion (~560 lines)
     ├── frontmatter.ts           # YAML frontmatter generation (FORMAT_VERSION 1.1.0)
     └── links.ts                 # Cross-reference link resolution (USC + CFR fallback URLs)
 ```

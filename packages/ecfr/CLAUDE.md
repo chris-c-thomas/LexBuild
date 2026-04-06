@@ -13,6 +13,7 @@ src/
 ├── ecfr-builder.ts          # SAX → AST state machine for eCFR XML
 ├── ecfr-builder.test.ts     # 12 unit tests
 ├── ecfr-frontmatter.ts      # Build FrontmatterData from eCFR context
+├── ecfr-frontmatter.test.ts # 15 unit tests
 ├── ecfr-path.ts             # Output path builder
 ├── converter.ts             # Conversion orchestrator (collect-then-write)
 ├── downloader.ts            # Download eCFR XML from govinfo bulk data

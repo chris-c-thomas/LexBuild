@@ -45,7 +45,6 @@ src/
 └── lib/
     ├── content-negotiation.ts
     ├── markdown-strip.ts   # Markdown to plaintext conversion
-    ├── scalar-theme.ts     # Custom Scalar API reference theme (LexBuild brand)
     ├── source-registry.ts  # API_SOURCES config, URL_TO_DB_SOURCE mapping
     ├── documents.ts        # Identifier resolution, metadata building, field selection
     └── listings.ts         # Collection response envelope builder

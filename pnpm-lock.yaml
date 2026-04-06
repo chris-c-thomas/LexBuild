@@ -67,9 +67,6 @@ importers:
       '@lexbuild/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@scalar/hono-api-reference':
-        specifier: ^0.10.6
-        version: 0.10.6(hono@4.12.8)
       better-sqlite3:
         specifier: ^11.9
         version: 11.10.0
@@ -2497,10 +2494,6 @@ packages:
     resolution: {integrity: sha512-vOQyxImr6nbMDGUkIM4vs+DF0A26l33J+zYHAV4cm1X8FQ0huPW464EPDiD7csPkg79yF9vqblhFhyqq4u2dqw==}
     engines: {node: '>=22'}
 
-  '@scalar/core@0.4.6':
-    resolution: {integrity: sha512-lIlCUx0O18ei63j7Z7QTAVAuh66sdms9zoDPhpDOzHTVObnb7n0f3J306sT3H9KQsoWKQrEsnKx4LcZLw/TlPw==}
-    engines: {node: '>=22'}
-
   '@scalar/draggable@0.4.1':
     resolution: {integrity: sha512-TvTiy0tB2ulfBL7jwrpnsf7Geqlq/tWaIopkyZLii9bZPxPX5y1o6fVJXMyjtsUo0FSzvB382kN4uPi1TK/Hww==}
     engines: {node: '>=22'}
@@ -2508,12 +2501,6 @@ packages:
   '@scalar/helpers@0.4.3':
     resolution: {integrity: sha512-Gv2V7SFreLx3DltzF2lKXdaJSH5cP1LOyt9PxON1cSWGxkrs3sg93c1taEJsW24E9ckfYXkL5hjCAVLfAN3wQw==}
     engines: {node: '>=22'}
-
-  '@scalar/hono-api-reference@0.10.6':
-    resolution: {integrity: sha512-9/sZvJ2P0TCMnTqQHKC7RGT6qBauJ1Z+diiFRtLuJhCk4e+6uzPOD0QmRwpUARK7NXZp4oNPm2hXHHT6GqZZAQ==}
-    engines: {node: '>=22'}
-    peerDependencies:
-      hono: ^4.12.5
 
   '@scalar/icons@0.7.2':
     resolution: {integrity: sha512-21L2y/D6oU7wZHHa9i6FK98cZ+XH4HX9+e69uNpvlp4awRUpz6ifNHOLlxI607bq+Yz4G313gnV0uyUHwZ/pig==}
@@ -8735,10 +8722,6 @@ snapshots:
       - supports-color
       - typescript
 
-  '@scalar/core@0.4.6':
-    dependencies:
-      '@scalar/types': 0.7.6
-
   '@scalar/draggable@0.4.1(typescript@5.9.3)':
     dependencies:
       vue: 3.5.32(typescript@5.9.3)
@@ -8746,11 +8729,6 @@ snapshots:
       - typescript
 
   '@scalar/helpers@0.4.3': {}
-
-  '@scalar/hono-api-reference@0.10.6(hono@4.12.8)':
-    dependencies:
-      '@scalar/core': 0.4.6
-      hono: 4.12.8
 
   '@scalar/icons@0.7.2(typescript@5.9.3)':
     dependencies:

@@ -35,6 +35,7 @@ interface ConvertEcfrCommandOptions {
   includeAmendments: boolean;
   dryRun: boolean;
   verbose: boolean;
+  currencyDate?: string | undefined;
 }
 
 /** Build EcfrConvertOptions from CLI flags. */
@@ -57,6 +58,7 @@ function buildConvertOptions(
     includeStatutoryNotes: options.includeStatutoryNotes,
     includeAmendments: options.includeAmendments,
     dryRun: options.dryRun,
+    currencyDate: options.currencyDate,
   };
 }
 
@@ -182,6 +184,7 @@ export const convertEcfrCommand = new Command("convert-ecfr")
   .option("--include-amendments", "Include amendment history notes only", false)
   .option("--dry-run", "Parse and report structure without writing files", false)
   .option("-v, --verbose", "Enable verbose logging", false)
+  .option("--currency-date <YYYY-MM-DD>", "Currency date for frontmatter (default: today)")
   .addHelpText(
     "after",
     `

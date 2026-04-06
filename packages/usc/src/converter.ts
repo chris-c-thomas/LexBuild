@@ -20,6 +20,7 @@ import {
   GENERATOR,
   BIG_LEVELS,
   writeFile,
+  writeFileIfChanged,
   mkdir,
 } from "@lexbuild/core";
 import type {
@@ -317,9 +318,9 @@ async function writeSection(
   // Render the document
   const markdown = renderDocument(sectionNode, frontmatter, renderOpts);
 
-  // Ensure the directory exists and write the file
+  // Ensure the directory exists and write the file (skip if content unchanged)
   await mkdir(dirname(filePath), { recursive: true });
-  await writeFile(filePath, markdown, "utf-8");
+  await writeFileIfChanged(filePath, markdown, "utf-8");
 
   // Collect metadata
   const titleNum = findAncestor(context.ancestors, "title")?.numValue ?? "0";
@@ -619,7 +620,7 @@ async function writeChapter(
   const markdown = parts.join("\n") + "\n";
 
   await mkdir(dirname(filePath), { recursive: true });
-  await writeFile(filePath, markdown, "utf-8");
+  await writeFileIfChanged(filePath, markdown, "utf-8");
 
   return { filePath, sectionMetas };
 }
@@ -771,7 +772,7 @@ async function writeWholeTitle(
   const filePath = join(options.output, "usc", titleFile);
 
   await mkdir(dirname(filePath), { recursive: true });
-  await writeFile(filePath, markdown, "utf-8");
+  await writeFileIfChanged(filePath, markdown, "utf-8");
 
   const totalTokenEstimate = Math.ceil(bodyMarkdown.length / 4);
   return { filePath, sectionMetas, totalTokenEstimate };

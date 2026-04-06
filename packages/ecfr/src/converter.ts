@@ -17,6 +17,7 @@ import {
   FORMAT_VERSION,
   GENERATOR,
   writeFile,
+  writeFileIfChanged,
   mkdir,
 } from "@lexbuild/core";
 import type {
@@ -54,6 +55,8 @@ export interface EcfrConvertOptions {
   includeAmendments: boolean;
   /** Parse only, don't write files */
   dryRun: boolean;
+  /** Currency date (YYYY-MM-DD) from eCFR API metadata. Defaults to today if not provided. */
+  currencyDate?: string | undefined;
 }
 
 /** Result of an eCFR conversion */
@@ -208,7 +211,7 @@ export async function convertEcfrTitle(options: EcfrConvertOptions): Promise<Ecf
       if (!item || !suffixedPath) continue;
       const { node, context } = item;
 
-      const frontmatter = buildEcfrFrontmatter(node, context);
+      const frontmatter = buildEcfrFrontmatter(node, context, options.currencyDate);
       // Enrich with part-level authority/source from builder's captured notes
       const partId = context.ancestors.find((a) => a.levelType === "part")?.identifier;
       if (partId && (!frontmatter.authority || !frontmatter.regulatory_source)) {
@@ -230,7 +233,7 @@ export async function convertEcfrTitle(options: EcfrConvertOptions): Promise<Ecf
       });
 
       await mkdir(dirname(suffixedPath), { recursive: true });
-      await writeFile(suffixedPath, markdown, "utf-8");
+      await writeFileIfChanged(suffixedPath, markdown, "utf-8");
 
       const hasNotes = node.children.some((c) => c.type === "note" || c.type === "notesContainer");
       const secNum = node.numValue ?? "0";
@@ -256,7 +259,7 @@ export async function convertEcfrTitle(options: EcfrConvertOptions): Promise<Ecf
     }
 
     // Write _meta.json and README (dryRun returns early above, so this always runs)
-    await writeMetaFiles(sectionMetas, titleNumber, titleName, output, granularity, input);
+    await writeMetaFiles(sectionMetas, titleNumber, titleName, output, granularity, input, options.currencyDate);
 
     const files = sectionMetas.map((m) => join(buildTitleDir(titleNumber, output), m.relativeFile));
 
@@ -311,12 +314,12 @@ export async function convertEcfrTitle(options: EcfrConvertOptions): Promise<Ecf
         children: sections.map((s) => s.node),
       };
 
-      const frontmatter = buildEcfrFrontmatter(chapterNode, firstContext);
+      const frontmatter = buildEcfrFrontmatter(chapterNode, firstContext, options.currencyDate);
       const markdown = renderDocument(chapterNode, frontmatter, renderOpts);
 
       const filePath = buildEcfrOutputPath(chapterNode, firstContext, output);
       await mkdir(dirname(filePath), { recursive: true });
-      await writeFile(filePath, markdown, "utf-8");
+      await writeFileIfChanged(filePath, markdown, "utf-8");
       files.push(filePath);
       totalLength += markdown.length;
     }
@@ -326,12 +329,12 @@ export async function convertEcfrTitle(options: EcfrConvertOptions): Promise<Ecf
     const filtered = collected.filter((c) => c.node.levelType === targetLevel);
 
     for (const { node, context } of filtered) {
-      const frontmatter = buildEcfrFrontmatter(node, context);
+      const frontmatter = buildEcfrFrontmatter(node, context, options.currencyDate);
       const markdown = renderDocument(node, frontmatter, renderOpts);
 
       const filePath = buildEcfrOutputPath(node, context, output);
       await mkdir(dirname(filePath), { recursive: true });
-      await writeFile(filePath, markdown, "utf-8");
+      await writeFileIfChanged(filePath, markdown, "utf-8");
       files.push(filePath);
       totalLength += markdown.length;
     }
@@ -463,6 +466,7 @@ async function writeMetaFiles(
   outputRoot: string,
   granularity: string,
   sourceXml: string,
+  currencyDate?: string | undefined,
 ): Promise<void> {
   // Group sections by part
   const partMap = new Map<string, SectionMeta[]>();
@@ -527,7 +531,7 @@ async function writeMetaFiles(
     title_name: titleName,
     source: "ecfr",
     legal_status: "authoritative_unofficial",
-    currency: new Date().toISOString().slice(0, 10),
+    currency: currencyDate ?? new Date().toISOString().slice(0, 10),
     source_xml: basename(sourceXml),
     granularity,
     stats: {

@@ -8,8 +8,16 @@ import type { LevelNode, EmitContext, FrontmatterData, ASTNode } from "@lexbuild
 
 /**
  * Build FrontmatterData from an eCFR section/part/title node.
+ *
+ * @param node - Emitted AST node (section, part, or title)
+ * @param context - Emit context with ancestors and document metadata
+ * @param currencyDate - Currency date (YYYY-MM-DD) from API metadata. Defaults to today.
  */
-export function buildEcfrFrontmatter(node: LevelNode, context: EmitContext): FrontmatterData {
+export function buildEcfrFrontmatter(
+  node: LevelNode,
+  context: EmitContext,
+  currencyDate?: string | undefined,
+): FrontmatterData {
   const titleAncestor = context.ancestors.find((a) => a.levelType === "title");
   const partAncestor = context.ancestors.find((a) => a.levelType === "part");
   const chapterAncestor = context.ancestors.find((a) => a.levelType === "chapter");
@@ -42,7 +50,7 @@ export function buildEcfrFrontmatter(node: LevelNode, context: EmitContext): Fro
   // Extract source credit text (from SourceCreditNode children)
   const sourceCredit = extractSourceCreditText(node);
 
-  const today = new Date().toISOString().slice(0, 10);
+  const currency = currencyDate ?? new Date().toISOString().slice(0, 10);
 
   const fm: FrontmatterData = {
     source: "ecfr",
@@ -52,8 +60,8 @@ export function buildEcfrFrontmatter(node: LevelNode, context: EmitContext): Fro
     title_number: titleNum,
     title_name: titleName,
     positive_law: false, // Regulations, not legislation
-    currency: today,
-    last_updated: today,
+    currency,
+    last_updated: currency,
   };
 
   if (node.levelType === "section" || node.levelType === "part") {

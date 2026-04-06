@@ -118,6 +118,9 @@ pnpm turbo build:api --filter=@lexbuild/api        # Production build
 ./scripts/deploy.sh                # Code only (git pull, build, pm2 reload)
 ./scripts/deploy.sh --content      # Code + rsync local output/ to VPS
 ./scripts/deploy.sh --content-only # Rsync only, no code deploy
+./scripts/deploy.sh --nav-only                     # Rsync nav JSON only
+./scripts/deploy.sh --sitemaps-only                # Rsync sitemaps only
+./scripts/deploy.sh --highlights-only              # Rsync .highlighted.html files only
 ./scripts/deploy.sh --remote       # Full pipeline on VPS (download + convert + build)
 ./scripts/deploy.sh --api                        # Deploy API code (git pull, build:api, pm2 reload)
 ./scripts/deploy.sh --api-db                     # Sync lexbuild.db to VPS + reload API

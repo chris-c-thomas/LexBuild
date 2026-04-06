@@ -11,6 +11,7 @@
 #   ./scripts/deploy.sh --api-full     # API code + database sync + reload
 #   ./scripts/deploy.sh --search-vps                   # Incremental reindex directly on VPS
 #   ./scripts/deploy.sh --search-vps --source fr       # Reindex one source on VPS
+#   ./scripts/deploy.sh --highlights-only              # Rsync only .highlighted.html files to VPS
 #   ./scripts/deploy.sh --search-docker                # Full reindex in Docker, transfer to VPS
 #   ./scripts/deploy.sh --search-docker --source fr    # Incremental: add/update one source only
 #   ./scripts/deploy.sh --search-docker-seed           # Seed Docker volume from VPS data
@@ -85,6 +86,9 @@ case "${1:-}" in
   --sitemaps-only)
     MODE="sitemaps-only"
     ;;
+  --highlights-only)
+    MODE="highlights-only"
+    ;;
   --remote)
     MODE="remote"
     ;;
@@ -136,7 +140,7 @@ case "${1:-}" in
     ;; # default: code only
   *)
     echo "Unknown option: $1"
-    echo "Usage: ./scripts/deploy.sh [--content | --content-only | --nav-only | --sitemaps-only | --remote | --api | --api-db | --api-full | --search-vps [--source <name>] | --search-docker [--source <name>] | --search-docker-seed | --help]"
+    echo "Usage: ./scripts/deploy.sh [--content | --content-only | --nav-only | --sitemaps-only | --highlights-only | --remote | --api | --api-db | --api-full | --search-vps [--source <name>] | --search-docker [--source <name>] | --search-docker-seed | --help]"
     exit 1
     ;;
 esac
@@ -281,6 +285,37 @@ deploy_sitemaps_rsync() {
     echo "==> Sitemaps rsync complete"
   else
     echo "ERROR: No sitemap files found in apps/astro/public/"
+    exit 1
+  fi
+}
+
+# --- Highlights-only rsync (used by: highlights-only) ---
+
+deploy_highlights_rsync() {
+  echo "==> Deploying highlights to VPS..."
+  RSYNC_OPTS=(-avz --checksum --include='*/' --include='*.highlighted.html' --exclude='*')
+  SYNCED=false
+
+  if [ -d "output/usc" ]; then
+    echo "--- Syncing USC highlights"
+    rsync "${RSYNC_OPTS[@]}" output/usc/ "${VPS_HOST}:${CONTENT_DEST}/usc/sections/"
+    SYNCED=true
+  fi
+  if [ -d "output/ecfr" ]; then
+    echo "--- Syncing eCFR highlights"
+    rsync "${RSYNC_OPTS[@]}" output/ecfr/ "${VPS_HOST}:${CONTENT_DEST}/ecfr/sections/"
+    SYNCED=true
+  fi
+  if [ -d "output/fr" ]; then
+    echo "--- Syncing FR highlights"
+    rsync "${RSYNC_OPTS[@]}" output/fr/ "${VPS_HOST}:${CONTENT_DEST}/fr/documents/"
+    SYNCED=true
+  fi
+
+  if [ "$SYNCED" = true ]; then
+    echo "==> Highlights rsync complete"
+  else
+    echo "ERROR: No output directories found"
     exit 1
   fi
 }
@@ -881,6 +916,9 @@ case "$MODE" in
     ;;
   sitemaps-only)
     deploy_sitemaps_rsync
+    ;;
+  highlights-only)
+    deploy_highlights_rsync
     ;;
   remote)
     deploy_remote

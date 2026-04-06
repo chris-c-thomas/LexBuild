@@ -84,8 +84,12 @@ export async function writeFileIfChanged(
   try {
     const existing = await withRetry(() => fsReadFile(path, encoding));
     if (existing === data) return false;
-  } catch {
-    // File doesn't exist or is unreadable — write it
+  } catch (err) {
+    // File doesn't exist — fall through to write. Re-throw other errors
+    // (permission denied, disk failure) so they aren't silently swallowed.
+    if (err instanceof Error && "code" in err && (err as NodeJS.ErrnoException).code !== "ENOENT") {
+      throw err;
+    }
   }
   await withRetry(() => fsWriteFile(path, data, encoding));
   return true;

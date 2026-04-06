@@ -28,10 +28,22 @@ interface Checkpoint {
 }
 
 async function readCheckpoint(): Promise<Checkpoint | null> {
+  let raw: string;
   try {
-    const raw = await readFile(CHECKPOINT_PATH, "utf-8");
+    raw = await readFile(CHECKPOINT_PATH, "utf-8");
+  } catch (err) {
+    if (err instanceof Error && "code" in err && (err as NodeJS.ErrnoException).code === "ENOENT") {
+      return null; // No checkpoint yet — first run
+    }
+    throw err;
+  }
+  try {
     return JSON.parse(raw) as Checkpoint;
-  } catch {
+  } catch (err) {
+    console.error(
+      `Warning: Checkpoint file is corrupt (${CHECKPOINT_PATH}). ` +
+        `Treating all titles as changed. Error: ${err instanceof Error ? err.message : String(err)}`,
+    );
     return null;
   }
 }
@@ -99,7 +111,7 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((err) => {
-  console.error(err instanceof Error ? err.message : String(err));
+main().catch((err: unknown) => {
+  console.error("ecfr-changed-titles failed:", err);
   process.exit(1);
 });

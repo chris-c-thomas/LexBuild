@@ -109,8 +109,9 @@ if should_run "ecfr"; then
   if "$SCRIPT_DIR/update-ecfr.sh" $ECFR_ARGS $SHARED_ARGS; then
     echo ""
   else
+    ECFR_EXIT=$?
     echo ""
-    echo "WARNING: eCFR update failed (exit code $?)"
+    echo "WARNING: eCFR update failed (exit code $ECFR_EXIT)"
     FAILED="$FAILED ecfr"
     echo ""
   fi
@@ -122,8 +123,9 @@ if should_run "fr"; then
   if "$SCRIPT_DIR/update-fr.sh" $FR_ARGS $SHARED_ARGS; then
     echo ""
   else
+    FR_EXIT=$?
     echo ""
-    echo "WARNING: FR update failed (exit code $?)"
+    echo "WARNING: FR update failed (exit code $FR_EXIT)"
     FAILED="$FAILED fr"
     echo ""
   fi
@@ -135,8 +137,9 @@ if should_run "usc"; then
   if "$SCRIPT_DIR/update-usc.sh" $USC_ARGS $SHARED_ARGS; then
     echo ""
   else
+    USC_EXIT=$?
     echo ""
-    echo "WARNING: USC update failed (exit code $?)"
+    echo "WARNING: USC update failed (exit code $USC_EXIT)"
     FAILED="$FAILED usc"
     echo ""
   fi

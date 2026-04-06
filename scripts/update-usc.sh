@@ -44,6 +44,7 @@ FORCE=false
 SKIP_DEPLOY=false
 DEPLOY_ONLY=false
 SKIP_HIGHLIGHTS=false
+LATEST=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -106,8 +107,10 @@ if [ "$DEPLOY_ONLY" = false ]; then
   LATEST=$(node -e "
     import('${REPO_ROOT}/packages/usc/dist/index.js').then(m =>
       m.detectLatestReleasePoint()
-    ).then(rp => process.stdout.write(rp))
-    .catch(e => { console.error(e.message); process.exit(1); });
+    ).then(rp => {
+      if (!rp) { console.error('Failed to detect release point'); process.exit(1); }
+      process.stdout.write(rp.releasePoint);
+    }).catch(e => { console.error(e.message); process.exit(1); });
   ")
 
   STORED=""
@@ -214,4 +217,8 @@ ssh "$VPS_HOST" << 'REMOTE'
 REMOTE
 
 echo ""
-echo "==> USC update complete (release point $LATEST)"
+if [ -n "$LATEST" ]; then
+  echo "==> USC update complete (release point $LATEST)"
+else
+  echo "==> USC deploy complete"
+fi

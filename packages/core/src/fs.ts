@@ -8,7 +8,7 @@
  * with exponential backoff.
  */
 
-import { writeFile as fsWriteFile, mkdir as fsMkdir } from "node:fs/promises";
+import { readFile as fsReadFile, writeFile as fsWriteFile, mkdir as fsMkdir } from "node:fs/promises";
 
 /** Error codes that indicate a transient file descriptor exhaustion. */
 const RETRIABLE_CODES = new Set(["ENFILE", "EMFILE"]);
@@ -64,6 +64,31 @@ async function withRetry<T>(operation: () => Promise<T>): Promise<T> {
  */
 export async function writeFile(path: string, data: string, encoding: BufferEncoding = "utf-8"): Promise<void> {
   await withRetry(() => fsWriteFile(path, data, encoding));
+}
+
+/**
+ * Write a file only if its content has changed.
+ *
+ * Reads the existing file and compares content. If identical, the write is
+ * skipped and the file's mtime is preserved. This prevents downstream
+ * mtime-based tools (Shiki highlights, search indexing) from reprocessing
+ * unchanged files after a reconversion.
+ *
+ * @returns `true` if the file was written, `false` if skipped (content identical)
+ */
+export async function writeFileIfChanged(
+  path: string,
+  data: string,
+  encoding: BufferEncoding = "utf-8",
+): Promise<boolean> {
+  try {
+    const existing = await withRetry(() => fsReadFile(path, encoding));
+    if (existing === data) return false;
+  } catch {
+    // File doesn't exist or is unreadable — write it
+  }
+  await withRetry(() => fsWriteFile(path, data, encoding));
+  return true;
 }
 
 /**

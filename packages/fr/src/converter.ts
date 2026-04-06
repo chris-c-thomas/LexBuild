@@ -13,7 +13,7 @@
 import { createReadStream, existsSync } from "node:fs";
 import { readFile, readdir, stat } from "node:fs/promises";
 import { join, dirname } from "node:path";
-import { XMLParser, renderDocument, createLinkResolver, writeFile, mkdir } from "@lexbuild/core";
+import { XMLParser, renderDocument, createLinkResolver, writeFileIfChanged, mkdir } from "@lexbuild/core";
 import type { LevelNode, EmitContext } from "@lexbuild/core";
 import { FrASTBuilder } from "./fr-builder.js";
 import type { FrDocumentXmlMeta } from "./fr-builder.js";
@@ -144,7 +144,7 @@ export async function convertFrDocuments(options: FrConvertOptions): Promise<FrC
       });
 
       await mkdir(dirname(outputPath), { recursive: true });
-      await writeFile(outputPath, markdown, "utf-8");
+      await writeFileIfChanged(outputPath, markdown, "utf-8");
 
       documentsConverted++;
       totalTokenEstimate += Math.round(markdown.length / 4);

@@ -5,9 +5,8 @@
  * authoritative palette). Uses `theme: "none"` in the Scalar config so
  * these variables have full control without fighting a built-in theme.
  *
- * Unlike the standalone theme in `apps/api/src/lib/scalar-theme.ts`, this
- * version omits the Google Fonts `@import` since the Astro app already
- * loads IBM Plex via `@fontsource` packages.
+ * Omits font `@import` since the Astro app loads IBM Plex via `@fontsource`
+ * packages.
  */
 export const SCALAR_THEME_CSS = /* css */ `
 /* ---- Light mode ---- */

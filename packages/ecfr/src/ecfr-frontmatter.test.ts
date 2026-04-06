@@ -61,11 +61,7 @@ describe("buildEcfrFrontmatter", () => {
     });
 
     it("uses provided currencyDate for currency and last_updated fields", () => {
-      const fm = buildEcfrFrontmatter(
-        makeSection(),
-        makeContext({ partNum: "1" }),
-        "2026-03-15",
-      );
+      const fm = buildEcfrFrontmatter(makeSection(), makeContext({ partNum: "1" }), "2026-03-15");
 
       expect(fm.currency).toBe("2026-03-15");
       expect(fm.last_updated).toBe("2026-03-15");

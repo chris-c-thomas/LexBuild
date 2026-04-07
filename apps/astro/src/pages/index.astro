@@ -1019,7 +1019,7 @@ Astro.response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-
             </div>
           </div>
           <div class="bg-background" data-tab-content="yaml">
-            <div class="sample-shiki"><Fragment set:html={highlightedYaml} /></div>
+            <div class="sample-shiki sample-shiki-yaml"><Fragment set:html={highlightedYaml} /></div>
           </div>
           <div class="bg-background" data-tab-content="preview" style="display:none;">
             <dl class="sample-preview-grid">
@@ -1093,7 +1093,7 @@ Astro.response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-
             </div>
           </div>
           <div class="bg-background max-h-[500px] overflow-y-auto" data-tab-content="markdown">
-            <div class="sample-shiki"><Fragment set:html={highlightedMarkdown} /></div>
+            <div class="sample-shiki sample-shiki-md"><Fragment set:html={highlightedMarkdown} /></div>
           </div>
           <div class="bg-background max-h-[500px] overflow-y-auto" data-tab-content="rendered" style="display:none;">
             <div class="prose prose-zinc dark:prose-invert max-w-none p-4 text-sm">
@@ -1536,6 +1536,27 @@ Astro.response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-
     word-break: break-word;
     border-radius: 0;
     background: transparent !important;
+  }
+
+  /* YAML keys at semibold, values at regular.
+     Case-insensitive flag (i) handles Shiki's uppercase hex output. */
+  .sample-shiki-yaml :global(pre.shiki span[style*="color:#476C85" i]) {
+    font-weight: 600;
+  }
+
+  /* Markdown headings at semibold, body at regular.
+     #643C21 = heading text, #975826 = heading # punctuation. */
+  .sample-shiki-md :global(pre.shiki span[style*="color:#643C21" i]),
+  .sample-shiki-md :global(pre.shiki span[style*="color:#975826" i]) {
+    font-weight: 600;
+  }
+
+  /* Emphasis tokens at medium — bold, italic, blockquote, inline code. */
+  .sample-shiki-md :global(pre.shiki span[style*="color:#3E5B51" i]),
+  .sample-shiki-md :global(pre.shiki span[style*="color:#6FA48E" i]),
+  .sample-shiki-md :global(pre.shiki span[style*="color:#487061" i]),
+  .sample-shiki-md :global(pre.shiki span[style*="font-style:italic" i]) {
+    font-weight: 500;
   }
 
   /* auto-fit minmax grid — no Tailwind shorthand */

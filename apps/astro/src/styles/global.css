@@ -281,6 +281,24 @@
   line-height: 1.625 !important;
 }
 
+/* Markdown headings at semibold, body stays at regular.
+   #643C21 = heading text, #975826 = heading # punctuation. */
+.shiki-wrap pre.shiki span[style*="color:#643C21" i],
+.shiki-wrap pre.shiki span[style*="color:#975826" i] {
+  font-weight: 600 !important;
+}
+
+/* Emphasis tokens at medium — bold markers/text, italic/blockquote, inline code.
+   #3E5B51 = bold text, #6FA48E = ** markers, #487061 = inline code.
+   font-style:italic substring matches --shiki-light-font-style:italic
+   (italic text, blockquotes) without matching list bullets at the same color. */
+.shiki-wrap pre.shiki span[style*="color:#3E5B51" i],
+.shiki-wrap pre.shiki span[style*="color:#6FA48E" i],
+.shiki-wrap pre.shiki span[style*="color:#487061" i],
+.shiki-wrap pre.shiki span[style*="font-style:italic" i] {
+  font-weight: 500 !important;
+}
+
 .shiki-wrap .line {
   display: inline !important;
 }

@@ -391,4 +391,12 @@ const hasToggle = !!rawYaml;
     border-radius: 0;
     background: transparent !important;
   }
+
+  /* YAML keys at medium weight, values stay at regular.
+     Targets Shiki's inline style — the light-theme color is always present
+     in the style attribute regardless of dark mode (dark uses --shiki-dark var).
+     Case-insensitive flag (i) handles Shiki's uppercase hex output (#476C85). */
+  .frontmatter-yaml-view :global(pre.shiki span[style*="color:#476C85" i]) {
+    font-weight: 600;
+  }
 </style>

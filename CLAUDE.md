@@ -294,6 +294,7 @@ Note: identifiers use `/us/cfr/` (content type) not `/us/ecfr/` (data source). B
 - **Docker Meilisearch stores data at `data.ms/` inside the volume**: When tarring/extracting, use `-C /data/data.ms` not `-C /data`. Extracting at the wrong level causes "failed to infer database version" on the VPS.
 - **Docker search index checkpoints**: The incremental indexing script writes checkpoint files (`.search-indexed-at-{source}`) into the content directory. For Docker runs, these are persisted in `downloads/.search-checkpoints/` and restored into the temp content dir on each run. If this directory is deleted, the next Docker index run will scan all files from scratch.
 - **Docker volume profiles**: `MEILI_PROFILE=dev|full` selects volume (`meili-data-dev` or `meili-data-full`). Dev mode runs without master key (`MEILI_ENV=development`). Full mode requires `MEILI_MASTER_KEY` for VPS-compatible data.
+- **Cloudflare "Managed robots.txt"**: When enabled, Cloudflare overwrites the site's `robots.txt` to block AI crawlers. For LexBuild (public domain legal content), this should be **OFF**. The custom `robots.txt` at `apps/astro/public/robots.txt` blocks AI crawlers from `/_astro/` (hashed static assets), `/nav/` (internal JSON), and `/api/` while allowing legal content.
 
 ## When Adding New Source Types
 

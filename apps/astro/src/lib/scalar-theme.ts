@@ -162,16 +162,18 @@ export const SCALAR_THEME_CSS = /* css */ `
   padding: 0.75rem !important;
   --scalar-sidebar-indent: 12px !important;
 
-  /* Override Scalar sidebar color tokens to match docs sidebar */
+  /* Override Scalar sidebar tokens to match docs sidebar */
   --sidebar-c-1: var(--scalar-color-1) !important;
   --sidebar-c-2: var(--scalar-color-2) !important;
   --sidebar-b-hover: var(--scalar-background-3) !important;
   --sidebar-active-c: var(--scalar-color-1) !important;
+  --scalar-sidebar-font-weight: 400 !important;
 }
 
-/* Group headers: bold, dark text like docs section headings */
-.t-doc__sidebar .group\/group-button > button {
-  font-weight: 700 !important;
+/* Group headers + top-level standalone items (Introduction): semibold, dark */
+.t-doc__sidebar .group\\/group-button > button,
+.t-doc__sidebar > ul > .group\\/item > button {
+  font-weight: 600 !important;
   font-size: 0.875rem !important;
   color: var(--scalar-color-1) !important;
   padding: 0.375rem 0.5rem !important;
@@ -182,27 +184,28 @@ export const SCALAR_THEME_CSS = /* css */ `
 .t-doc__sidebar button {
   border-radius: 6px !important;
 }
-.t-doc__sidebar .group\/item > button:hover,
-.t-doc__sidebar .group\/group-button > button:hover {
+.t-doc__sidebar .group\\/item > button:hover,
+.t-doc__sidebar .group\\/group-button > button:hover {
   background: var(--scalar-background-3) !important;
 }
 
 /* Active/selected item: prominent background highlight */
-.t-doc__sidebar .group\/item > button[aria-selected="true"],
-.t-doc__sidebar .group\/item > button.active {
+.t-doc__sidebar .group\\/item > button[aria-selected="true"],
+.t-doc__sidebar .group\\/item > button.active {
   background: var(--scalar-background-3) !important;
   color: var(--scalar-color-1) !important;
   font-weight: 500 !important;
 }
 
 /* Endpoint items: match docs text size */
-.t-doc__sidebar .group\/items .group\/item > button {
+.t-doc__sidebar .group\\/items .group\\/item > button {
   font-size: 0.875rem !important;
   padding: 0.25rem 0.5rem !important;
 }
 
-/* GET badges: visible but compact */
+/* GET badges: visible but compact, force IBM Plex Mono */
 .t-doc__sidebar .sidebar-heading-type {
+  font-family: "IBM Plex Mono", ui-monospace, monospace !important;
   font-size: 0.75rem !important;
   opacity: 0.9 !important;
   font-weight: 600 !important;

@@ -62,7 +62,7 @@ export function SourcesDropdown({ source }: SourcesDropdownProps) {
           "hover:text-slate-blue-700 dark:hover:text-slate-blue-300",
           source ? "text-foreground" : "text-muted-foreground",
         )}>
-        {activeLabel ?? "Browse"}
+        {activeLabel ?? "Sources"}
         <ChevronDown className="size-3.5" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-56">

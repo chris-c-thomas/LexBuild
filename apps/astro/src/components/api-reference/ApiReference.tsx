@@ -63,8 +63,12 @@ export default function ApiReference({ specUrl }: ApiReferenceProps) {
           darkMode: isDark,
           withDefaultFonts: false,
           customCss: SCALAR_THEME_CSS,
-          // Hide Scalar's Cmd+K search to avoid conflicting with the site SearchDialog
-          hideModals: { "search-modal": true },
+          defaultOpenAllTags: true,
+          expandAllResponses: true,
+          hideClientButton: true,
+          hideDarkModeToggle: true,
+          hideModels: true,
+          hideSearch: true,
         }}
       />
     </ApiReferenceErrorBoundary>

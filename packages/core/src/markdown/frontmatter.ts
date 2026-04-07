@@ -10,15 +10,19 @@ import type { FrontmatterData } from "../ast/types.js";
 
 /** Resolve package.json version at module load time */
 function readPackageVersion(): string {
-  try {
-    const dir = dirname(fileURLToPath(import.meta.url));
-    // Works from both src/markdown/ (dev) and dist/ (built)
-    const pkgPath = resolve(dir, "..", "..", "package.json");
-    const raw = readFileSync(pkgPath, "utf-8");
-    return (JSON.parse(raw) as { version: string }).version;
-  } catch {
-    return "0.0.0";
+  const dir = dirname(fileURLToPath(import.meta.url));
+  // From dist/index.js: ../package.json = packages/core/package.json
+  // From src/markdown/frontmatter.ts: ../../package.json = packages/core/package.json
+  for (const rel of ["../package.json", "../../package.json"]) {
+    try {
+      const raw = readFileSync(resolve(dir, rel), "utf-8");
+      const version = (JSON.parse(raw) as { version: string }).version;
+      if (version) return version;
+    } catch {
+      // try next path
+    }
   }
+  return "0.0.0";
 }
 
 /** Output format version */

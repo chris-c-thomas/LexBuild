@@ -51,6 +51,7 @@ describe("@lexbuild/core barrel exports", () => {
     expect(typeof renderNode).toBe("function");
     expect(typeof generateFrontmatter).toBe("function");
     expect(FORMAT_VERSION).toBe("1.1.0");
-    expect(GENERATOR).toMatch(/^lexbuild@/);
+    expect(GENERATOR).toMatch(/^lexbuild@\d+\.\d+\.\d+$/);
+    expect(GENERATOR).not.toBe("lexbuild@0.0.0");
   });
 });

@@ -1,31 +1,23 @@
 # =============================================================================
 # robots.txt for lexbuild.dev
-# Updated: 2026-04-06
+# Updated: 2026-04-07
 #
 # LexBuild converts U.S. legal sources into structured Markdown for LLMs,
 # RAG pipelines, and semantic search.
 #
-# AI crawlers are explicitly welcome.
+# AI crawlers are explicitly welcome to crawl legal content.
+# Static assets (JS/CSS bundles, nav JSON) are excluded — they contain
+# no useful content and waste crawl budget.
 # =============================================================================
 
 # ---------------------------------------------------------------------------
-# Search engines
+# Search engines — full access (need JS/CSS for page rendering)
 # ---------------------------------------------------------------------------
 User-agent: Googlebot
-Allow: /
-
 User-agent: Googlebot-Image
-Allow: /
-
 User-agent: Bingbot
-Allow: /
-
 User-agent: DuckDuckBot
-Allow: /
-
 User-agent: Yandex
-Allow: /
-
 User-agent: Baiduspider
 Allow: /
 
@@ -33,58 +25,33 @@ Allow: /
 # AI crawlers: training
 #
 # Public-domain legal content. Training ingestion is encouraged.
+# Static assets and internal data endpoints are excluded.
 # ---------------------------------------------------------------------------
 User-agent: GPTBot
-Allow: /
-
 User-agent: Google-Extended
-Allow: /
-
 User-agent: ClaudeBot
-Allow: /
-
 User-agent: anthropic-ai
-Allow: /
-
 User-agent: CCBot
-Allow: /
-
 User-agent: Applebot-Extended
-Allow: /
-
 User-agent: Meta-ExternalAgent
-Allow: /
-
 User-agent: Bytespider
-Allow: /
-
 User-agent: Diffbot
-Allow: /
-
 User-agent: cohere-ai
-Allow: /
-
 User-agent: cohere-training-data-crawler
-Allow: /
-
 User-agent: Amazonbot
-Allow: /
-
 User-agent: Timpibot
-Allow: /
-
 User-agent: DeepSeekBot
-Allow: /
-
 User-agent: Google-CloudVertexBot
-Allow: /
-
 User-agent: MistralBot
-Allow: /
-
 User-agent: xAI-Grok
 Allow: /
+Disallow: /_astro/
+Disallow: /nav/
+Disallow: /api/
 
+# ---------------------------------------------------------------------------
+# AI crawlers: image-only (blocked — no useful image content)
+# ---------------------------------------------------------------------------
 User-agent: img2dataset
 Disallow: /
 
@@ -92,54 +59,30 @@ Disallow: /
 # AI crawlers: search and retrieval
 #
 # These power AI search results and user-initiated fetches.
+# Static assets and internal data endpoints are excluded.
 # ---------------------------------------------------------------------------
 User-agent: OAI-SearchBot
-Allow: /
-
 User-agent: ChatGPT-User
-Allow: /
-
 User-agent: Claude-SearchBot
-Allow: /
-
 User-agent: Claude-User
-Allow: /
-
 User-agent: PerplexityBot
-Allow: /
-
 User-agent: Perplexity-User
-Allow: /
-
 User-agent: YouBot
-Allow: /
-
 User-agent: PhindBot
-Allow: /
-
 User-agent: ExaBot
-Allow: /
-
 User-agent: AndiBot
-Allow: /
-
 User-agent: DuckAssistBot
-Allow: /
-
 User-agent: FirecrawlAgent
 Allow: /
+Disallow: /_astro/
+Disallow: /nav/
+Disallow: /api/
 
 # ---------------------------------------------------------------------------
 # SEO audit bots (allowed with rate consideration)
-#
-# These provide useful site audit data. Aggressive scrapers are still blocked.
 # ---------------------------------------------------------------------------
 User-agent: Screaming Frog SEO Spider
-Allow: /
-
 User-agent: AhrefsBot
-Allow: /
-
 User-agent: AhrefsSiteAudit
 Allow: /
 
@@ -147,53 +90,21 @@ Allow: /
 # SEO crawlers (blocked — aggressive or low-value)
 # ---------------------------------------------------------------------------
 User-agent: SemrushBot
-Disallow: /
-
 User-agent: SemrushBot-BA
-Disallow: /
-
 User-agent: SemrushBot-SI
-Disallow: /
-
 User-agent: SemrushBot-SWA
-Disallow: /
-
 User-agent: SemrushBot-OCOB
-Disallow: /
-
 User-agent: SiteAuditBot
-Disallow: /
-
 User-agent: SplitSignalBot
-Disallow: /
-
 User-agent: MJ12bot
-Disallow: /
-
 User-agent: DotBot
-Disallow: /
-
 User-agent: BLEXBot
-Disallow: /
-
 User-agent: SearchmetricsBot
-Disallow: /
-
 User-agent: Barkrowler
-Disallow: /
-
 User-agent: rogerbot
-Disallow: /
-
 User-agent: spbot
-Disallow: /
-
 User-agent: SurveyBot
-Disallow: /
-
 User-agent: SEOdiver
-Disallow: /
-
 User-agent: PetalBot
 Disallow: /
 
@@ -201,35 +112,23 @@ Disallow: /
 # Miscellaneous bad actors / resource wasters (blocked)
 # ---------------------------------------------------------------------------
 User-agent: Nutch
-Disallow: /
-
 User-agent: CensysInspect
-Disallow: /
-
 User-agent: Expanse
-Disallow: /
-
 User-agent: VelenPublicWebCrawler
-Disallow: /
-
 User-agent: Webzio-Extended
-Disallow: /
-
 User-agent: omgili
-Disallow: /
-
 User-agent: omgilibot
-Disallow: /
-
 User-agent: ICC-Crawler
 Disallow: /
 
 # ---------------------------------------------------------------------------
-# Default: allow
+# Default: allow content, block static assets and internal endpoints
 # ---------------------------------------------------------------------------
 User-agent: *
 Allow: /
 Allow: /api/openapi.json
+Disallow: /_astro/
+Disallow: /nav/
 Disallow: /api/
 
 Sitemap: https://lexbuild.dev/sitemap.xml

@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
 
+## [1.20.1]
+
+### Changed
+
+- Upgraded Astro from 6.0.4 to 6.1.4
+- Updated robots.txt: allowed /api/openapi.json, added DeepSeekBot/MistralBot/xAI-Grok/Google-CloudVertexBot, relaxed Ahrefs/Screaming Frog
+
+### Fixed
+
+- Resolved 10 Dependabot vulnerabilities via pnpm overrides (dompurify ^3.3.2, vite ^7.3.2, defu ^6.1.5)a
+
 ## [1.20.0]
 
 ### Added
@@ -864,7 +875,6 @@ eCFR npm publish issue via changeset and publish.yml
 ### Changed
 
 - **Organization**: General repository maintenance and cleanup.
-
 
 ## [0.7.0]
 

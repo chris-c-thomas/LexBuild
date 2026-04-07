@@ -63,7 +63,7 @@ export function createApp(config: AppConfig): OpenAPIHono {
     openapi: "3.1.0",
     info: {
       title: "LexBuild API",
-      version: "1.17.2",
+      version: "1.20.1",
       description:
         "The LexBuild API provides structured, programmatic access to over one million U.S. legal documents, including the U.S. Code, the Code of Federal Regulations, and the Federal Register.\n\n It transforms complex, hard-to-use government legal sources into structured, machine-readable data optimized for LLMs, AI-driven workflows, RAG pipelines, semantic search systems, and other legal-tech applications.\n\n Core capabilities include full-text search with faceted filtering, hierarchical navigation across legal structures, paginated collections, selective field projection, and HTTP caching via ETags for efficient data access.",
       license: { name: "MIT", url: "https://opensource.org/licenses/MIT" },

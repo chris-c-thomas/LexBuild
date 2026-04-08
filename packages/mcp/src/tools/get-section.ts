@@ -6,6 +6,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { ServerDeps } from "../server/create-server.js";
 import { enforceResponseBudget } from "./guards.js";
 import { wrapUntrustedContent } from "./sanitize.js";
+import { withErrorHandling } from "./with-error-handling.js";
 
 const InputSchema = {
   source: z
@@ -37,7 +38,7 @@ export function registerGetSectionTool(server: McpServer, deps: ServerDeps): voi
         openWorldHint: false,
       },
     },
-    async (input) => {
+    withErrorHandling("get_section", deps.logger, async (input) => {
       deps.logger.debug("get_section invoked", { source: input.source, identifier: input.identifier });
 
       const result = await deps.api.getDocument(input.source, input.identifier);
@@ -53,6 +54,6 @@ export function registerGetSectionTool(server: McpServer, deps: ServerDeps): voi
       const checked = enforceResponseBudget(output, deps.config.LEXBUILD_MCP_MAX_RESPONSE_BYTES);
 
       return { content: [{ type: "text" as const, text: JSON.stringify(checked, null, 2) }] };
-    },
+    }),
   );
 }

@@ -15,8 +15,22 @@ export function createHttpApp(deps: ServerDeps): Hono {
   const rateLimiter = new RateLimiter(deps.config.LEXBUILD_MCP_RATE_LIMIT_PER_MIN);
   const logger = deps.logger.child({ transport: "http" });
 
-  // Track active transports by session ID for reuse
-  const sessions = new Map<string, WebStandardStreamableHTTPServerTransport>();
+  // Track active transports by session ID with last-activity timestamps
+  const sessions = new Map<string, { transport: WebStandardStreamableHTTPServerTransport; lastActive: number }>();
+  const MAX_SESSIONS = 1000;
+  const SESSION_TTL_MS = 30 * 60 * 1000; // 30 minutes
+
+  // Periodic cleanup of stale sessions
+  const cleanupInterval = setInterval(() => {
+    const now = Date.now();
+    for (const [id, session] of sessions.entries()) {
+      if (now - session.lastActive > SESSION_TTL_MS) {
+        sessions.delete(id);
+        logger.info("Stale MCP session cleaned up", { sessionId: id });
+      }
+    }
+  }, 60_000);
+  cleanupInterval.unref();
 
   // Health check — no auth
   app.get("/healthz", (c) => c.json({ status: "ok" }));
@@ -26,7 +40,10 @@ export function createHttpApp(deps: ServerDeps): Hono {
     try {
       await deps.api.healthCheck();
       return c.json({ status: "ready" });
-    } catch {
+    } catch (err) {
+      logger.warn("Readiness check failed", {
+        error: err instanceof Error ? err.message : String(err),
+      });
       return c.json({ status: "not_ready" }, 503);
     }
   });
@@ -58,7 +75,13 @@ export function createHttpApp(deps: ServerDeps): Hono {
       const transport = new WebStandardStreamableHTTPServerTransport({
         sessionIdGenerator: () => crypto.randomUUID(),
         onsessioninitialized: (id) => {
-          sessions.set(id, transport);
+          if (sessions.size >= MAX_SESSIONS) {
+            logger.warn("Max sessions reached, rejecting new session", {
+              maxSessions: MAX_SESSIONS,
+            });
+            return;
+          }
+          sessions.set(id, { transport, lastActive: Date.now() });
           logger.info("MCP session initialized", { sessionId: id });
         },
         onsessionclosed: (id) => {
@@ -73,8 +96,8 @@ export function createHttpApp(deps: ServerDeps): Hono {
     }
 
     // For existing sessions, look up the transport
-    const existingTransport = sessions.get(sessionId);
-    if (!existingTransport) {
+    const existingSession = sessions.get(sessionId);
+    if (!existingSession) {
       return c.json(
         {
           jsonrpc: "2.0",
@@ -85,7 +108,8 @@ export function createHttpApp(deps: ServerDeps): Hono {
       );
     }
 
-    return existingTransport.handleRequest(c.req.raw);
+    existingSession.lastActive = Date.now();
+    return existingSession.transport.handleRequest(c.req.raw);
   });
 
   // Log unhandled routes

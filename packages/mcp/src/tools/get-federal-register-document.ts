@@ -6,6 +6,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { ServerDeps } from "../server/create-server.js";
 import { enforceResponseBudget } from "./guards.js";
 import { wrapUntrustedContent } from "./sanitize.js";
+import { withErrorHandling } from "./with-error-handling.js";
 
 const InputSchema = {
   document_number: z.string().min(1).describe("Federal Register document number. Example: '2026-06029'."),
@@ -28,7 +29,7 @@ export function registerGetFrDocumentTool(server: McpServer, deps: ServerDeps): 
         openWorldHint: false,
       },
     },
-    async (input) => {
+    withErrorHandling("get_federal_register_document", deps.logger, async (input) => {
       deps.logger.debug("get_federal_register_document invoked", {
         document_number: input.document_number,
       });
@@ -46,6 +47,6 @@ export function registerGetFrDocumentTool(server: McpServer, deps: ServerDeps): 
       const checked = enforceResponseBudget(output, deps.config.LEXBUILD_MCP_MAX_RESPONSE_BYTES);
 
       return { content: [{ type: "text" as const, text: JSON.stringify(checked, null, 2) }] };
-    },
+    }),
   );
 }

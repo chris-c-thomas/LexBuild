@@ -5,13 +5,14 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { ServerDeps } from "../server/create-server.js";
 import { enforceResponseBudget } from "./guards.js";
+import { withErrorHandling } from "./with-error-handling.js";
 
 const InputSchema = {
   query: z.string().min(2).max(256).describe("Natural language or keyword query. Supports quoted phrases."),
-  sources: z
-    .array(z.enum(["usc", "cfr", "fr"]))
+  source: z
+    .enum(["usc", "cfr", "fr"])
     .optional()
-    .describe("Restrict search to specific sources. Omit to search all."),
+    .describe("Restrict search to a specific source. Omit to search all."),
   title: z
     .number()
     .int()
@@ -46,13 +47,12 @@ export function registerSearchLawsTool(server: McpServer, deps: ServerDeps): voi
         openWorldHint: false,
       },
     },
-    async (input) => {
+    withErrorHandling("search_laws", deps.logger, async (input) => {
       deps.logger.debug("search_laws invoked", { query: input.query });
 
-      const source = input.sources?.[0];
       const result = await deps.api.search({
         q: input.query,
-        source,
+        source: input.source,
         title_number: input.title,
         limit: input.limit,
         offset: input.offset,
@@ -76,6 +76,6 @@ export function registerSearchLawsTool(server: McpServer, deps: ServerDeps): voi
       const checked = enforceResponseBudget(output, deps.config.LEXBUILD_MCP_MAX_RESPONSE_BYTES);
 
       return { content: [{ type: "text" as const, text: JSON.stringify(checked, null, 2) }] };
-    },
+    }),
   );
 }

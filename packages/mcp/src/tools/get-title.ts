@@ -4,6 +4,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { ServerDeps } from "../server/create-server.js";
+import { withErrorHandling } from "./with-error-handling.js";
 
 const InputSchema = {
   source: z.enum(["usc", "cfr", "fr"]).describe("Legal source."),
@@ -31,7 +32,7 @@ export function registerGetTitleTool(server: McpServer, deps: ServerDeps): void 
         openWorldHint: false,
       },
     },
-    async (input) => {
+    withErrorHandling("get_title", deps.logger, async (input) => {
       deps.logger.debug("get_title invoked", { source: input.source, number: input.number });
 
       if (input.source === "fr") {
@@ -61,6 +62,6 @@ export function registerGetTitleTool(server: McpServer, deps: ServerDeps): void 
         })),
       };
       return { content: [{ type: "text" as const, text: JSON.stringify(output, null, 2) }] };
-    },
+    }),
   );
 }

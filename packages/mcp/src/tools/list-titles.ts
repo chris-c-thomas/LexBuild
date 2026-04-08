@@ -4,6 +4,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { ServerDeps } from "../server/create-server.js";
+import { withErrorHandling } from "./with-error-handling.js";
 
 const InputSchema = {
   source: z.enum(["usc", "cfr", "fr"]).describe("Legal source. For usc/cfr, returns titles. For fr, returns years."),
@@ -26,7 +27,7 @@ export function registerListTitlesTool(server: McpServer, deps: ServerDeps): voi
         openWorldHint: false,
       },
     },
-    async (input) => {
+    withErrorHandling("list_titles", deps.logger, async (input) => {
       deps.logger.debug("list_titles invoked", { source: input.source });
 
       if (input.source === "fr") {
@@ -52,6 +53,6 @@ export function registerListTitlesTool(server: McpServer, deps: ServerDeps): voi
         })),
       };
       return { content: [{ type: "text" as const, text: JSON.stringify(output, null, 2) }] };
-    },
+    }),
   );
 }

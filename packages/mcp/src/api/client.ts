@@ -4,6 +4,7 @@
  */
 import type { Logger } from "../lib/logger.js";
 import { McpServerError } from "../server/errors.js";
+import { VERSION } from "../lib/version.js";
 import type {
   SearchParams,
   SearchResponse,
@@ -53,7 +54,7 @@ export class LexBuildApiClient {
 
     const headers: Record<string, string> = {
       Accept: "application/json",
-      "User-Agent": "lexbuild-mcp/0.1.0",
+      "User-Agent": `lexbuild-mcp/${VERSION}`,
     };
 
     if (this.apiKey) {
@@ -92,6 +93,11 @@ export class LexBuildApiClient {
       return (await response.json()) as T;
     } catch (err) {
       if (err instanceof McpServerError) throw err;
+      if (err instanceof SyntaxError) {
+        throw new McpServerError("api_error", `Data API returned invalid JSON for ${path}`, {
+          cause: err,
+        });
+      }
       throw new McpServerError("api_unavailable", "Data API is unreachable", { cause: err });
     }
   }
@@ -156,7 +162,7 @@ export class LexBuildApiClient {
   }
 
   /** List FR years. */
-  async listYears(options?: { signal?: AbortSignal }): Promise<YearsResponse> {
+  async listYears(options?: { signal?: AbortSignal | undefined }): Promise<YearsResponse> {
     return this.json<YearsResponse>("/api/fr/years", options);
   }
 
@@ -166,7 +172,7 @@ export class LexBuildApiClient {
   }
 
   /** Health check — also validates API key if one is configured. */
-  async healthCheck(options?: { signal?: AbortSignal }): Promise<HealthResponse> {
+  async healthCheck(options?: { signal?: AbortSignal | undefined }): Promise<HealthResponse> {
     return this.json<HealthResponse>("/api/health", options);
   }
 }

@@ -325,12 +325,17 @@ span.required {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
 }
 
-/* ---- Introduction section — branded heading ---- */
+/* ---- Introduction section — branded heading + badge spacing ---- */
 .section-header h1 {
   font-family: "IBM Plex Serif", serif !important;
   font-weight: 600 !important;
   letter-spacing: -0.015em !important;
   color: var(--scalar-color-1) !important;
+}
+
+/* Version/OAS badges above the title — add breathing room below */
+.section-header-label {
+  margin-bottom: 0.5rem !important;
 }
 
 /* ---- Sticky cards (right column) — subtle elevation ---- */

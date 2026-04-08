@@ -1,12 +1,12 @@
 {
   "name": "@lexbuild/mcp",
-  "version": "0.1.0",
+  "version": "1.22.0",
   "description": "Model Context Protocol server for LexBuild. Exposes U.S. legal sources to AI agents.",
   "author": "Chris Thomas",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/chris-c-thomas/LexBuild.git",
+    "url": "git+https://github.com/chris-c-thomas/LexBuild.git",
     "directory": "packages/mcp"
   },
   "homepage": "https://github.com/chris-c-thomas/LexBuild/tree/main/packages/mcp",
@@ -36,8 +36,8 @@
     }
   },
   "bin": {
-    "lexbuild-mcp": "./dist/bin/stdio.js",
-    "lexbuild-mcp-http": "./dist/bin/http.js"
+    "lexbuild-mcp": "dist/bin/stdio.js",
+    "lexbuild-mcp-http": "dist/bin/http.js"
   },
   "sideEffects": false,
   "files": [

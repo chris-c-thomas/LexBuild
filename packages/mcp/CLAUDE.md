@@ -6,7 +6,7 @@
 
 ## Monorepo Integration
 
-- **Published to npm** as `@lexbuild/mcp` — included in changesets, independently versioned (not in the `fixed` group)
+- **Published to npm** as `@lexbuild/mcp` — included in changesets `fixed` group (lockstep versioning with all packages)
 - **Fully independent** — no dependency on `@lexbuild/core` or any source package. ESLint boundary rules enforce this.
 - **Two bin entrypoints**: `lexbuild-mcp` (stdio) and `lexbuild-mcp-http` (HTTP)
 

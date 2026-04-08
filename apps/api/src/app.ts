@@ -86,12 +86,12 @@ export function createApp(config: AppConfig): OpenAPIHono {
       {
         name: "eCFR",
         description:
-          "Browse and retrieve sections from the Electronic Code of Federal Regulations, provided by the Government Publishing Office, organized by title and chapter.",
+          "Browse and retrieve sections from the Electronic Code of Federal Regulations, published by the National Archives through the Office of the Federal Register, organized by title and chapter.",
       },
       {
         name: "Federal Register",
         description:
-          "Browse and retrieve Federal Register documents, provided by the Government Publishing Office, organized by year and month.",
+          "Browse and retrieve Federal Register documents, published by the National Archives through the Office of the Federal Register, organized by year and month.",
       },
       {
         name: "Search",

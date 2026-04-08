@@ -314,7 +314,7 @@
   left: 0;
   width: 100%;
   height: 1.5px;
-  background-color: var(--color-slate-blue-600);
+  background-color: var(--color-summer-green-600);
   transform: scaleX(0);
   transform-origin: left;
   transition: transform 0.2s ease;

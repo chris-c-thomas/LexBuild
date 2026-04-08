@@ -241,9 +241,12 @@ export const SCALAR_THEME_CSS = /* css */ `
   color: var(--scalar-color-2) !important;
 }
 
-/* ---- Section dividers — subtle brand-tinted top border ---- */
-.section:not(:first-of-type) {
-  border-top: 1px solid var(--scalar-border-color) !important;
+/* ---- Section dividers — subtle summer-green tinted top border ---- */
+.light-mode .section:not(:first-of-type) {
+  border-top: 1px solid #d3e4dc !important;
+}
+.dark-mode .section:not(:first-of-type) {
+  border-top: 1px solid #354b43 !important;
 }
 
 /* ---- Operation headings (Health Check, List Sources, etc.) ---- */

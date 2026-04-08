@@ -69,9 +69,7 @@ export function createApp(config: AppConfig): OpenAPIHono {
       license: { name: "MIT", url: "https://opensource.org/licenses/MIT" },
       contact: { name: "LexBuild", url: "https://lexbuild.dev" },
     },
-    servers: [
-      { url: "https://lexbuild.dev/api", description: "Production" },
-    ],
+    servers: [{ url: "https://lexbuild.dev/api", description: "Production" }],
     security: [{ apiKey: [] }],
     tags: [
       {

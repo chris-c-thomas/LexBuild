@@ -3,10 +3,7 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
 import ApiReference from "@/components/api-reference/ApiReference";
 import type { PageSEO } from "@/lib/types";
 
-Astro.response.headers.set(
-  "Cache-Control",
-  "public, s-maxage=86400, stale-while-revalidate=3600",
-);
+Astro.response.headers.set("Cache-Control", "public, s-maxage=86400, stale-while-revalidate=3600");
 
 const siteUrl = import.meta.env.SITE_URL ?? "https://lexbuild.dev";
 const apiUrl = import.meta.env.API_URL ?? siteUrl;

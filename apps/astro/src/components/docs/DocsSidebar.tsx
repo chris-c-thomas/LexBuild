@@ -62,9 +62,7 @@ function SidebarSection({
               const isActive = currentSlug === item.slug;
               return (
                 <li key={item.slug}>
-                  {item.separator ? (
-                    <hr className="border-sidebar-border my-1.5 mx-2" />
-                  ) : null}
+                  {item.separator ? <hr className="border-sidebar-border mx-2 my-1.5" /> : null}
                   <a
                     href={`/docs/${item.slug}`}
                     className={`block rounded-md px-2 py-1 text-sm transition-colors ${

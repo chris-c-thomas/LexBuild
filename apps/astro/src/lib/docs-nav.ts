@@ -62,9 +62,7 @@ export const DOCS_NAV: DocsNavSection[] = [
   },
   {
     title: "MCP",
-    items: [
-      { title: "Overview", slug: "mcp/overview", badge: "Coming Soon" },
-    ],
+    items: [{ title: "Overview", slug: "mcp/overview", badge: "Coming Soon" }],
   },
   {
     title: "Guides",

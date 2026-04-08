@@ -865,11 +865,6 @@ export class ASTBuilder {
     }
   }
 
-  /**
-   * Bubble text content up to the nearest heading/num ignore frame on the stack.
-   * This handles patterns like <heading><b>Editorial Notes</b></heading>
-   * where the text is inside an inline child but needs to be collected by the heading frame.
-   */
   // ---------------------------------------------------------------------------
   // XHTML table handling
   // ---------------------------------------------------------------------------

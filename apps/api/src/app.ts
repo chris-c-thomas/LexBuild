@@ -1,3 +1,7 @@
+/**
+ * Hono application factory — assembles middleware stack and route registrations.
+ * Exported for use by the server entry point and integration tests.
+ */
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { cors } from "hono/cors";
 import { createDatabase } from "./db/client.js";

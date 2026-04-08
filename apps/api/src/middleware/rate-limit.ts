@@ -4,6 +4,8 @@ import { validateApiKey, trackUsage } from "../db/keys.js";
 
 const ANON_LIMIT = 100;
 const ANON_WINDOW = 60;
+/** Evict rate-limit entries older than 1 hour to prevent unbounded memory growth. */
+const CLEANUP_MAX_AGE_MS = 3_600_000;
 
 interface RateLimitEntry {
   count: number;
@@ -41,7 +43,7 @@ class InMemoryRateLimiter {
 
   private cleanup(): void {
     const now = Date.now();
-    const maxAge = 3600_000;
+    const maxAge = CLEANUP_MAX_AGE_MS;
     for (const [key, entry] of this.store) {
       if (now - entry.windowStart > maxAge) {
         this.store.delete(key);

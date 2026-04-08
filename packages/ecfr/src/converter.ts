@@ -181,6 +181,8 @@ export async function convertEcfrTitle(options: EcfrConvertOptions): Promise<Ecf
       counts.set(key, (counts.get(key) ?? 0) + 1);
     }
 
+    // Assign occurrence-based suffixes (-2, -3, ...) to duplicate sections.
+    // First occurrence keeps the canonical (unsuffixed) path for stable URLs.
     const seen = new Map<string, number>();
     const outputPaths: string[] = [];
 

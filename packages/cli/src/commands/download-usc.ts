@@ -58,7 +58,6 @@ Source: https://uscode.house.gov/download/download.shtml`,
     const outputDir = resolve(options.output);
     const titleCount = titles ? titles.length : 54;
 
-    // Resolve release point: use explicit flag, auto-detect, or fall back
     let releasePoint = options.releasePoint;
     if (!releasePoint) {
       const detectSpinner = createSpinner("Detecting latest OLRC release point...");

@@ -1,3 +1,7 @@
+/**
+ * Hono application factory — assembles middleware stack and route registrations.
+ * Exported for use by the server entry point and integration tests.
+ */
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { cors } from "hono/cors";
 import { createDatabase } from "./db/client.js";
@@ -69,9 +73,7 @@ export function createApp(config: AppConfig): OpenAPIHono {
       license: { name: "MIT", url: "https://opensource.org/licenses/MIT" },
       contact: { name: "LexBuild", url: "https://lexbuild.dev" },
     },
-    servers: [
-      { url: "https://lexbuild.dev/api", description: "Production" },
-    ],
+    servers: [{ url: "https://lexbuild.dev/api", description: "Production" }],
     security: [{ apiKey: [] }],
     tags: [
       {

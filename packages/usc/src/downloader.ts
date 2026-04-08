@@ -208,7 +208,6 @@ async function downloadAndExtractTitle(
   const xmlFileName = `usc${paddedTitle}.xml`;
   const xmlPath = join(outputDir, xmlFileName);
 
-  // Download the zip file
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}: ${response.statusText} for ${url}`);
@@ -218,18 +217,13 @@ async function downloadAndExtractTitle(
     throw new Error(`No response body for ${url}`);
   }
 
-  // Write zip to disk
   const fileStream = createWriteStream(zipPath);
   // ReadableStream type mismatch between DOM and Node — cast to `never` to bridge
   await pipeline(Readable.fromWeb(response.body as never), fileStream);
 
-  // Extract XML from zip
   await extractXmlFromZip(zipPath, xmlFileName, xmlPath);
-
-  // Clean up zip file
   await unlink(zipPath);
 
-  // Get file size
   const fileStat = await stat(xmlPath);
 
   return {
@@ -403,7 +397,6 @@ async function downloadAndExtractAllTitles(
 
   onProgress?.({ current: 0, total: 54, titleNumber: 0, phase: "downloading" });
 
-  // Download the zip file
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}: ${response.statusText} for ${url}`);
@@ -413,28 +406,23 @@ async function downloadAndExtractAllTitles(
     throw new Error(`No response body for ${url}`);
   }
 
-  // Write zip to disk
   const fileStream = createWriteStream(zipPath);
   await pipeline(Readable.fromWeb(response.body as never), fileStream);
 
-  // Extract all XML files from zip
   let extractCount = 0;
   const extracted = await extractAllXmlFromZip(zipPath, outputDir, (titleNumber) => {
     extractCount++;
     onProgress?.({ current: extractCount, total: 54, titleNumber, phase: "extracting" });
   });
 
-  // Clean up zip file
   await unlink(zipPath);
 
-  // Stat each extracted file and build results
   const files: DownloadedFile[] = [];
   for (const { titleNumber, filePath } of extracted) {
     const fileStat = await stat(filePath);
     files.push({ titleNumber, filePath, size: fileStat.size });
   }
 
-  // Sort by title number for consistent ordering
   files.sort((a, b) => a.titleNumber - b.titleNumber);
 
   return files;

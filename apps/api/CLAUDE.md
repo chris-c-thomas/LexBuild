@@ -2,7 +2,7 @@
 
 ## Package Overview
 
-`apps/api/` is the LexBuild Data API — a Hono-powered REST API that serves structured U.S. legal content from a SQLite database. It provides programmatic access to USC, CFR (eCFR-sourced), and Federal Register documents as Markdown or JSON, with content negotiation, pagination, and search proxy capabilities.
+`apps/api/` is the LexBuild Data API — a Hono-powered REST API that serves structured U.S. legal content from a SQLite database. It provides programmatic access to USC, eCFR, and Federal Register documents as Markdown or JSON, with content negotiation, pagination, and search proxy capabilities.
 
 ## Monorepo Integration
 
@@ -27,7 +27,7 @@ src/
 │   ├── health.ts          # GET /api/health
 │   ├── sources.ts         # GET /api/sources
 │   ├── usc.ts             # USC document + listing endpoints
-│   ├── cfr.ts             # CFR document + listing endpoints
+│   ├── ecfr.ts            # eCFR document + listing endpoints
 │   ├── fr.ts              # FR document + listing endpoints
 │   ├── search.ts          # Meilisearch proxy with faceted filtering
 │   ├── hierarchy.ts       # Title/year/month browsing

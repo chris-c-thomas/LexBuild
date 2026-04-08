@@ -270,6 +270,7 @@ Note: identifiers use `/us/cfr/` (content type) not `/us/ecfr/` (data source). B
 
 ## Common Pitfalls
 
+- **USC snapshot tests break on version bumps**: `packages/usc/src/snapshot.test.ts` contains inline snapshots with the `generator` field. After changesets bump versions, update with `pnpm turbo test --filter=@lexbuild/usc -- --update` and commit the updated `fixtures/expected/*.md` files.
 - **`??` does not catch empty strings**: `"" ?? "fallback"` returns `""`, not `"fallback"`. Use `||` when empty strings should be treated as falsy (e.g., date components defaulting to `"0000"`).
 - **`const` temporal dead zone in closures**: A closure that captures a `const` variable defined later in the same scope will throw `ReferenceError` when invoked — even though the closure itself is defined without error. Watch for this with `resolveLink` callbacks that reference `outputPath`.
 - **XHTML namespace tables**: `<table>` elements in USC XML are in the XHTML namespace, not the USLM namespace. The SAX parser must handle namespace-aware element names.

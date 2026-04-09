@@ -127,7 +127,7 @@ function FrSidebarContent({ currentPath }: { currentPath: string }) {
                       onClick={() => toggleYear(yearStr)}
                       className={`flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-sm transition-colors ${
                         isExpanded
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground border-summer-green-500 border-l-2"
+                          ? "bg-sidebar-accent text-sidebar-accent-foreground border-slate-blue-500 border-l-2"
                           : "text-sidebar-foreground hover:bg-sidebar-accent/50 border-l-2 border-transparent"
                       }`}
                       aria-expanded={isExpanded}>
@@ -479,7 +479,7 @@ function PartList({ parts, sourceId, titleDir, chapterDir, expandedPart, toggleP
               onClick={() => togglePart(part.directory)}
               className={`flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-xs transition-colors ${
                 isExpanded
-                  ? "bg-sidebar-accent/50 text-sidebar-accent-foreground border-summer-green-500 border-l-2"
+                  ? "bg-sidebar-accent/50 text-sidebar-accent-foreground border-slate-blue-500 border-l-2"
                   : "text-sidebar-foreground/70 hover:bg-sidebar-accent/30 border-l-2 border-transparent"
               }`}
               aria-expanded={isExpanded}>

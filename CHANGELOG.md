@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
 
+## [1.23.0]
+
+### Added
+
+- Add MCP documentation: overview, installation (10 clients), tools reference, resources & prompts, and security
+- Add MCP quickstart to Getting Started section
+- Add MCP to architecture overview, contributing guide, and glossary
+- Add MCP server to home page How It Works diagram and Packages section
+- Add syntax highlighting for JSON, TOML, and bash in docs code blocks (Shiki theme tokens)
+- Add clipboard icon copy button to docs code blocks (replaces hover-to-reveal "Copy" text)
+- Add five distinct callout color palettes: slate blue (TIP), summer green (NOTE), lavender (IMPORTANT), putty (CAUTION), chestnut (WARNING)
+
+### Changed
+
+- Enable MCP links in desktop navbar and footer (remove "Coming Soon" badges)
+- Redesign mobile nav: Browse dropdown with inline source selection, top-level nav links, minimal footer
+- Update home page packages grid from 5-column to 3-column layout (6 published packages)
+- Apply Astro Content Collections dual-theme CSS for Shiki syntax highlighting in docs
+- Set explicit code block backgrounds for light mode (#f4f4f5) and dark mode (#1e293b)
+
+### Fixed
+
+- Fix clipboard catch block silently swallowing errors (now shows red tint + console warning)
+- Fix mobile nav "Docs" link incorrectly highlighting on CLI/API/MCP sub-pages
+- Fix mobile nav previewSource persisting across navigations (reset on sheet open)
+- Fix injection defense markers in security docs to match actual implementation
+- Fix "Full CLI Docs" link on home page pointing to 404 GitHub URL
+- Fix MCP version.ts runtime require of package.json failing in bundled output (use tsup define injection)
+- Rename MCP health endpoints from /healthz and /readyz to /health and /ready for consistency with Data API
+
 ## [1.22.0]
 
 ### Added

@@ -230,6 +230,19 @@
   --color-chestnut-900: #6a3138;
   --color-chestnut-950: #3a171b;
 
+  /* Juniper */
+  --color-juniper-50: #f6f9f9;
+  --color-juniper-100: #e5f0ef;
+  --color-juniper-200: #d3e4e3;
+  --color-juniper-300: #b4d0cf;
+  --color-juniper-400: #94b7b7;
+  --color-juniper-500: #67a3a3;
+  --color-juniper-600: #52888a;
+  --color-juniper-700: #467071;
+  --color-juniper-800: #3d5b5c;
+  --color-juniper-900: #354a4b;
+  --color-juniper-950: #1c2f30;
+
   /*
    * --- Semantic tokens (dark-aware via runtime vars) ---
    * Use these for custom page layouts. They auto-adapt to dark mode.

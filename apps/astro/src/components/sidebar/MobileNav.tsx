@@ -13,11 +13,11 @@ const SOURCES: { id: SourceId; label: string }[] = [
   { id: "fr", label: "Federal Register" },
 ];
 
-const NAV_LINKS: { label: string; href: string }[] = [
-  { label: "CLI", href: "/docs/cli/installation" },
-  { label: "API", href: "/docs/api" },
-  { label: "MCP", href: "/docs/mcp/overview" },
-  { label: "Docs", href: "/docs/" },
+const NAV_LINKS: { label: string; href: string; activePrefix: string }[] = [
+  { label: "CLI", href: "/docs/cli/installation", activePrefix: "/docs/cli" },
+  { label: "API", href: "/docs/api", activePrefix: "/docs/api" },
+  { label: "MCP", href: "/docs/mcp/overview", activePrefix: "/docs/mcp" },
+  { label: "Docs", href: "/docs/", activePrefix: "/docs" },
 ];
 
 interface MobileNavProps {
@@ -33,7 +33,15 @@ export function MobileNav({ source, currentPath }: MobileNavProps) {
   const isDocsPage = currentPath.startsWith("/docs");
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
+    <Sheet
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v);
+        if (v) {
+          setPreviewSource(null);
+          setBrowseExpanded(false);
+        }
+      }}>
       <Button
         variant="ghost"
         size="icon-sm"
@@ -70,14 +78,13 @@ export function MobileNav({ source, currentPath }: MobileNavProps) {
               />
             </button>
             {NAV_LINKS.map((link) => {
-              const base = link.href.replace(/\/$/, "");
               const isActive =
                 link.label === "Docs"
                   ? currentPath.startsWith("/docs") &&
-                    currentPath !== "/docs/api" &&
                     !currentPath.startsWith("/docs/cli") &&
+                    !currentPath.startsWith("/docs/api") &&
                     !currentPath.startsWith("/docs/mcp")
-                  : currentPath.startsWith(base);
+                  : currentPath.startsWith(link.activePrefix);
               return (
                 <a
                   key={link.href}

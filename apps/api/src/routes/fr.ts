@@ -6,7 +6,7 @@ import { documentResponseSchema, documentQuerySchema } from "../schemas/document
 import { collectionResponseSchema } from "../schemas/pagination.js";
 import { frFilterSchema } from "../schemas/filters.js";
 import { errorResponseSchema } from "../schemas/errors.js";
-import { URL_TO_DB_SOURCE } from "../lib/source-registry.js";
+import { toDbSource } from "../lib/source-registry.js";
 import { resolveIdentifier, renderDocumentResponse } from "../lib/documents.js";
 import { buildListingResponse } from "../lib/listings.js";
 import { queryDocuments } from "../db/queries.js";
@@ -62,7 +62,7 @@ const getDocumentRoute = createRoute({
 
 /** Register Federal Register document endpoints. */
 export function registerFrRoutes(app: OpenAPIHono, db: Database.Database): void {
-  const dbSource = URL_TO_DB_SOURCE["fr"] ?? "fr";
+  const dbSource = toDbSource("fr");
   const findByIdentifier = db.prepare("SELECT * FROM documents WHERE identifier = ? AND source = ?");
 
   // Published FR documents never change after publication

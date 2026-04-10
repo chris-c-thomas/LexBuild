@@ -126,10 +126,10 @@ lexbuild ingest ./output --db ./lexbuild.db --prune            # Remove deleted 
 | GET | `/api/usc/documents/{identifier}` | Single USC document |
 | GET | `/api/usc/titles` | USC title listing with counts |
 | GET | `/api/usc/titles/{number}` | Title detail + chapters |
-| GET | `/api/cfr/documents` | List/filter/sort CFR sections |
-| GET | `/api/cfr/documents/{identifier}` | Single CFR document |
-| GET | `/api/cfr/titles` | CFR title listing with counts |
-| GET | `/api/cfr/titles/{number}` | Title detail + chapters |
+| GET | `/api/ecfr/documents` | List/filter/sort eCFR sections |
+| GET | `/api/ecfr/documents/{identifier}` | Single eCFR document |
+| GET | `/api/ecfr/titles` | eCFR title listing with counts |
+| GET | `/api/ecfr/titles/{number}` | Title detail + chapters |
 | GET | `/api/fr/documents` | List/filter/sort FR documents |
 | GET | `/api/fr/documents/{identifier}` | Single FR document |
 | GET | `/api/fr/years` | FR year listing with counts |

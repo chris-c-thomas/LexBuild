@@ -17,7 +17,8 @@ describe("errorHandler", () => {
     const c = {
       get: () => undefined,
       req: { method: "GET", path: "/test" },
-      json: (body: unknown, status: number) => {
+      json: (body: unknown, opts: number | { status: number }) => {
+        const status = typeof opts === "number" ? opts : opts.status;
         jsonResult = { body, status };
         return new Response(JSON.stringify(body), { status });
       },

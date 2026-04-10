@@ -286,6 +286,7 @@ const monthDetailResponseSchema = z.object({
     limit: z.number(),
     offset: z.number(),
     has_more: z.boolean(),
+    next: z.string().nullable(),
   }),
 });
 
@@ -329,7 +330,9 @@ const getMonthRoute = createRoute({
   path: "/fr/years/{year}/{month}",
   tags: ["Federal Register"],
   summary: "Get Month",
-  description: "Returns all Federal Register documents published in the specified month.",
+  description:
+    "Returns a paginated list of Federal Register documents published in the specified month. " +
+    "The document_count field reflects the total for the month, not the number returned in this page.",
   request: {
     params: z.object({
       year: z.coerce.number().int().openapi({ example: 2026 }),
@@ -418,6 +421,10 @@ export function registerFrHierarchyRoutes(app: OpenAPIHono, db: Database.Databas
           limit,
           offset,
           has_more: offset + docs.length < total,
+          next:
+            offset + docs.length < total
+              ? `/api/fr/years/${year}/${String(month).padStart(2, "0")}?limit=${limit}&offset=${offset + docs.length}`
+              : null,
         },
       },
       200,

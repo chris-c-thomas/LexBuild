@@ -3,13 +3,12 @@
  * Exported for use by the server entry point and integration tests.
  */
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { HTTPException } from "hono/http-exception";
 import { cors } from "hono/cors";
 import { createDatabase } from "./db/client.js";
 import { initKeysDatabase } from "./db/keys.js";
 import { requestId } from "./middleware/request-id.js";
 import { requestLogger } from "./middleware/request-logger.js";
-import { errorHandler } from "./middleware/error-handler.js";
+import { errorHandler, buildErrorResponse } from "./middleware/error-handler.js";
 import { rateLimitMiddleware } from "./middleware/rate-limit.js";
 import { registerHealthRoutes } from "./routes/health.js";
 import { registerSourceRoutes } from "./routes/sources.js";
@@ -49,29 +48,12 @@ export function createApp(config: AppConfig): OpenAPIHono {
   // Hono v4 catches HTTPException before middleware catch blocks. This handler
   // ensures HTTPException (thrown by hierarchy routes, validation, etc.) returns
   // structured JSON instead of Hono's default plain text response.
+  // Uses shared buildErrorResponse to keep format consistent with errorHandler middleware.
   app.onError((err, c) => {
-    const status = err instanceof HTTPException ? err.status : 500;
-    const message = err instanceof Error ? err.message : "Internal server error";
-    // requestId middleware stores the ID both in context and as a response header;
-    // onError's context type doesn't include custom variables, so read from res header
-    const requestId = c.res?.headers.get("X-Request-ID") ?? c.req.header("X-Request-ID");
-
-    if (status === 500) {
-      console.error(`[${requestId ?? "?"}] ${c.req.method} ${c.req.path}:`, err);
-    } else {
-      console.error(`[${requestId ?? "?"}] ${status} ${c.req.method} ${c.req.path}: ${message}`);
-    }
-
-    return c.json(
-      {
-        error: {
-          status,
-          code: status === 500 ? "INTERNAL_ERROR" : "REQUEST_ERROR",
-          message: status === 500 ? "Internal server error" : message,
-        },
-      },
-      { status },
-    );
+    // onError's context type doesn't include custom variables, so read request ID
+    // from the response header set by the requestId middleware
+    const reqId = c.res?.headers.get("X-Request-ID") ?? c.req.header("X-Request-ID");
+    return buildErrorResponse(c, err, reqId);
   });
 
   const v1 = new OpenAPIHono();

@@ -24,7 +24,7 @@ export const searchQuerySchema = z.object({
     .openapi({ description: "Publication date range end (YYYY-MM-DD, FR only)" }),
   sort: z.string().optional().openapi({
     description:
-      "Sort field. Options: relevance (default), publication_date, -publication_date, title_number, identifier",
+      "Sort field. Options: relevance (default), publication_date, -publication_date, title_number, identifier, document_number. Prefix with - for descending.",
   }),
   limit: z.coerce.number().int().min(1).max(100).default(20),
   offset: z.coerce.number().int().min(0).default(0),

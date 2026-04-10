@@ -209,18 +209,22 @@ describe("FR hierarchy", () => {
 
       expect(body.pagination.total).toBe(3);
       expect(body.pagination.has_more).toBe(false);
+      expect(body.pagination.next).toBeNull();
     });
 
-    it("respects limit parameter with has_more", async () => {
+    it("respects limit parameter with has_more and next URL", async () => {
       const res = await ctx.app.request("/api/fr/years/2026/3?limit=1");
       expect(res.status).toBe(200);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test assertion
-    const body = (await res.json()) as any;
+      const body = (await res.json()) as any;
 
       expect(body.data.documents).toHaveLength(1);
       expect(body.pagination.total).toBe(3);
       expect(body.pagination.limit).toBe(1);
       expect(body.pagination.has_more).toBe(true);
+      expect(body.pagination.next).toContain("/api/fr/years/2026/03");
+      expect(body.pagination.next).toContain("offset=1");
+      expect(body.pagination.next).toContain("limit=1");
     });
 
     it("respects offset parameter", async () => {
@@ -253,6 +257,7 @@ describe("FR hierarchy", () => {
       expect(body.data.document_count).toBe(3);
       expect(body.pagination.total).toBe(3);
       expect(body.pagination.has_more).toBe(false);
+      expect(body.pagination.next).toBeNull();
     });
 
     it("returns structured JSON 404 for month with no documents", async () => {

@@ -148,6 +148,18 @@ export function registerSearchRoutes(app: OpenAPIHono, meiliUrl: string, meiliKe
         .search(params.q, searchOptions, { signal: AbortSignal.timeout(MEILI_TIMEOUT_MS) });
     } catch (err: unknown) {
       console.error("[search] Meilisearch query failed:", err);
+
+      // Distinguish timeout (504) from general unavailability (503).
+      // AbortSignal.timeout fires a DOMException wrapped by the Meilisearch client.
+      const cause = err instanceof Error && "cause" in err ? (err.cause as Error) : undefined;
+      const isTimeout =
+        (err instanceof DOMException && err.name === "TimeoutError") ||
+        (cause instanceof DOMException && cause.name === "TimeoutError");
+
+      if (isTimeout) {
+        throw new HTTPException(504, { message: "Search request timed out" });
+      }
+
       // Do not leak internal Meilisearch URL or error details to API consumers
       throw new HTTPException(503, { message: "Search service is temporarily unavailable" });
     }

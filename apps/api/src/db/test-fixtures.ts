@@ -1,7 +1,7 @@
 /**
  * Test database fixtures for the Data API test suite.
  *
- * Creates an in-memory-equivalent SQLite database with the real schema
+ * Creates a temporary on-disk SQLite database with the real schema
  * from @lexbuild/core, seeded with representative documents across all
  * three sources (USC, eCFR, FR).
  */

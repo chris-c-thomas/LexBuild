@@ -68,12 +68,14 @@ describe("USC hierarchy", () => {
       expect(body.data.chapters[0].document_count).toBe(3);
     });
 
-    it("returns 404 for nonexistent title", async () => {
+    it("returns structured JSON 404 for nonexistent title", async () => {
       const res = await ctx.app.request("/api/usc/titles/999");
       expect(res.status).toBe(404);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test assertion
-    const body = (await res.json()) as any;
+      const body = (await res.json()) as any;
       expect(body.error.status).toBe(404);
+      expect(body.error.code).toBe("REQUEST_ERROR");
+      expect(body.error.message).toContain("No USC title 999 found");
     });
   });
 });
@@ -121,9 +123,14 @@ describe("eCFR hierarchy", () => {
       expect(body.data.chapters[0].chapter_name).toBe("Securities and Exchange Commission");
     });
 
-    it("returns 404 for nonexistent eCFR title", async () => {
+    it("returns structured JSON 404 for nonexistent eCFR title", async () => {
       const res = await ctx.app.request("/api/ecfr/titles/999");
       expect(res.status).toBe(404);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test assertion
+      const body = (await res.json()) as any;
+      expect(body.error.status).toBe(404);
+      expect(body.error.code).toBe("REQUEST_ERROR");
+      expect(body.error.message).toContain("No CFR title 999 found");
     });
   });
 });
@@ -171,9 +178,13 @@ describe("FR hierarchy", () => {
       expect(april.document_count).toBe(1);
     });
 
-    it("returns 404 for nonexistent year", async () => {
+    it("returns structured JSON 404 for nonexistent year", async () => {
       const res = await ctx.app.request("/api/fr/years/1900");
       expect(res.status).toBe(404);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test assertion
+      const body = (await res.json()) as any;
+      expect(body.error.status).toBe(404);
+      expect(body.error.code).toBe("REQUEST_ERROR");
     });
   });
 
@@ -233,14 +244,33 @@ describe("FR hierarchy", () => {
       expect(body.data.documents[0].document_type).toBe("presidential_document");
     });
 
-    it("returns 404 for month with no documents", async () => {
-      const res = await ctx.app.request("/api/fr/years/2026/1");
-      expect(res.status).toBe(404);
+    it("returns empty documents array when offset exceeds total", async () => {
+      const res = await ctx.app.request("/api/fr/years/2026/3?offset=100");
+      expect(res.status).toBe(200);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test assertion
+      const body = (await res.json()) as any;
+      expect(body.data.documents).toHaveLength(0);
+      expect(body.data.document_count).toBe(3);
+      expect(body.pagination.total).toBe(3);
+      expect(body.pagination.has_more).toBe(false);
     });
 
-    it("returns 404 for nonexistent year/month", async () => {
+    it("returns structured JSON 404 for month with no documents", async () => {
+      const res = await ctx.app.request("/api/fr/years/2026/1");
+      expect(res.status).toBe(404);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test assertion
+      const body = (await res.json()) as any;
+      expect(body.error.status).toBe(404);
+      expect(body.error.code).toBe("REQUEST_ERROR");
+    });
+
+    it("returns structured JSON 404 for nonexistent year/month", async () => {
       const res = await ctx.app.request("/api/fr/years/1900/1");
       expect(res.status).toBe(404);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test assertion
+      const body = (await res.json()) as any;
+      expect(body.error.status).toBe(404);
+      expect(body.error.code).toBe("REQUEST_ERROR");
     });
   });
 });

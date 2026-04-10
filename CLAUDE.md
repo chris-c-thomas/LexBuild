@@ -270,6 +270,7 @@ Note: identifiers use `/us/cfr/` (content type) not `/us/ecfr/` (data source). B
 
 ## Common Pitfalls
 
+- **Hono v4 HTTPException bypasses middleware catch blocks**: In Hono v4, `HTTPException` is intercepted at the compose layer before middleware try-catch runs. Use `app.onError()` (not middleware) to handle `HTTPException`. The Data API configures this in `apps/api/src/app.ts`.
 - **USC snapshot tests break on version bumps**: `packages/usc/src/snapshot.test.ts` contains inline snapshots with the `generator` field. After changesets bump versions, update with `pnpm turbo test --filter=@lexbuild/usc -- --update` and commit the updated `fixtures/expected/*.md` files.
 - **`??` does not catch empty strings**: `"" ?? "fallback"` returns `""`, not `"fallback"`. Use `||` when empty strings should be treated as falsy (e.g., date components defaulting to `"0000"`).
 - **`const` temporal dead zone in closures**: A closure that captures a `const` variable defined later in the same scope will throw `ReferenceError` when invoked — even though the closure itself is defined without error. Watch for this with `resolveLink` callbacks that reference `outputPath`.

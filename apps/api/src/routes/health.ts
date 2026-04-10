@@ -1,25 +1,7 @@
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { createRoute, z } from "@hono/zod-openapi";
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import type Database from "better-sqlite3";
-
-const API_VERSION = (() => {
-  const dir = dirname(fileURLToPath(import.meta.url));
-  // From dist/index.js: ../package.json = apps/api/package.json
-  // From src/routes/health.ts: ../../package.json = apps/api/package.json
-  for (const rel of ["../package.json", "../../package.json"]) {
-    try {
-      const raw = readFileSync(resolve(dir, rel), "utf-8");
-      const version = (JSON.parse(raw) as { version: string }).version;
-      if (version) return version;
-    } catch {
-      // try next path
-    }
-  }
-  return process.env.npm_package_version ?? "unknown";
-})();
+import { API_VERSION } from "../lib/version.js";
 
 const healthResponseSchema = z.object({
   status: z.enum(["ok", "degraded", "error"]),

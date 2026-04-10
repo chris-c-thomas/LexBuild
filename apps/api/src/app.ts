@@ -8,7 +8,7 @@ import { createDatabase } from "./db/client.js";
 import { initKeysDatabase } from "./db/keys.js";
 import { requestId } from "./middleware/request-id.js";
 import { requestLogger } from "./middleware/request-logger.js";
-import { errorHandler } from "./middleware/error-handler.js";
+import { errorHandler, buildErrorResponse } from "./middleware/error-handler.js";
 import { rateLimitMiddleware } from "./middleware/rate-limit.js";
 import { registerHealthRoutes } from "./routes/health.js";
 import { registerSourceRoutes } from "./routes/sources.js";
@@ -22,6 +22,7 @@ import {
 } from "./routes/hierarchy.js";
 import { registerStatsRoutes } from "./routes/stats.js";
 import { registerSearchRoutes } from "./routes/search.js";
+import { API_VERSION } from "./lib/version.js";
 
 /** Configuration for the Hono app factory. */
 export interface AppConfig {
@@ -43,6 +44,17 @@ export function createApp(config: AppConfig): OpenAPIHono {
   app.use("*", requestLogger());
   app.use("*", cors({ origin: "*" }));
   app.use("*", errorHandler());
+
+  // Hono v4 catches HTTPException before middleware catch blocks. This handler
+  // ensures HTTPException (thrown by hierarchy routes, validation, etc.) returns
+  // structured JSON instead of Hono's default plain text response.
+  // Uses shared buildErrorResponse to keep format consistent with errorHandler middleware.
+  app.onError((err, c) => {
+    // onError's context type doesn't include custom variables, so read request ID
+    // from the response header set by the requestId middleware
+    const reqId = c.res?.headers.get("X-Request-ID") ?? c.req.header("X-Request-ID");
+    return buildErrorResponse(c, err, reqId);
+  });
 
   const v1 = new OpenAPIHono();
 
@@ -67,7 +79,7 @@ export function createApp(config: AppConfig): OpenAPIHono {
     openapi: "3.1.0",
     info: {
       title: "LexBuild API",
-      version: "1.20.1",
+      version: API_VERSION,
       description:
         "The LexBuild API provides structured, programmatic access to over one million U.S. legal documents, including the U.S. Code, the Code of Federal Regulations, and the Federal Register.\n\n It transforms complex, hard-to-use government legal sources into structured, machine-readable data optimized for LLMs, AI-driven workflows, RAG pipelines, semantic search systems, and other legal-tech applications.\n\n Core capabilities include full-text search with faceted filtering, hierarchical navigation across legal structures, paginated collections, selective field projection, and HTTP caching via ETags for efficient data access.",
       license: { name: "MIT", url: "https://opensource.org/licenses/MIT" },
@@ -107,6 +119,20 @@ export function createApp(config: AppConfig): OpenAPIHono {
   v1.get("/docs", (c) => c.redirect("/docs/api", 301));
 
   app.route("/api", v1);
+
+  // Structured JSON 404 for unmatched routes
+  app.notFound((c) =>
+    c.json(
+      {
+        error: {
+          status: 404,
+          code: "NOT_FOUND",
+          message: `No endpoint found at ${c.req.method} ${c.req.path}`,
+        },
+      },
+      404,
+    ),
+  );
 
   return app;
 }

@@ -126,10 +126,10 @@ lexbuild ingest ./output --db ./lexbuild.db --prune            # Remove deleted 
 | GET | `/api/usc/documents/{identifier}` | Single USC document |
 | GET | `/api/usc/titles` | USC title listing with counts |
 | GET | `/api/usc/titles/{number}` | Title detail + chapters |
-| GET | `/api/cfr/documents` | List/filter/sort CFR sections |
-| GET | `/api/cfr/documents/{identifier}` | Single CFR document |
-| GET | `/api/cfr/titles` | CFR title listing with counts |
-| GET | `/api/cfr/titles/{number}` | Title detail + chapters |
+| GET | `/api/ecfr/documents` | List/filter/sort eCFR sections |
+| GET | `/api/ecfr/documents/{identifier}` | Single eCFR document |
+| GET | `/api/ecfr/titles` | eCFR title listing with counts |
+| GET | `/api/ecfr/titles/{number}` | Title detail + chapters |
 | GET | `/api/fr/documents` | List/filter/sort FR documents |
 | GET | `/api/fr/documents/{identifier}` | Single FR document |
 | GET | `/api/fr/years` | FR year listing with counts |
@@ -142,14 +142,18 @@ All endpoints: API key auth (optional), tiered rate limiting, X-RateLimit header
 
 ## Common Pitfalls
 
+- **Hono v4 intercepts HTTPException before middleware catch blocks**: `errorHandler()` middleware's try-catch never fires for `HTTPException`. Use `app.onError()` for HTTPException handling and `app.notFound()` for unmatched routes. Both are configured in `app.ts` to return structured JSON `{ error: { status, code, message } }`.
+- **`app.onError()` context has no typed variables**: `c.get("requestId")` fails to compile in `onError` because the context type doesn't include custom variables set by middleware. Read the server-generated request ID from `c.res?.headers.get("X-Request-ID")` instead, falling back to `c.req.header("X-Request-ID")`.
+- **Route `{identifier}` matches a single path segment**: Shorthand identifiers containing `/` (e.g., `t1/s1`) must be URL-encoded as `t1%2Fs1` in the URL path. Hono's `:param` does not match across `/` boundaries.
+- **Meilisearch timeout error chain**: `AbortSignal.timeout()` fires a `DOMException` (name: `TimeoutError`), wrapped by the Meilisearch client as `MeiliSearchRequestError` with the `DOMException` as `cause`. Check `err.cause instanceof DOMException && cause.name === "TimeoutError"` to distinguish timeouts (504) from connection failures (503).
+- **Meilisearch errors leak internal URLs**: `MeiliSearchRequestError.message` includes the full internal URL (`http://127.0.0.1:7700/indexes/lexbuild/search`). Never pass `err.message` to user-facing responses — use a fixed generic message and log details server-side only.
 - **`better-sqlite3` requires build approval**: Must be listed in root `package.json` under `pnpm.onlyBuiltDependencies`. Without it, `pnpm install` skips native compilation and the module fails at runtime.
 - **`better-sqlite3` is platform-specific**: macOS binaries won't work on Linux. The VPS must run `pnpm install` or `pnpm rebuild better-sqlite3` after deployment.
 - **tsup `noExternal` regex overrides `external` array**: `noExternal: [/(.*)/]` with `external: ["better-sqlite3"]` does NOT work. Use a negative lookahead: `noExternal: [/^(?!better-sqlite3|bindings|file-uri-to-path|@lexbuild\/)/]`.
 - **ESM bundle needs CJS shims for native modules**: The bundled ESM output needs `createRequire`, `__filename`, and `__dirname` provided via tsup `banner` for `better-sqlite3` and its `bindings` dependency to resolve native `.node` files.
 - **`/api/docs` redirects to `/docs/api`**: The standalone Scalar API reference was moved to the Astro app. The Hono endpoint is a 301 redirect. `@scalar/hono-api-reference` is no longer used.
 - **Hono `createMiddleware` + `noImplicitReturns`**: If the middleware catch block returns a Response, the try block must also have an explicit `return`. Use a named function returning `MiddlewareHandler` instead of arrow + `createMiddleware` to avoid this.
-- **CFR source mapping**: API URL uses `/cfr/` but database stores `source = "ecfr"`. `URL_TO_DB_SOURCE` in `lib/source-registry.ts` handles this translation. Always use it for DB queries.
-- **`noUncheckedIndexedAccess` on `URL_TO_DB_SOURCE`**: `URL_TO_DB_SOURCE["usc"]` returns `string | undefined`. Use `?? "usc"` fallback when passing to typed function params.
+- **Source mapping**: Both API URLs and database use `ecfr` as the source identifier. Use `toDbSource()` from `lib/source-registry.ts` for type-safe source mapping in DB queries.
 - **`exactOptionalPropertyTypes` on `cursor?: string`**: `string | undefined` (from Zod schema) can't be assigned to `cursor?: string`. Use `cursor?: string | undefined` on the receiving interface.
 - **OpenAPIHono 404 return type unions**: `c.json(data, 404)` in a handler that also returns `c.json(data, 200)` creates `_status: 200 | 404` which fails type checking. Fix: throw `HTTPException(404)` instead (caught by error handler middleware), or pass explicit `200` status to `c.json()` on the success path.
 - **Zod `.default()` doesn't narrow destructured type**: `sort: z.string().optional().default("identifier")` still types as `string | undefined` when destructured from `c.req.valid("query")`. Use `sort = "identifier"` in destructuring AND `sort ?? "identifier"` when passing to typed functions.

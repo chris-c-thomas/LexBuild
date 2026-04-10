@@ -1,7 +1,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import type Database from "better-sqlite3";
-import { API_SOURCES, URL_TO_DB_SOURCE } from "../lib/source-registry.js";
+import { API_SOURCES, toDbSource } from "../lib/source-registry.js";
 
 const sourceSchema = z.object({
   id: z.string(),
@@ -56,7 +56,7 @@ export function registerSourceRoutes(app: OpenAPIHono, db: Database.Database): v
     }
 
     const data = Object.values(API_SOURCES).map((source) => {
-      const dbSource = URL_TO_DB_SOURCE[source.id] ?? source.id;
+      const dbSource = toDbSource(source.id);
       return {
         id: source.id,
         name: source.name,

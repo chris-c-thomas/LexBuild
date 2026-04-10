@@ -6,7 +6,7 @@ import { documentResponseSchema, documentQuerySchema } from "../schemas/document
 import { collectionResponseSchema } from "../schemas/pagination.js";
 import { ecfrFilterSchema } from "../schemas/filters.js";
 import { errorResponseSchema } from "../schemas/errors.js";
-import { URL_TO_DB_SOURCE } from "../lib/source-registry.js";
+import { toDbSource } from "../lib/source-registry.js";
 import { resolveIdentifier, renderDocumentResponse } from "../lib/documents.js";
 import { buildListingResponse } from "../lib/listings.js";
 import { queryDocuments } from "../db/queries.js";
@@ -62,7 +62,7 @@ const getDocumentRoute = createRoute({
 
 /** Register eCFR document endpoints. */
 export function registerEcfrRoutes(app: OpenAPIHono, db: Database.Database): void {
-  const dbSource = URL_TO_DB_SOURCE["ecfr"] ?? "ecfr";
+  const dbSource = toDbSource("ecfr");
   const findByIdentifier = db.prepare("SELECT * FROM documents WHERE identifier = ? AND source = ?");
 
   // eCFR updates daily but individual sections change less often

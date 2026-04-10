@@ -6,7 +6,7 @@ import { documentResponseSchema, documentQuerySchema } from "../schemas/document
 import { collectionResponseSchema } from "../schemas/pagination.js";
 import { uscFilterSchema } from "../schemas/filters.js";
 import { errorResponseSchema } from "../schemas/errors.js";
-import { URL_TO_DB_SOURCE } from "../lib/source-registry.js";
+import { toDbSource } from "../lib/source-registry.js";
 import { resolveIdentifier, renderDocumentResponse } from "../lib/documents.js";
 import { buildListingResponse } from "../lib/listings.js";
 import { queryDocuments } from "../db/queries.js";
@@ -62,7 +62,7 @@ const getDocumentRoute = createRoute({
 
 /** Register U.S. Code document endpoints. */
 export function registerUscRoutes(app: OpenAPIHono, db: Database.Database): void {
-  const dbSource = URL_TO_DB_SOURCE["usc"] ?? "usc";
+  const dbSource = toDbSource("usc");
   const findByIdentifier = db.prepare("SELECT * FROM documents WHERE identifier = ? AND source = ?");
 
   // USC content updates irregularly per release point

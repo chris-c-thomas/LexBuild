@@ -36,8 +36,11 @@ const ALLOWED_FACETS = new Set([
 
 const ALLOWED_SORT_FIELDS = new Set(["publication_date", "title_number", "identifier", "document_number"]);
 
+/** Meilisearch search timeout in milliseconds. */
+const MEILI_TIMEOUT_MS = 5_000;
+
 /** Translate API query params into a Meilisearch filter string. */
-function buildMeiliFilter(params: z.infer<typeof searchQuerySchema>): string | undefined {
+export function buildMeiliFilter(params: z.infer<typeof searchQuerySchema>): string | undefined {
   const filters: string[] = [];
 
   if (params.source) {
@@ -75,7 +78,7 @@ function buildMeiliFilter(params: z.infer<typeof searchQuerySchema>): string | u
 }
 
 /** Map API sort param to Meilisearch sort format. */
-function buildMeiliSort(sort: string | undefined): string[] | undefined {
+export function buildMeiliSort(sort: string | undefined): string[] | undefined {
   if (!sort || sort === "relevance") return undefined;
 
   const descending = sort.startsWith("-");
@@ -87,7 +90,7 @@ function buildMeiliSort(sort: string | undefined): string[] | undefined {
 }
 
 /** Parse and validate requested facets. */
-function parseFacets(facetsParam: string | undefined): string[] {
+export function parseFacets(facetsParam: string | undefined): string[] {
   if (!facetsParam) return ["source", "status"];
 
   const requested = facetsParam.split(",").map((f) => f.trim());
@@ -140,11 +143,25 @@ export function registerSearchRoutes(app: OpenAPIHono, meiliUrl: string, meiliKe
       if (filter) searchOptions.filter = filter;
       if (sort) searchOptions.sort = sort;
 
-      result = await client.index(INDEX_NAME).search(params.q, searchOptions);
+      result = await client
+        .index(INDEX_NAME)
+        .search(params.q, searchOptions, { signal: AbortSignal.timeout(MEILI_TIMEOUT_MS) });
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Search service unavailable";
       console.error("[search] Meilisearch query failed:", err);
-      throw new HTTPException(503, { message: `Search service unavailable: ${message}` });
+
+      // Distinguish timeout (504) from general unavailability (503).
+      // AbortSignal.timeout fires a DOMException wrapped by the Meilisearch client.
+      const cause = err instanceof Error && "cause" in err ? (err.cause as Error) : undefined;
+      const isTimeout =
+        (err instanceof DOMException && err.name === "TimeoutError") ||
+        (cause instanceof DOMException && cause.name === "TimeoutError");
+
+      if (isTimeout) {
+        throw new HTTPException(504, { message: "Search request timed out" });
+      }
+
+      // Do not leak internal Meilisearch URL or error details to API consumers
+      throw new HTTPException(503, { message: "Search service is temporarily unavailable" });
     }
 
     const estimatedTotal = result.estimatedTotalHits ?? 0;

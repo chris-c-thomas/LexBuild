@@ -3,7 +3,7 @@ import type { OpenAPIHono } from "@hono/zod-openapi";
 import type Database from "better-sqlite3";
 import { HTTPException } from "hono/http-exception";
 import { errorResponseSchema } from "../schemas/errors.js";
-import { URL_TO_DB_SOURCE } from "../lib/source-registry.js";
+import { toDbSource } from "../lib/source-registry.js";
 
 const titlesResponseSchema = z.object({
   data: z.array(
@@ -79,7 +79,7 @@ function createTitleRoutes(sourceId: string, tag: string, urlPrefix: string) {
 
 /** Register USC hierarchy browsing endpoints. */
 export function registerUscHierarchyRoutes(app: OpenAPIHono, db: Database.Database): void {
-  const dbSource = URL_TO_DB_SOURCE["usc"];
+  const dbSource = toDbSource("usc");
   const { listTitlesRoute, getTitleRoute } = createTitleRoutes("usc", "U.S. Code", "usc");
 
   const listTitles = db.prepare(
@@ -159,7 +159,7 @@ export function registerUscHierarchyRoutes(app: OpenAPIHono, db: Database.Databa
 
 /** Register eCFR hierarchy browsing endpoints. */
 export function registerEcfrHierarchyRoutes(app: OpenAPIHono, db: Database.Database): void {
-  const dbSource = URL_TO_DB_SOURCE["ecfr"];
+  const dbSource = toDbSource("ecfr");
   const { listTitlesRoute, getTitleRoute } = createTitleRoutes("ecfr", "eCFR", "ecfr");
 
   const listTitles = db.prepare(
@@ -281,6 +281,13 @@ const monthDetailResponseSchema = z.object({
     ),
   }),
   meta: z.object({ api_version: z.string(), timestamp: z.string() }),
+  pagination: z.object({
+    total: z.number(),
+    limit: z.number(),
+    offset: z.number(),
+    has_more: z.boolean(),
+    next: z.string().nullable(),
+  }),
 });
 
 const listYearsRoute = createRoute({
@@ -323,11 +330,21 @@ const getMonthRoute = createRoute({
   path: "/fr/years/{year}/{month}",
   tags: ["Federal Register"],
   summary: "Get Month",
-  description: "Returns all Federal Register documents published in the specified month.",
+  description:
+    "Returns a paginated list of Federal Register documents published in the specified month. " +
+    "The document_count field reflects the total for the month, not the number returned in this page.",
   request: {
     params: z.object({
       year: z.coerce.number().int().openapi({ example: 2026 }),
       month: z.coerce.number().int().min(1).max(12).openapi({ example: 3 }),
+    }),
+    query: z.object({
+      limit: z.coerce.number().int().min(1).max(500).default(100).openapi({
+        description: "Number of documents to return (1-500)",
+      }),
+      offset: z.coerce.number().int().min(0).default(0).openapi({
+        description: "Number of documents to skip",
+      }),
     }),
   },
   responses: {
@@ -360,17 +377,27 @@ export function registerFrHierarchyRoutes(app: OpenAPIHono, db: Database.Databas
     "SELECT count(*) as total FROM documents WHERE source = 'fr' AND substr(publication_date, 1, 4) = ?",
   );
 
-  const monthDocuments = db.prepare(
+  const monthDocumentsPaged = db.prepare(
     "SELECT id, identifier, document_number, display_title, document_type, publication_date, agency " +
       "FROM documents WHERE source = 'fr' AND substr(publication_date, 1, 7) = ? " +
-      "ORDER BY publication_date ASC, document_number ASC",
+      "ORDER BY publication_date ASC, document_number ASC LIMIT ? OFFSET ?",
+  );
+
+  const monthTotal = db.prepare(
+    "SELECT count(*) as total FROM documents WHERE source = 'fr' AND substr(publication_date, 1, 7) = ?",
   );
 
   app.openapi(getMonthRoute, (c) => {
     const { year, month } = c.req.valid("param");
+    const { limit, offset } = c.req.valid("query");
     const monthStr = `${year}-${String(month).padStart(2, "0")}`;
 
-    const docs = monthDocuments.all(monthStr) as Array<{
+    const { total } = monthTotal.get(monthStr) as { total: number };
+    if (total === 0) {
+      throw new HTTPException(404, { message: `No FR documents found for ${monthStr}` });
+    }
+
+    const docs = monthDocumentsPaged.all(monthStr, limit, offset) as Array<{
       id: string;
       identifier: string;
       document_number: string | null;
@@ -380,19 +407,25 @@ export function registerFrHierarchyRoutes(app: OpenAPIHono, db: Database.Databas
       agency: string | null;
     }>;
 
-    if (docs.length === 0) {
-      throw new HTTPException(404, { message: `No FR documents found for ${monthStr}` });
-    }
-
     return c.json(
       {
         data: {
           year,
           month,
-          document_count: docs.length,
+          document_count: total,
           documents: docs,
         },
         meta: { api_version: "v1", timestamp: new Date().toISOString() },
+        pagination: {
+          total,
+          limit,
+          offset,
+          has_more: offset + docs.length < total,
+          next:
+            offset + docs.length < total
+              ? `/api/fr/years/${year}/${String(month).padStart(2, "0")}?limit=${limit}&offset=${offset + docs.length}`
+              : null,
+        },
       },
       200,
     );

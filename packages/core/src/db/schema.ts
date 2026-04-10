@@ -103,6 +103,9 @@ export const INDEXES_SQL = [
 
   // FR-specific queries
   "CREATE INDEX IF NOT EXISTS idx_doc_publication_date ON documents(publication_date) WHERE publication_date IS NOT NULL",
+  "CREATE INDEX IF NOT EXISTS idx_doc_source_pubdate ON documents(source, publication_date) WHERE publication_date IS NOT NULL",
+  "CREATE INDEX IF NOT EXISTS idx_doc_source_pubdate_desc ON documents(source, publication_date DESC) WHERE publication_date IS NOT NULL",
+  "CREATE INDEX IF NOT EXISTS idx_doc_source_docnum ON documents(source, document_number) WHERE document_number IS NOT NULL",
   "CREATE INDEX IF NOT EXISTS idx_doc_document_type ON documents(source, document_type) WHERE document_type IS NOT NULL",
   "CREATE INDEX IF NOT EXISTS idx_doc_agency ON documents(agency) WHERE agency IS NOT NULL",
 

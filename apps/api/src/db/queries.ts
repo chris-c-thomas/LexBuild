@@ -1,5 +1,18 @@
 import type Database from "better-sqlite3";
 
+/** Cache compiled prepared statements by SQL string to avoid per-request compilation. */
+const stmtCache = new Map<string, Database.Statement>();
+
+/** Return a cached prepared statement, compiling it on first use. */
+function cachedPrepare(db: Database.Database, sql: string): Database.Statement {
+  let stmt = stmtCache.get(sql);
+  if (!stmt) {
+    stmt = db.prepare(sql);
+    stmtCache.set(sql, stmt);
+  }
+  return stmt;
+}
+
 /** Options for building a filtered, sorted, paginated query. */
 export interface QueryOptions {
   source: string;
@@ -120,7 +133,7 @@ export function queryDocuments(db: Database.Database, options: QueryOptions): Qu
 
   // Total uses base filters, not cursor — cursor only affects the data page
   const countSql = `SELECT count(*) as total FROM documents WHERE ${whereClause}`;
-  const { total } = db.prepare(countSql).get(params) as { total: number };
+  const { total } = cachedPrepare(db, countSql).get(params) as { total: number };
 
   const useCursor = options.cursor && SORTABLE_COLUMNS.has(sort.startsWith("-") ? sort.slice(1) : sort);
   const dataSql = useCursor
@@ -129,7 +142,7 @@ export function queryDocuments(db: Database.Database, options: QueryOptions): Qu
 
   const queryParams = useCursor ? { ...params, limit } : { ...params, limit, offset };
 
-  const rows = db.prepare(dataSql).all(queryParams) as Record<string, unknown>[];
+  const rows = cachedPrepare(db, dataSql).all(queryParams) as Record<string, unknown>[];
 
   return {
     rows,

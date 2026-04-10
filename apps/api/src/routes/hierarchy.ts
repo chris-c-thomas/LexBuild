@@ -352,25 +352,28 @@ export function registerFrHierarchyRoutes(app: OpenAPIHono, db: Database.Databas
 
   const yearMonths = db.prepare(
     "SELECT CAST(substr(publication_date, 6, 2) AS INTEGER) as month, count(*) as document_count " +
-      "FROM documents WHERE source = 'fr' AND substr(publication_date, 1, 4) = ? " +
+      "FROM documents WHERE source = 'fr' AND publication_date >= ? AND publication_date < ? " +
       "GROUP BY substr(publication_date, 6, 2) ORDER BY month ASC",
   );
 
   const yearTotal = db.prepare(
-    "SELECT count(*) as total FROM documents WHERE source = 'fr' AND substr(publication_date, 1, 4) = ?",
+    "SELECT count(*) as total FROM documents WHERE source = 'fr' AND publication_date >= ? AND publication_date < ?",
   );
 
   const monthDocuments = db.prepare(
     "SELECT id, identifier, document_number, display_title, document_type, publication_date, agency " +
-      "FROM documents WHERE source = 'fr' AND substr(publication_date, 1, 7) = ? " +
+      "FROM documents WHERE source = 'fr' AND publication_date >= ? AND publication_date < ? " +
       "ORDER BY publication_date ASC, document_number ASC",
   );
 
   app.openapi(getMonthRoute, (c) => {
     const { year, month } = c.req.valid("param");
-    const monthStr = `${year}-${String(month).padStart(2, "0")}`;
+    const monthStart = `${year}-${String(month).padStart(2, "0")}-01`;
+    const nextMonth = month === 12 ? 1 : month + 1;
+    const nextYear = month === 12 ? year + 1 : year;
+    const monthEnd = `${nextYear}-${String(nextMonth).padStart(2, "0")}-01`;
 
-    const docs = monthDocuments.all(monthStr) as Array<{
+    const docs = monthDocuments.all(monthStart, monthEnd) as Array<{
       id: string;
       identifier: string;
       document_number: string | null;
@@ -381,7 +384,7 @@ export function registerFrHierarchyRoutes(app: OpenAPIHono, db: Database.Databas
     }>;
 
     if (docs.length === 0) {
-      throw new HTTPException(404, { message: `No FR documents found for ${monthStr}` });
+      throw new HTTPException(404, { message: `No FR documents found for ${year}-${String(month).padStart(2, "0")}` });
     }
 
     return c.json(
@@ -400,14 +403,15 @@ export function registerFrHierarchyRoutes(app: OpenAPIHono, db: Database.Databas
 
   app.openapi(getYearRoute, (c) => {
     const year = c.req.valid("param").year;
-    const yearStr = String(year);
+    const yearStart = `${year}-01-01`;
+    const yearEnd = `${year + 1}-01-01`;
 
-    const total = yearTotal.get(yearStr) as { total: number };
+    const total = yearTotal.get(yearStart, yearEnd) as { total: number };
     if (total.total === 0) {
       throw new HTTPException(404, { message: `No FR documents found for year ${year}` });
     }
 
-    const months = yearMonths.all(yearStr) as Array<{ month: number; document_count: number }>;
+    const months = yearMonths.all(yearStart, yearEnd) as Array<{ month: number; document_count: number }>;
 
     return c.json(
       {

@@ -576,6 +576,12 @@ whose source files have been deleted.`,
 
       console.log(summaryBlock({ title: "Ingestion Complete", rows: summaryRows }));
 
+      // Update query planner statistics for optimal index selection
+      const analyzeSpinner = createSpinner("Running ANALYZE");
+      analyzeSpinner.start();
+      db.exec("ANALYZE");
+      analyzeSpinner.succeed("Query planner statistics updated");
+
       // Optional stats
       if (showStats) {
         printStats(db, dbPath);

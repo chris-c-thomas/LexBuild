@@ -9,6 +9,7 @@ import { initKeysDatabase } from "./db/keys.js";
 import { requestId } from "./middleware/request-id.js";
 import { requestLogger } from "./middleware/request-logger.js";
 import { errorHandler } from "./middleware/error-handler.js";
+import { requestTimeout } from "./middleware/timeout.js";
 import { rateLimitMiddleware } from "./middleware/rate-limit.js";
 import { registerHealthRoutes } from "./routes/health.js";
 import { registerSourceRoutes } from "./routes/sources.js";
@@ -43,6 +44,7 @@ export function createApp(config: AppConfig): OpenAPIHono {
   app.use("*", requestLogger());
   app.use("*", cors({ origin: "*" }));
   app.use("*", errorHandler());
+  app.use("*", requestTimeout(30_000));
 
   const v1 = new OpenAPIHono();
 

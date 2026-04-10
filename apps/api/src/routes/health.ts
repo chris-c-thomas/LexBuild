@@ -48,16 +48,15 @@ const healthRoute = createRoute({
 
 /** Register the health check endpoint. */
 export function registerHealthRoutes(app: OpenAPIHono, db: Database.Database): void {
+  const countStmt = db.prepare("SELECT count(*) as count FROM documents");
+  const versionStmt = db.prepare("SELECT value FROM schema_meta WHERE key = 'schema_version'");
+
   app.openapi(healthRoute, (c) => {
     let dbStatus = { connected: false, documents: 0, schema_version: 0 };
 
     try {
-      const count = db.prepare("SELECT count(*) as count FROM documents").get() as {
-        count: number;
-      };
-      const version = db.prepare("SELECT value FROM schema_meta WHERE key = 'schema_version'").get() as {
-        value: string;
-      };
+      const count = countStmt.get() as { count: number };
+      const version = versionStmt.get() as { value: string };
       dbStatus = {
         connected: true,
         documents: count.count,

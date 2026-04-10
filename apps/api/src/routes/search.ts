@@ -112,7 +112,7 @@ const searchRoute = createRoute({
 
 /** Register the search endpoint. */
 export function registerSearchRoutes(app: OpenAPIHono, meiliUrl: string, meiliKey: string): void {
-  const client = new Meilisearch({ host: meiliUrl, apiKey: meiliKey });
+  const client = new Meilisearch({ host: meiliUrl, apiKey: meiliKey, timeout: 5000 });
 
   // Short cache — search results depend on query but are stable between re-indexes
   app.use("/search", cacheHeaders({ maxAge: 60, sMaxAge: 300 }));

@@ -19,7 +19,7 @@ describe("GET /api/search", () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test assertion
     const body = (await res.json()) as any;
     expect(body.error.status).toBe(503);
-    expect(body.error.message).toContain("Search service unavailable");
+    expect(body.error.message).toContain("Search service is temporarily unavailable");
   });
 });
 

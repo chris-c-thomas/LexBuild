@@ -1,5 +1,7 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { HTTPException } from "hono/http-exception";
+import type { TestContext } from "../test-helpers.js";
+import { setupTestApp } from "../test-helpers.js";
 import { errorHandler } from "./error-handler.js";
 
 describe("errorHandler", () => {
@@ -109,5 +111,41 @@ describe("errorHandler", () => {
     const body = result!.body as { error: { status: number; code: string; message: string } };
     expect(body.error.code).toBe("INTERNAL_ERROR");
     expect(body.error.message).toBe("Internal server error");
+  });
+});
+
+describe("app.onError and app.notFound (full app context)", () => {
+  let ctx: TestContext;
+
+  beforeAll(() => {
+    ctx = setupTestApp();
+  });
+  afterAll(() => {
+    ctx.cleanup();
+  });
+
+  it("returns structured JSON for HTTPException from hierarchy routes", async () => {
+    const res = await ctx.app.request("/api/usc/titles/999");
+    expect(res.status).toBe(404);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test assertion
+    const body = (await res.json()) as any;
+    expect(body.error.status).toBe(404);
+    expect(body.error.code).toBe("REQUEST_ERROR");
+    expect(body.error.message).toContain("No USC title 999 found");
+  });
+
+  it("returns structured JSON 404 for unmatched routes", async () => {
+    const res = await ctx.app.request("/api/nonexistent/path");
+    expect(res.status).toBe(404);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test assertion
+    const body = (await res.json()) as any;
+    expect(body.error.status).toBe(404);
+    expect(body.error.code).toBe("NOT_FOUND");
+    expect(body.error.message).toContain("/api/nonexistent/path");
+  });
+
+  it("returns JSON content type for all error responses", async () => {
+    const res = await ctx.app.request("/api/usc/titles/999");
+    expect(res.headers.get("content-type")).toContain("application/json");
   });
 });

@@ -52,9 +52,11 @@ export function createApp(config: AppConfig): OpenAPIHono {
   app.onError((err, c) => {
     const status = err instanceof HTTPException ? err.status : 500;
     const message = err instanceof Error ? err.message : "Internal server error";
-    const requestId = c.req.header("X-Request-ID");
+    // requestId middleware stores the ID both in context and as a response header;
+    // onError's context type doesn't include custom variables, so read from res header
+    const requestId = c.res?.headers.get("X-Request-ID") ?? c.req.header("X-Request-ID");
 
-    if (status === 500 && err instanceof Error) {
+    if (status === 500) {
       console.error(`[${requestId ?? "?"}] ${c.req.method} ${c.req.path}:`, err);
     } else {
       console.error(`[${requestId ?? "?"}] ${status} ${c.req.method} ${c.req.path}: ${message}`);

@@ -147,9 +147,9 @@ export function registerSearchRoutes(app: OpenAPIHono, meiliUrl: string, meiliKe
         .index(INDEX_NAME)
         .search(params.q, searchOptions, { signal: AbortSignal.timeout(MEILI_TIMEOUT_MS) });
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Search service unavailable";
       console.error("[search] Meilisearch query failed:", err);
-      throw new HTTPException(503, { message: `Search service unavailable: ${message}` });
+      // Do not leak internal Meilisearch URL or error details to API consumers
+      throw new HTTPException(503, { message: "Search service is temporarily unavailable" });
     }
 
     const estimatedTotal = result.estimatedTotalHits ?? 0;

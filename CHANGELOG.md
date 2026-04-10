@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
 
+## [1.23.2]
+
+### Added
+
+- Add comprehensive Data API test suite: 22 test files, 244 tests covering all 19 endpoints, middleware, database queries, API key lifecycle, schema validation, and utility functions
+- Add `app.onError()` and `app.notFound()` handlers for structured JSON error responses across all error paths
+- Add pagination (limit/offset) to FR month hierarchy endpoint (`GET /api/fr/years/{year}/{month}`) with `next` URL for consistency with other collection endpoints
+- Add Meilisearch search timeout (`AbortSignal.timeout(5s)`) to prevent request hangs when Meilisearch is unresponsive
+- Add shared `buildErrorResponse()` helper consolidating error response format between `app.onError()` and `errorHandler()` middleware
+- Add `lib/version.ts` shared API version reader used by both OpenAPI spec and health endpoint
+
+### Fixed
+
+- Fix HTTPException returning plain text instead of structured JSON (Hono v4 intercepts before middleware catch blocks)
+- Fix Meilisearch internal URL leaking in 503 error messages to API consumers
+- Fix request ID resolution in `app.onError()` reading client header instead of server-generated UUID
+- Fix `version.ts` path resolution for production bundled builds
+- Fix OpenAPI spec version hardcoded to stale "1.20.1" instead of reading from package.json
+- Fix FR month route description claiming "Returns all" when endpoint is now paginated
+- Fix search sort OpenAPI description missing `document_number` as a supported sort field
+- Fix CLAUDE.md eCFR route URLs showing `/cfr/` instead of actual `/ecfr/` paths
+
+### Changed
+
+- Migrate all route files from deprecated `URL_TO_DB_SOURCE` to typed `toDbSource()` function
+- Distinguish Meilisearch timeout errors (504) from connection failures (503)
+- Remove stale CLAUDE.md pitfalls referencing deprecated `URL_TO_DB_SOURCE` pattern
+
 ## [1.23.1]
 
 ### Added

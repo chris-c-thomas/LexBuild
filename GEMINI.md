@@ -93,9 +93,18 @@ pnpm turbo dev:api --filter=@lexbuild/api      # REST API (http://localhost:4322
 - **Monorepo Boundaries**: Packages should only depend on `@lexbuild/core`. Source packages (`usc`, `ecfr`, `fr`) must NOT depend on each other.
 - **Linting/Formatting**: Prettier and ESLint are enforced via CI. Use `pnpm format` before committing.
 
-## Key Files
-- `CLAUDE.md`: Detailed architecture and operational guide (primary reference).
-- `turbo.json`: Task pipeline configuration.
-- `pnpm-workspace.yaml`: Monorepo structure definition.
-- `package.json`: Root dependencies and global scripts.
-- `.claude/rules/conventions.md`: Strict coding and architectural rules.
+## Key Files and Instruction Context
+
+LexBuild uses a hierarchical documentation structure to provide context across the monorepo:
+
+- **Root `CLAUDE.md`**: Primary reference for project-wide architecture, development workflows, and common pitfalls.
+- **Package/App `CLAUDE.md`**: Each package and application contains its own `CLAUDE.md` with deep-dives into source-specific logic, module structures, and local conventions (e.g., `packages/core/CLAUDE.md`, `apps/astro/CLAUDE.md`).
+- **`.github/copilot-instructions.md`**: Global AI instruction context for the repository.
+- **`.github/instructions/*.md`**: Specialized AI instructions for different components, including:
+    - `api.instructions.md`: Guidelines for the Hono/SQLite Data API.
+    - `astro-ui.instructions.md`: UI and design guidelines for the Astro web application.
+    - `documentation.instructions.md`: Standards for technical documentation.
+    - `mcp.instructions.md`: Instructions for the Model Context Protocol server.
+- **`turbo.json`**: Definition of the build, test, and lint task pipeline.
+- **`.claude/rules/conventions.md`**: Core mandates for coding styles and architectural integrity.
+- **`package.json`**: Root-level dependencies and workspace scripts.

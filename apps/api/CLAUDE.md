@@ -142,6 +142,11 @@ All endpoints: API key auth (optional), tiered rate limiting, X-RateLimit header
 
 ## Common Pitfalls
 
+- **Hono v4 intercepts HTTPException before middleware catch blocks**: `errorHandler()` middleware's try-catch never fires for `HTTPException`. Use `app.onError()` for HTTPException handling and `app.notFound()` for unmatched routes. Both are configured in `app.ts` to return structured JSON `{ error: { status, code, message } }`.
+- **`app.onError()` context has no typed variables**: `c.get("requestId")` fails to compile in `onError` because the context type doesn't include custom variables set by middleware. Read the server-generated request ID from `c.res?.headers.get("X-Request-ID")` instead, falling back to `c.req.header("X-Request-ID")`.
+- **Route `{identifier}` matches a single path segment**: Shorthand identifiers containing `/` (e.g., `t1/s1`) must be URL-encoded as `t1%2Fs1` in the URL path. Hono's `:param` does not match across `/` boundaries.
+- **Meilisearch timeout error chain**: `AbortSignal.timeout()` fires a `DOMException` (name: `TimeoutError`), wrapped by the Meilisearch client as `MeiliSearchRequestError` with the `DOMException` as `cause`. Check `err.cause instanceof DOMException && cause.name === "TimeoutError"` to distinguish timeouts (504) from connection failures (503).
+- **Meilisearch errors leak internal URLs**: `MeiliSearchRequestError.message` includes the full internal URL (`http://127.0.0.1:7700/indexes/lexbuild/search`). Never pass `err.message` to user-facing responses — use a fixed generic message and log details server-side only.
 - **`better-sqlite3` requires build approval**: Must be listed in root `package.json` under `pnpm.onlyBuiltDependencies`. Without it, `pnpm install` skips native compilation and the module fails at runtime.
 - **`better-sqlite3` is platform-specific**: macOS binaries won't work on Linux. The VPS must run `pnpm install` or `pnpm rebuild better-sqlite3` after deployment.
 - **tsup `noExternal` regex overrides `external` array**: `noExternal: [/(.*)/]` with `external: ["better-sqlite3"]` does NOT work. Use a negative lookahead: `noExternal: [/^(?!better-sqlite3|bindings|file-uri-to-path|@lexbuild\/)/]`.

@@ -186,3 +186,6 @@ data.ms/
 *.db
 *.db-wal
 *.db-shm
+
+# Postman
+apps/api/postman/*.local.postman_environment.json

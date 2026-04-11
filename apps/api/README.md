@@ -54,6 +54,17 @@ pnpm turbo dev:api --filter=@lexbuild/api
 
 Navigate to [http://localhost:4321/docs/api](http://localhost:4321/docs/api) for the interactive API reference (requires the Astro dev server). The old `/api/docs` path redirects there automatically.
 
+## Postman
+
+The shared Postman files live in `apps/api/postman/`:
+
+- `lexbuild-api.postman_collection.json`
+- `lexbuild-api.postman_environment.json`
+
+The committed environment file keeps `api_key` blank so it is safe to share in git and works for anonymous requests at the default rate limit. If you want to use a real API key locally, create a separate local environment file such as `lexbuild-api.local.postman_environment.json` and keep your key there instead of editing the shared file.
+
+Local Postman environment files matching `*.local.postman_environment.json` are gitignored.
+
 ## Environment Variables
 
 | Variable | Default | Description |

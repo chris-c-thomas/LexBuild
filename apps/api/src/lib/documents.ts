@@ -14,8 +14,10 @@ export const DOCUMENT_METADATA_COLUMNS =
   "cfr_subpart, agencies, cfr_references, docket_ids, source_credit, content_hash, format_version";
 
 /** Row shape used to render document responses before optionally loading the Markdown body. */
-export interface DocumentRenderableRow
-  extends Omit<DocumentRow, "frontmatter_yaml" | "markdown_body" | "file_path" | "generator" | "ingested_at"> {
+export interface DocumentRenderableRow extends Omit<
+  DocumentRow,
+  "frontmatter_yaml" | "markdown_body" | "file_path" | "generator" | "ingested_at"
+> {
   frontmatter_yaml?: string;
   markdown_body?: string;
 }

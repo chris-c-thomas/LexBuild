@@ -424,9 +424,7 @@ export function registerFrHierarchyRoutes(app: OpenAPIHono, db: Database.Databas
       .find((entry: FrYearAggregate) => entry.year === year)
       ?.months.find((entry: FrMonthAggregate) => entry.month === month)?.document_count;
 
-    const total =
-      totalFromSummary ??
-      ((monthTotal.get(monthStart, nextMonthStart) as { total: number }).total);
+    const total = totalFromSummary ?? (monthTotal.get(monthStart, nextMonthStart) as { total: number }).total;
     if (total === 0) {
       throw new HTTPException(404, { message: `No FR documents found for ${monthStr}` });
     }
@@ -471,8 +469,8 @@ export function registerFrHierarchyRoutes(app: OpenAPIHono, db: Database.Databas
     const nextYearStart = buildFrNextYearStart(year);
 
     const aggregates = getApiAggregates();
-  const yearSummary = aggregates?.sources.fr.years.find((entry: FrYearAggregate) => entry.year === year);
-    const total = yearSummary?.document_count ?? ((yearTotal.get(yearStart, nextYearStart) as { total: number }).total);
+    const yearSummary = aggregates?.sources.fr.years.find((entry: FrYearAggregate) => entry.year === year);
+    const total = yearSummary?.document_count ?? (yearTotal.get(yearStart, nextYearStart) as { total: number }).total;
     if (total === 0) {
       throw new HTTPException(404, { message: `No FR documents found for year ${year}` });
     }

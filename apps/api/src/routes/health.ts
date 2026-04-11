@@ -42,9 +42,11 @@ export function registerHealthRoutes(app: OpenAPIHono, db: Database.Database): v
     const aggregates = getApiAggregates();
     const count =
       aggregates?.total_documents ??
-      ((db.prepare("SELECT count(*) as count FROM documents").get() as {
-        count: number;
-      }).count);
+      (
+        db.prepare("SELECT count(*) as count FROM documents").get() as {
+          count: number;
+        }
+      ).count;
 
     return {
       connected: true,

@@ -2,6 +2,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import type Database from "better-sqlite3";
 import { API_VERSION } from "../lib/version.js";
+import { readApiAggregates } from "../lib/api-aggregates.js";
 import { memoizeForTtl } from "../lib/ttl-cache.js";
 
 const HEALTH_CACHE_TTL_MS = 30_000;
@@ -33,17 +34,21 @@ const healthRoute = createRoute({
 
 /** Register the health check endpoint. */
 export function registerHealthRoutes(app: OpenAPIHono, db: Database.Database): void {
+  const getApiAggregates = memoizeForTtl(HEALTH_CACHE_TTL_MS, () => readApiAggregates(db));
   const getDatabaseStatus = memoizeForTtl(HEALTH_CACHE_TTL_MS, () => {
-    const count = db.prepare("SELECT count(*) as count FROM documents").get() as {
-      count: number;
-    };
     const version = db.prepare("SELECT value FROM schema_meta WHERE key = 'schema_version'").get() as {
       value: string;
     };
+    const aggregates = getApiAggregates();
+    const count =
+      aggregates?.total_documents ??
+      ((db.prepare("SELECT count(*) as count FROM documents").get() as {
+        count: number;
+      }).count);
 
     return {
       connected: true,
-      documents: count.count,
+      documents: count,
       schema_version: Number.parseInt(version.value, 10),
     };
   });

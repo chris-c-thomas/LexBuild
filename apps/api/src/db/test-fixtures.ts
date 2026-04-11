@@ -11,7 +11,9 @@ import {
   SCHEMA_META_TABLE_SQL,
   INDEXES_SQL,
   SCHEMA_VERSION,
+  API_AGGREGATES_META_KEY,
 } from "@lexbuild/core";
+import type { ApiAggregates, FrYearAggregate } from "@lexbuild/core";
 
 /** Minimal document fields for fixture insertion. */
 interface FixtureDoc {
@@ -592,6 +594,59 @@ const INSERT_SQL =
   `@frontmatter_yaml, @markdown_body, @file_path, @content_hash, @format_version, @generator` +
   `)`;
 
+function buildFixtureApiAggregates(): ApiAggregates {
+  const frYears = new Map<number, FrYearAggregate>();
+  for (const doc of FR_DOCS) {
+    const year = Number.parseInt(doc.publication_date!.slice(0, 4), 10);
+    const month = Number.parseInt(doc.publication_date!.slice(5, 7), 10);
+    const existing = frYears.get(year);
+    if (existing) {
+      existing.document_count += 1;
+      const monthEntry = existing.months.find((entry: FrYearAggregate["months"][number]) => entry.month === month);
+      if (monthEntry) {
+        monthEntry.document_count += 1;
+      } else {
+        existing.months.push({ month, document_count: 1 });
+      }
+      continue;
+    }
+
+    frYears.set(year, {
+      year,
+      document_count: 1,
+      months: [{ month, document_count: 1 }],
+    });
+  }
+
+  return {
+    total_documents: FIXTURE_COUNTS.total,
+    sources: {
+      usc: {
+        document_count: FIXTURE_COUNTS.usc,
+        title_count: 2,
+        last_updated: "2024-01-03",
+      },
+      ecfr: {
+        document_count: FIXTURE_COUNTS.ecfr,
+        title_count: 2,
+        last_updated: "2024-04-01",
+      },
+      fr: {
+        document_count: FIXTURE_COUNTS.fr,
+        earliest_publication_date: "2026-03-15",
+        latest_publication_date: "2026-04-01",
+        document_types: {
+          rule: 1,
+          proposed_rule: 1,
+          notice: 1,
+          presidential_document: 1,
+        },
+        years: Array.from(frYears.values()),
+      },
+    },
+  };
+}
+
 /**
  * Create and populate a test database at the given path.
  * Uses the real schema from @lexbuild/core with fixture data.
@@ -607,6 +662,10 @@ export function createTestDatabase(dbPath: string): Database.Database {
 
   db.prepare("INSERT INTO schema_meta (key, value) VALUES ('schema_version', ?)").run(
     String(SCHEMA_VERSION),
+  );
+  db.prepare("INSERT INTO schema_meta (key, value) VALUES (?, ?)").run(
+    API_AGGREGATES_META_KEY,
+    JSON.stringify(buildFixtureApiAggregates()),
   );
 
   const insert = db.prepare(INSERT_SQL);

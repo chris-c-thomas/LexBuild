@@ -1,9 +1,14 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import type Database from "better-sqlite3";
+import type { FrMonthAggregate, FrYearAggregate } from "@lexbuild/core";
 import { HTTPException } from "hono/http-exception";
 import { errorResponseSchema } from "../schemas/errors.js";
+import { readApiAggregates } from "../lib/api-aggregates.js";
 import { toDbSource } from "../lib/source-registry.js";
+import { memoizeForTtl } from "../lib/ttl-cache.js";
+
+const FR_HIERARCHY_CACHE_TTL_MS = 300_000;
 
 const titlesResponseSchema = z.object({
   data: z.array(
@@ -381,6 +386,7 @@ function buildFrNextMonthStart(year: number, month: number): string {
 
 /** Register Federal Register hierarchy browsing endpoints. */
 export function registerFrHierarchyRoutes(app: OpenAPIHono, db: Database.Database): void {
+  const getApiAggregates = memoizeForTtl(FR_HIERARCHY_CACHE_TTL_MS, () => readApiAggregates(db));
   const frDateRange = db.prepare(
     "SELECT min(publication_date) as earliest, max(publication_date) as latest " +
       "FROM documents WHERE source = 'fr' AND publication_date IS NOT NULL",
@@ -413,8 +419,14 @@ export function registerFrHierarchyRoutes(app: OpenAPIHono, db: Database.Databas
     const monthStr = `${year}-${String(month).padStart(2, "0")}`;
     const monthStart = buildFrMonthStart(year, month);
     const nextMonthStart = buildFrNextMonthStart(year, month);
+    const aggregates = getApiAggregates();
+    const totalFromSummary = aggregates?.sources.fr.years
+      .find((entry: FrYearAggregate) => entry.year === year)
+      ?.months.find((entry: FrMonthAggregate) => entry.month === month)?.document_count;
 
-    const { total } = monthTotal.get(monthStart, nextMonthStart) as { total: number };
+    const total =
+      totalFromSummary ??
+      ((monthTotal.get(monthStart, nextMonthStart) as { total: number }).total);
     if (total === 0) {
       throw new HTTPException(404, { message: `No FR documents found for ${monthStr}` });
     }
@@ -458,27 +470,34 @@ export function registerFrHierarchyRoutes(app: OpenAPIHono, db: Database.Databas
     const yearStart = buildFrYearStart(year);
     const nextYearStart = buildFrNextYearStart(year);
 
-    const total = yearTotal.get(yearStart, nextYearStart) as { total: number };
-    if (total.total === 0) {
+    const aggregates = getApiAggregates();
+  const yearSummary = aggregates?.sources.fr.years.find((entry: FrYearAggregate) => entry.year === year);
+    const total = yearSummary?.document_count ?? ((yearTotal.get(yearStart, nextYearStart) as { total: number }).total);
+    if (total === 0) {
       throw new HTTPException(404, { message: `No FR documents found for year ${year}` });
     }
 
-    const months: Array<{ month: number; document_count: number }> = [];
-    for (let month = 1; month <= 12; month++) {
-      const monthStart = buildFrMonthStart(year, month);
-      const nextMonthStart = buildFrNextMonthStart(year, month);
-      const monthCount = yearCount.get(monthStart, nextMonthStart) as { total: number };
+    const months: Array<{ month: number; document_count: number }> =
+      yearSummary?.months ??
+      (() => {
+        const fallbackMonths: Array<{ month: number; document_count: number }> = [];
+        for (let month = 1; month <= 12; month++) {
+          const monthStart = buildFrMonthStart(year, month);
+          const nextMonthStart = buildFrNextMonthStart(year, month);
+          const monthCount = yearCount.get(monthStart, nextMonthStart) as { total: number };
 
-      if (monthCount.total > 0) {
-        months.push({ month, document_count: monthCount.total });
-      }
-    }
+          if (monthCount.total > 0) {
+            fallbackMonths.push({ month, document_count: monthCount.total });
+          }
+        }
+        return fallbackMonths;
+      })();
 
     return c.json(
       {
         data: {
           year,
-          document_count: total.total,
+          document_count: total,
           months: months.map((m) => ({
             month: m.month,
             document_count: m.document_count,
@@ -492,23 +511,33 @@ export function registerFrHierarchyRoutes(app: OpenAPIHono, db: Database.Databas
   });
 
   app.openapi(listYearsRoute, (c) => {
-    const range = frDateRange.get() as { earliest: string | null; latest: string | null };
-    const rows: Array<{ year: number; document_count: number }> = [];
+    const aggregates = getApiAggregates();
+    const rows: Array<{ year: number; document_count: number }> =
+      aggregates?.sources.fr.years.map((entry: FrYearAggregate) => ({
+        year: entry.year,
+        document_count: entry.document_count,
+      })) ??
+      (() => {
+        const range = frDateRange.get() as { earliest: string | null; latest: string | null };
+        const fallbackRows: Array<{ year: number; document_count: number }> = [];
 
-    if (range.earliest && range.latest) {
-      const startYear = Number.parseInt(range.earliest.slice(0, 4), 10);
-      const endYear = Number.parseInt(range.latest.slice(0, 4), 10);
+        if (range.earliest && range.latest) {
+          const startYear = Number.parseInt(range.earliest.slice(0, 4), 10);
+          const endYear = Number.parseInt(range.latest.slice(0, 4), 10);
 
-      for (let year = endYear; year >= startYear; year--) {
-        const yearStart = buildFrYearStart(year);
-        const nextYearStart = buildFrNextYearStart(year);
-        const total = yearCount.get(yearStart, nextYearStart) as { total: number };
+          for (let year = endYear; year >= startYear; year--) {
+            const yearStart = buildFrYearStart(year);
+            const nextYearStart = buildFrNextYearStart(year);
+            const total = yearCount.get(yearStart, nextYearStart) as { total: number };
 
-        if (total.total > 0) {
-          rows.push({ year, document_count: total.total });
+            if (total.total > 0) {
+              fallbackRows.push({ year, document_count: total.total });
+            }
+          }
         }
-      }
-    }
+
+        return fallbackRows;
+      })();
 
     return c.json(
       {

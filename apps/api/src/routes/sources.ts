@@ -2,6 +2,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import type Database from "better-sqlite3";
 import { API_SOURCES, toDbSource } from "../lib/source-registry.js";
+import { readApiAggregates } from "../lib/api-aggregates.js";
 import { memoizeForTtl } from "../lib/ttl-cache.js";
 
 const SOURCES_CACHE_TTL_MS = 60_000;
@@ -45,7 +46,25 @@ const sourcesRoute = createRoute({
 /** Register the sources metadata endpoint. */
 export function registerSourceRoutes(app: OpenAPIHono, db: Database.Database): void {
   const countBySource = db.prepare("SELECT source, count(*) as count FROM documents GROUP BY source");
+  const getApiAggregates = memoizeForTtl(SOURCES_CACHE_TTL_MS, () => readApiAggregates(db));
   const getSourceData = memoizeForTtl(SOURCES_CACHE_TTL_MS, () => {
+    const aggregates = getApiAggregates();
+
+    if (aggregates) {
+      return Object.values(API_SOURCES).map((source) => ({
+        id: source.id,
+        name: source.name,
+        short_name: source.shortName,
+        description: source.description,
+        url_prefix: source.urlPrefix,
+        hierarchy: source.hierarchy,
+        filterable_fields: source.filterableFields,
+        sortable_fields: source.sortableFields,
+        has_titles: source.hasTitles,
+        document_count: aggregates.sources[source.id].document_count,
+      }));
+    }
+
     const counts = new Map<string, number>();
     const rows = countBySource.all() as Array<{ source: string; count: number }>;
 

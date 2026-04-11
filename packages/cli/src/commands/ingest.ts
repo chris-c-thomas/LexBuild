@@ -14,8 +14,14 @@ import { createHash } from "node:crypto";
 import matter from "gray-matter";
 import Database from "better-sqlite3";
 import type { Database as DatabaseType } from "better-sqlite3";
-import { SCHEMA_VERSION, DOCUMENTS_TABLE_SQL, SCHEMA_META_TABLE_SQL, INDEXES_SQL } from "@lexbuild/core";
-import type { DocumentRow } from "@lexbuild/core";
+import {
+  SCHEMA_VERSION,
+  DOCUMENTS_TABLE_SQL,
+  SCHEMA_META_TABLE_SQL,
+  INDEXES_SQL,
+  API_AGGREGATES_META_KEY,
+} from "@lexbuild/core";
+import type { ApiAggregates, DocumentRow, FrYearAggregate } from "@lexbuild/core";
 import { createSpinner, summaryBlock, formatDuration, formatNumber, formatBytes, error } from "../ui.js";
 
 /** Valid source types for the --source filter */
@@ -98,6 +104,99 @@ function initializeDatabase(dbPath: string): DatabaseType {
   }
 
   return db;
+}
+
+/** Build the aggregate snapshot consumed by the Data API's hot system endpoints. */
+function computeApiAggregates(db: DatabaseType): ApiAggregates {
+  const totalQuery = db.prepare("SELECT count(*) as total FROM documents");
+  const titledStatsQuery = db.prepare(
+    "SELECT count(*) as document_count, count(DISTINCT title_number) as title_count, " +
+      "max(last_updated) as last_updated FROM documents WHERE source = ?",
+  );
+  const frStatsQuery = db.prepare(
+    "SELECT count(*) as document_count, min(publication_date) as earliest, max(publication_date) as latest " +
+      "FROM documents WHERE source = 'fr'",
+  );
+  const frDocTypesQuery = db.prepare(
+    "SELECT document_type, count(*) as count FROM documents " +
+      "WHERE source = 'fr' AND document_type IS NOT NULL GROUP BY document_type",
+  );
+  const frYearMonthsQuery = db.prepare(
+    "SELECT CAST(substr(publication_date, 1, 4) AS INTEGER) as year, " +
+      "CAST(substr(publication_date, 6, 2) AS INTEGER) as month, count(*) as document_count " +
+      "FROM documents WHERE source = 'fr' AND publication_date IS NOT NULL " +
+      "GROUP BY year, month ORDER BY year DESC, month ASC",
+  );
+
+  const { total } = totalQuery.get() as { total: number };
+  const usc = titledStatsQuery.get("usc") as {
+    document_count: number;
+    title_count: number;
+    last_updated: string | null;
+  };
+  const ecfr = titledStatsQuery.get("ecfr") as {
+    document_count: number;
+    title_count: number;
+    last_updated: string | null;
+  };
+  const fr = frStatsQuery.get() as {
+    document_count: number;
+    earliest: string | null;
+    latest: string | null;
+  };
+  const frDocTypes = frDocTypesQuery.all() as Array<{ document_type: string; count: number }>;
+  const frYearMonths = frYearMonthsQuery.all() as Array<{ year: number; month: number; document_count: number }>;
+
+  const documentTypes: Record<string, number> = {};
+  for (const row of frDocTypes) {
+    documentTypes[row.document_type] = row.count;
+  }
+
+  const years = new Map<number, FrYearAggregate>();
+  for (const row of frYearMonths) {
+    const existing = years.get(row.year);
+    if (existing) {
+      existing.document_count += row.document_count;
+      existing.months.push({ month: row.month, document_count: row.document_count });
+      continue;
+    }
+
+    years.set(row.year, {
+      year: row.year,
+      document_count: row.document_count,
+      months: [{ month: row.month, document_count: row.document_count }],
+    });
+  }
+
+  return {
+    total_documents: total,
+    sources: {
+      usc: {
+        document_count: usc.document_count,
+        title_count: usc.title_count,
+        last_updated: usc.last_updated,
+      },
+      ecfr: {
+        document_count: ecfr.document_count,
+        title_count: ecfr.title_count,
+        last_updated: ecfr.last_updated,
+      },
+      fr: {
+        document_count: fr.document_count,
+        earliest_publication_date: fr.earliest,
+        latest_publication_date: fr.latest,
+        document_types: documentTypes,
+        years: Array.from(years.values()),
+      },
+    },
+  };
+}
+
+/** Store the aggregate snapshot in schema_meta for low-latency API reads. */
+function writeApiAggregates(db: DatabaseType): void {
+  const insert = db.prepare("INSERT OR REPLACE INTO schema_meta (key, value) VALUES (?, ?)");
+  const aggregates = computeApiAggregates(db);
+  insert.run(API_AGGREGATES_META_KEY, JSON.stringify(aggregates));
 }
 
 /**
@@ -548,6 +647,11 @@ whose source files have been deleted.`,
           pruneSpinner.succeed("No documents to prune");
         }
       }
+
+      const aggregateSpinner = createSpinner("Refreshing API aggregate summaries");
+      aggregateSpinner.start();
+      writeApiAggregates(db);
+      aggregateSpinner.succeed("API aggregate summaries refreshed");
 
       const elapsed = performance.now() - startTime;
       const dbSize = existsSync(dbPath) ? statSync(dbPath).size : 0;

@@ -2,6 +2,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import type Database from "better-sqlite3";
 import { SCHEMA_VERSION } from "@lexbuild/core";
+import { readApiAggregates } from "../lib/api-aggregates.js";
 import { cacheHeaders } from "../middleware/cache-headers.js";
 import { memoizeForTtl } from "../lib/ttl-cache.js";
 
@@ -56,6 +57,7 @@ const statsRoute = createRoute({
 export function registerStatsRoutes(app: OpenAPIHono, db: Database.Database): void {
   // Expensive queries — cache aggressively
   app.use("/stats", cacheHeaders({ maxAge: 3600, sMaxAge: 86400, staleWhileRevalidate: 604800 }));
+  const getApiAggregates = memoizeForTtl(STATS_CACHE_TTL_MS, () => readApiAggregates(db));
 
   const totalCount = db.prepare("SELECT count(*) as total FROM documents");
 
@@ -81,6 +83,28 @@ export function registerStatsRoutes(app: OpenAPIHono, db: Database.Database): vo
   );
 
   const getStatsData = memoizeForTtl(STATS_CACHE_TTL_MS, () => {
+    const aggregates = getApiAggregates();
+    if (aggregates) {
+      return {
+        total_documents: aggregates.total_documents,
+        sources: {
+          usc: aggregates.sources.usc,
+          ecfr: aggregates.sources.ecfr,
+          fr: {
+            document_count: aggregates.sources.fr.document_count,
+            date_range: {
+              earliest: aggregates.sources.fr.earliest_publication_date,
+              latest: aggregates.sources.fr.latest_publication_date,
+            },
+            document_types: aggregates.sources.fr.document_types,
+          },
+        },
+        database: {
+          schema_version: SCHEMA_VERSION,
+        },
+      };
+    }
+
     const { total } = totalCount.get() as { total: number };
     const usc = uscStats.get() as { document_count: number; title_count: number; last_updated: string | null };
     const ecfr = ecfrStats.get() as { document_count: number; title_count: number; last_updated: string | null };

@@ -63,6 +63,14 @@ export { writeFile, writeFileIfChanged, mkdir } from "./fs.js";
 // Database schema (shared between CLI ingest and Data API)
 export { SCHEMA_VERSION, DOCUMENTS_TABLE_SQL, SCHEMA_META_TABLE_SQL, INDEXES_SQL } from "./db/schema.js";
 export type { DocumentRow } from "./db/schema.js";
+export { API_AGGREGATES_META_KEY } from "./db/api-aggregates.js";
+export type {
+  ApiAggregates,
+  TitledSourceAggregate,
+  FrSourceAggregate,
+  FrYearAggregate,
+  FrMonthAggregate,
+} from "./db/api-aggregates.js";
 
 // API keys schema (shared between CLI api-key commands and Data API)
 export { deriveApiKeyHash, TIER_DEFAULTS, API_KEYS_TABLE_SQL } from "./db/keys-schema.js";

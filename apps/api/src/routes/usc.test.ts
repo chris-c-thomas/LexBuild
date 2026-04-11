@@ -59,6 +59,24 @@ describe("GET /api/usc/documents", () => {
     expect(body.pagination.offset).toBe(2);
   });
 
+  it("uses cursor pagination without returning total counts", async () => {
+    const firstPage = await ctx.app.request("/api/usc/documents?limit=2");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test assertion
+    const firstBody = (await firstPage.json()) as any;
+    const cursor = firstBody.data[1].identifier as string;
+
+    const res = await ctx.app.request(`/api/usc/documents?limit=1&cursor=${encodeURIComponent(cursor)}`);
+    expect(res.status).toBe(200);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test assertion
+    const body = (await res.json()) as any;
+
+    expect(body.data).toHaveLength(1);
+    expect(body.pagination.total).toBeNull();
+    expect(body.pagination.offset).toBe(0);
+    expect(body.pagination.next).toContain("cursor=");
+    expect(body.pagination.next).not.toContain("offset=");
+  });
+
   it("returns documents sorted by identifier by default", async () => {
     const res = await ctx.app.request("/api/usc/documents");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test assertion

@@ -8,7 +8,8 @@ export const paginationSchema = z.object({
     description: "Number of results to skip",
   }),
   cursor: z.string().optional().openapi({
-    description: "Cursor for keyset pagination (alternative to offset). Value is the last document's sort key.",
+    description:
+      "Cursor for keyset pagination (alternative to offset). Value is the last document's sort key from the previous page.",
   }),
 });
 
@@ -27,7 +28,9 @@ export const collectionResponseSchema = z.object({
     timestamp: z.string(),
   }),
   pagination: z.object({
-    total: z.number(),
+    total: z.number().nullable().openapi({
+      description: "Total result count for offset pagination. Null when cursor pagination is used.",
+    }),
     limit: z.number(),
     offset: z.number(),
     has_more: z.boolean(),

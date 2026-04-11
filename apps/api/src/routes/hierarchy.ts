@@ -359,45 +359,67 @@ const getMonthRoute = createRoute({
   },
 });
 
+function buildFrYearStart(year: number): string {
+  return `${year}-01-01`;
+}
+
+function buildFrMonthStart(year: number, month: number): string {
+  return `${year}-${String(month).padStart(2, "0")}-01`;
+}
+
+function buildFrNextYearStart(year: number): string {
+  return `${year + 1}-01-01`;
+}
+
+function buildFrNextMonthStart(year: number, month: number): string {
+  if (month === 12) {
+    return buildFrYearStart(year + 1);
+  }
+
+  return buildFrMonthStart(year, month + 1);
+}
+
 /** Register Federal Register hierarchy browsing endpoints. */
 export function registerFrHierarchyRoutes(app: OpenAPIHono, db: Database.Database): void {
-  const listYears = db.prepare(
-    "SELECT CAST(substr(publication_date, 1, 4) AS INTEGER) as year, count(*) as document_count " +
-      "FROM documents WHERE source = 'fr' AND publication_date IS NOT NULL " +
-      "GROUP BY substr(publication_date, 1, 4) ORDER BY year DESC",
+  const frDateRange = db.prepare(
+    "SELECT min(publication_date) as earliest, max(publication_date) as latest " +
+      "FROM documents WHERE source = 'fr' AND publication_date IS NOT NULL",
   );
 
-  const yearMonths = db.prepare(
-    "SELECT CAST(substr(publication_date, 6, 2) AS INTEGER) as month, count(*) as document_count " +
-      "FROM documents WHERE source = 'fr' AND substr(publication_date, 1, 4) = ? " +
-      "GROUP BY substr(publication_date, 6, 2) ORDER BY month ASC",
+  const yearCount = db.prepare(
+    "SELECT count(*) as total FROM documents " +
+      "WHERE source = 'fr' AND publication_date >= ? AND publication_date < ?",
   );
 
   const yearTotal = db.prepare(
-    "SELECT count(*) as total FROM documents WHERE source = 'fr' AND substr(publication_date, 1, 4) = ?",
+    "SELECT count(*) as total FROM documents " +
+      "WHERE source = 'fr' AND publication_date >= ? AND publication_date < ?",
   );
 
   const monthDocumentsPaged = db.prepare(
     "SELECT id, identifier, document_number, display_title, document_type, publication_date, agency " +
-      "FROM documents WHERE source = 'fr' AND substr(publication_date, 1, 7) = ? " +
+      "FROM documents WHERE source = 'fr' AND publication_date >= ? AND publication_date < ? " +
       "ORDER BY publication_date ASC, document_number ASC LIMIT ? OFFSET ?",
   );
 
   const monthTotal = db.prepare(
-    "SELECT count(*) as total FROM documents WHERE source = 'fr' AND substr(publication_date, 1, 7) = ?",
+    "SELECT count(*) as total FROM documents " +
+      "WHERE source = 'fr' AND publication_date >= ? AND publication_date < ?",
   );
 
   app.openapi(getMonthRoute, (c) => {
     const { year, month } = c.req.valid("param");
     const { limit, offset } = c.req.valid("query");
     const monthStr = `${year}-${String(month).padStart(2, "0")}`;
+    const monthStart = buildFrMonthStart(year, month);
+    const nextMonthStart = buildFrNextMonthStart(year, month);
 
-    const { total } = monthTotal.get(monthStr) as { total: number };
+    const { total } = monthTotal.get(monthStart, nextMonthStart) as { total: number };
     if (total === 0) {
       throw new HTTPException(404, { message: `No FR documents found for ${monthStr}` });
     }
 
-    const docs = monthDocumentsPaged.all(monthStr, limit, offset) as Array<{
+    const docs = monthDocumentsPaged.all(monthStart, nextMonthStart, limit, offset) as Array<{
       id: string;
       identifier: string;
       document_number: string | null;
@@ -433,14 +455,24 @@ export function registerFrHierarchyRoutes(app: OpenAPIHono, db: Database.Databas
 
   app.openapi(getYearRoute, (c) => {
     const year = c.req.valid("param").year;
-    const yearStr = String(year);
+    const yearStart = buildFrYearStart(year);
+    const nextYearStart = buildFrNextYearStart(year);
 
-    const total = yearTotal.get(yearStr) as { total: number };
+    const total = yearTotal.get(yearStart, nextYearStart) as { total: number };
     if (total.total === 0) {
       throw new HTTPException(404, { message: `No FR documents found for year ${year}` });
     }
 
-    const months = yearMonths.all(yearStr) as Array<{ month: number; document_count: number }>;
+    const months: Array<{ month: number; document_count: number }> = [];
+    for (let month = 1; month <= 12; month++) {
+      const monthStart = buildFrMonthStart(year, month);
+      const nextMonthStart = buildFrNextMonthStart(year, month);
+      const monthCount = yearCount.get(monthStart, nextMonthStart) as { total: number };
+
+      if (monthCount.total > 0) {
+        months.push({ month, document_count: monthCount.total });
+      }
+    }
 
     return c.json(
       {
@@ -460,7 +492,24 @@ export function registerFrHierarchyRoutes(app: OpenAPIHono, db: Database.Databas
   });
 
   app.openapi(listYearsRoute, (c) => {
-    const rows = listYears.all() as Array<{ year: number; document_count: number }>;
+    const range = frDateRange.get() as { earliest: string | null; latest: string | null };
+    const rows: Array<{ year: number; document_count: number }> = [];
+
+    if (range.earliest && range.latest) {
+      const startYear = Number.parseInt(range.earliest.slice(0, 4), 10);
+      const endYear = Number.parseInt(range.latest.slice(0, 4), 10);
+
+      for (let year = endYear; year >= startYear; year--) {
+        const yearStart = buildFrYearStart(year);
+        const nextYearStart = buildFrNextYearStart(year);
+        const total = yearCount.get(yearStart, nextYearStart) as { total: number };
+
+        if (total.total > 0) {
+          rows.push({ year, document_count: total.total });
+        }
+      }
+    }
+
     return c.json(
       {
         data: rows.map((r) => ({

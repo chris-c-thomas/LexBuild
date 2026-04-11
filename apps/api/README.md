@@ -91,7 +91,7 @@ Full interactive documentation is available at [`/docs/api`](https://lexbuild.de
 | GET | `/api/fr/years/{year}` | Year detail with month listing |
 | GET | `/api/fr/years/{year}/{month}` | Month detail with document listing |
 
-Document endpoints support content negotiation (`?format=json|markdown|text` or `Accept` header), field selection (`?fields=metadata|body|field1,field2`), and ETag caching (`If-None-Match` returns 304). Listing endpoints support offset and cursor pagination, multi-field filtering, and configurable sort order.
+Document endpoints support content negotiation (`?format=json|markdown|text` or `Accept` header), field selection (`?fields=metadata|body|field1,field2`), and ETag caching (`If-None-Match` returns 304). Listing endpoints support offset and cursor pagination, multi-field filtering, and configurable sort order. Cursor-paginated responses omit the expensive total count and return `pagination.total` as `null`.
 
 ## Authentication
 

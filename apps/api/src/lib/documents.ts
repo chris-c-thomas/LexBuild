@@ -4,6 +4,22 @@ import { resolveFormat } from "./content-negotiation.js";
 import { stripMarkdown } from "./markdown-strip.js";
 import { toApiSource } from "./source-registry.js";
 
+/** Columns needed to render metadata and ETag responses without loading Markdown content. */
+export const DOCUMENT_METADATA_COLUMNS =
+  "id, source, identifier, title_number, title_name, section_number, section_name, " +
+  "chapter_number, chapter_name, subchapter_number, subchapter_name, part_number, part_name, " +
+  "legal_status, positive_law, status, currency, last_updated, display_title, " +
+  "document_number, document_type, publication_date, agency, fr_citation, fr_volume, " +
+  "effective_date, comments_close_date, fr_action, authority, regulatory_source, cfr_part, " +
+  "cfr_subpart, agencies, cfr_references, docket_ids, source_credit, content_hash, format_version";
+
+/** Row shape used to render document responses before optionally loading the Markdown body. */
+export interface DocumentRenderableRow
+  extends Omit<DocumentRow, "frontmatter_yaml" | "markdown_body" | "file_path" | "generator" | "ingested_at"> {
+  frontmatter_yaml?: string;
+  markdown_body?: string;
+}
+
 /** Safely parse a JSON column value, returning null on malformed data. */
 function safeJsonParse(value: string | null, field: string, identifier: string): unknown {
   if (!value) return null;
@@ -28,8 +44,30 @@ export function resolveIdentifier(source: string, raw: string): string {
   return `${prefix}${decoded}`;
 }
 
+/** Determine whether the request needs Markdown content loaded from the database. */
+export function requestNeedsDocumentBody(c: Context): boolean {
+  const format = resolveFormat(c);
+  if (format === "markdown" || format === "text") {
+    return true;
+  }
+
+  const fields = c.req.query("fields");
+  if (!fields) {
+    return true;
+  }
+
+  if (fields === "metadata") {
+    return false;
+  }
+
+  return fields
+    .split(",")
+    .map((field) => field.trim())
+    .includes("body");
+}
+
 /** Build metadata object from a DocumentRow, omitting internal/content fields. */
-export function buildMetadata(row: DocumentRow): Record<string, unknown> {
+export function buildMetadata(row: DocumentRenderableRow): Record<string, unknown> {
   const meta: Record<string, unknown> = {
     identifier: row.identifier,
     source: toApiSource(row.source),
@@ -86,7 +124,7 @@ export function buildMetadata(row: DocumentRow): Record<string, unknown> {
  * Returns the filtered metadata and whether to include the body.
  */
 export function selectFields(
-  row: DocumentRow,
+  row: DocumentRenderableRow,
   fields: string | undefined,
 ): { metadata: Record<string, unknown>; includeBody: boolean } {
   const allMetadata = buildMetadata(row);
@@ -123,7 +161,7 @@ export function selectFields(
  * Render the full HTTP response for a document row, handling content negotiation,
  * ETag, and field selection. Returns the Hono Response.
  */
-export function renderDocumentResponse(c: Context, row: DocumentRow): Response {
+export function renderDocumentResponse(c: Context, row: DocumentRenderableRow): Response {
   const etag = `"${row.content_hash.slice(0, 16)}"`;
   c.header("ETag", etag);
 
@@ -134,17 +172,29 @@ export function renderDocumentResponse(c: Context, row: DocumentRow): Response {
   const format = resolveFormat(c);
 
   if (format === "markdown") {
+    if (row.frontmatter_yaml === undefined || row.markdown_body === undefined) {
+      throw new Error(`Markdown requested without loaded content for ${row.identifier}`);
+    }
+
     c.header("Content-Type", "text/markdown; charset=utf-8");
     return c.body(`---\n${row.frontmatter_yaml.trim()}\n---\n${row.markdown_body}`);
   }
 
   if (format === "text") {
+    if (row.markdown_body === undefined) {
+      throw new Error(`Plain text requested without loaded content for ${row.identifier}`);
+    }
+
     c.header("Content-Type", "text/plain; charset=utf-8");
     return c.body(stripMarkdown(row.markdown_body));
   }
 
   const fields = c.req.query("fields");
   const { metadata, includeBody } = selectFields(row, fields);
+
+  if (includeBody && row.markdown_body === undefined) {
+    throw new Error(`Body requested without loaded content for ${row.identifier}`);
+  }
 
   return c.json({
     data: {

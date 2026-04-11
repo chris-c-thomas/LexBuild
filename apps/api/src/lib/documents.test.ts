@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { DocumentRow } from "@lexbuild/core";
-import { resolveIdentifier, buildMetadata, selectFields } from "./documents.js";
+import { resolveIdentifier, buildMetadata, requestNeedsDocumentBody, selectFields } from "./documents.js";
 
 describe("resolveIdentifier", () => {
   it("resolves USC shorthand to canonical identifier", () => {
@@ -150,5 +150,36 @@ describe("selectFields", () => {
     expect(metadata.status).toBe("in_force");
     expect(metadata.chapter_name).toBeUndefined();
     expect(includeBody).toBe(false);
+  });
+});
+
+describe("requestNeedsDocumentBody", () => {
+  function makeContext(url: string, headers?: Record<string, string>) {
+    const requestInit = headers ? { headers } : undefined;
+    const request = new Request(`https://lexbuild.dev${url}`, requestInit);
+    return {
+      req: {
+        query: (name: string) => new URL(request.url).searchParams.get(name) ?? undefined,
+        header: (name: string) => request.headers.get(name) ?? undefined,
+      },
+    } as Parameters<typeof requestNeedsDocumentBody>[0];
+  }
+
+  it("returns false for metadata-only JSON requests", () => {
+    expect(requestNeedsDocumentBody(makeContext("/api/usc/documents/t1?fields=metadata"))).toBe(false);
+  });
+
+  it("returns false when selected fields omit body", () => {
+    expect(requestNeedsDocumentBody(makeContext("/api/usc/documents/t1?fields=title_number,status"))).toBe(
+      false,
+    );
+  });
+
+  it("returns true for markdown requests", () => {
+    expect(requestNeedsDocumentBody(makeContext("/api/usc/documents/t1?format=markdown"))).toBe(true);
+  });
+
+  it("returns true for default JSON requests", () => {
+    expect(requestNeedsDocumentBody(makeContext("/api/usc/documents/t1"))).toBe(true);
   });
 });

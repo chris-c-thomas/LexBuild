@@ -35,6 +35,7 @@ function makeResult(overrides: Partial<QueryResult> = {}): QueryResult {
     limit: 20,
     offset: 0,
     hasMore: false,
+    cursorUsed: false,
     ...overrides,
   };
 }
@@ -88,6 +89,24 @@ describe("buildListingResponse", () => {
     );
     expect(result.pagination.next).toContain("title_number=1");
     expect(result.pagination.next).toContain("sort=identifier");
+  });
+
+  it("generates cursor-based next URL when cursor pagination is used", () => {
+    const result = buildListingResponse(
+      makeResult({
+        total: null,
+        limit: 10,
+        hasMore: true,
+        cursorUsed: true,
+        nextCursor: "/us/usc/t1/s1",
+      }),
+      "/api/usc/documents",
+      { sort: "identifier", cursor: "/us/usc/t1/preamble" },
+    );
+
+    expect(result.pagination.total).toBeNull();
+    expect(result.pagination.next).toContain("cursor=%2Fus%2Fusc%2Ft1%2Fs1");
+    expect(result.pagination.next).not.toContain("offset=");
   });
 
   it("omits undefined query params from next URL", () => {

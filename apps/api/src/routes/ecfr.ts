@@ -1,13 +1,18 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import type Database from "better-sqlite3";
-import type { DocumentRow } from "@lexbuild/core";
 import { documentResponseSchema, documentQuerySchema } from "../schemas/documents.js";
 import { collectionResponseSchema } from "../schemas/pagination.js";
 import { ecfrFilterSchema } from "../schemas/filters.js";
 import { errorResponseSchema } from "../schemas/errors.js";
 import { toDbSource } from "../lib/source-registry.js";
-import { resolveIdentifier, renderDocumentResponse } from "../lib/documents.js";
+import {
+  DOCUMENT_METADATA_COLUMNS,
+  type DocumentRenderableRow,
+  requestNeedsDocumentBody,
+  resolveIdentifier,
+  renderDocumentResponse,
+} from "../lib/documents.js";
 import { buildListingResponse } from "../lib/listings.js";
 import { queryDocuments } from "../db/queries.js";
 import { cacheHeaders } from "../middleware/cache-headers.js";
@@ -64,6 +69,9 @@ const getDocumentRoute = createRoute({
 export function registerEcfrRoutes(app: OpenAPIHono, db: Database.Database): void {
   const dbSource = toDbSource("ecfr");
   const findByIdentifier = db.prepare("SELECT * FROM documents WHERE identifier = ? AND source = ?");
+  const findByIdentifierMetadata = db.prepare(
+    `SELECT ${DOCUMENT_METADATA_COLUMNS} FROM documents WHERE identifier = ? AND source = ?`,
+  );
 
   // eCFR updates daily but individual sections change less often
   app.use("/ecfr/*", cacheHeaders({ maxAge: 3600, sMaxAge: 43200, staleWhileRevalidate: 604800 }));
@@ -85,7 +93,26 @@ export function registerEcfrRoutes(app: OpenAPIHono, db: Database.Database): voi
     const rawIdentifier = c.req.param("identifier");
     const identifier = resolveIdentifier("ecfr", rawIdentifier);
 
-    const row = findByIdentifier.get(identifier, dbSource) as DocumentRow | undefined;
+    const metadataRow = findByIdentifierMetadata.get(identifier, dbSource) as DocumentRenderableRow | undefined;
+    if (!metadataRow) {
+      return c.json(
+        {
+          error: {
+            status: 404,
+            code: "DOCUMENT_NOT_FOUND",
+            message: `No document found with identifier ${identifier}`,
+          },
+        },
+        404,
+      );
+    }
+
+    const etag = `"${metadataRow.content_hash.slice(0, 16)}"`;
+    if (!requestNeedsDocumentBody(c) || c.req.header("If-None-Match") === etag) {
+      return renderDocumentResponse(c, metadataRow);
+    }
+
+    const row = findByIdentifier.get(identifier, dbSource) as DocumentRenderableRow | undefined;
     if (!row) {
       return c.json(
         {

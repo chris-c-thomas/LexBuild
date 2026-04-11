@@ -13,10 +13,18 @@ export interface QueryOptions {
 /** Result from a paginated query. */
 export interface QueryResult {
   rows: Record<string, unknown>[];
-  total: number;
+  total: number | null;
   limit: number;
   offset: number;
   hasMore: boolean;
+  cursorUsed: boolean;
+  nextCursor?: string | undefined;
+}
+
+interface ParsedSort {
+  field: string;
+  descending: boolean;
+  clause: string;
 }
 
 /** Columns allowed in WHERE clauses — prevents SQL injection via column names. */
@@ -55,15 +63,32 @@ const LISTING_COLUMNS =
  * Parse a sort string (e.g., "-publication_date") into a validated ORDER BY clause.
  * Falls back to "identifier ASC" for invalid sort fields.
  */
-function parseSortParam(sort: string): string {
+function parseSortParam(sort: string): ParsedSort {
   const descending = sort.startsWith("-");
-  const field = descending ? sort.slice(1) : sort;
+  const requestedField = descending ? sort.slice(1) : sort;
 
-  if (!SORTABLE_COLUMNS.has(field)) {
-    return "identifier ASC";
+  if (!SORTABLE_COLUMNS.has(requestedField)) {
+    return {
+      field: "identifier",
+      descending: false,
+      clause: "identifier ASC",
+    };
   }
 
-  return `${field} ${descending ? "DESC" : "ASC"}`;
+  return {
+    field: requestedField,
+    descending,
+    clause: `${requestedField} ${descending ? "DESC" : "ASC"}`,
+  };
+}
+
+function getNextCursorValue(row: Record<string, unknown> | undefined, field: string): string | undefined {
+  const value = row?.[field];
+  if (typeof value === "string" || typeof value === "number") {
+    return String(value);
+  }
+
+  return undefined;
 }
 
 /**
@@ -103,39 +128,58 @@ export function queryDocuments(db: Database.Database, options: QueryOptions): Qu
   }
 
   const whereClause = conditions.join(" AND ");
-  const orderClause = parseSortParam(sort);
+  const parsedSort = parseSortParam(sort);
+  const useCursor = Boolean(options.cursor);
 
   // Cursor pagination: skip past the last-seen sort key
-  if (options.cursor) {
-    const descending = sort.startsWith("-");
-    const field = descending ? sort.slice(1) : sort;
-    if (SORTABLE_COLUMNS.has(field)) {
-      const op = descending ? "<" : ">";
-      conditions.push(`${field} ${op} @cursor`);
-      params.cursor = options.cursor;
-    }
+  if (useCursor && options.cursor) {
+    const op = parsedSort.descending ? "<" : ">";
+    conditions.push(`${parsedSort.field} ${op} @cursor`);
+    params.cursor = options.cursor;
   }
 
   const cursorWhereClause = conditions.join(" AND ");
 
-  // Total uses base filters, not cursor — cursor only affects the data page
+  if (useCursor) {
+    const dataSql =
+      `SELECT ${LISTING_COLUMNS} FROM documents WHERE ${cursorWhereClause} ` +
+      `ORDER BY ${parsedSort.clause} LIMIT @limit_plus_one`;
+
+    const rows = db.prepare(dataSql).all({
+      ...params,
+      limit_plus_one: limit + 1,
+    }) as Record<string, unknown>[];
+
+    const hasMore = rows.length > limit;
+    const pageRows = hasMore ? rows.slice(0, limit) : rows;
+
+    return {
+      rows: pageRows,
+      total: null,
+      limit,
+      offset: 0,
+      hasMore,
+      cursorUsed: true,
+      nextCursor: hasMore ? getNextCursorValue(pageRows.at(-1), parsedSort.field) : undefined,
+    };
+  }
+
+  // Offset pagination keeps returning total counts for traditional page UIs.
   const countSql = `SELECT count(*) as total FROM documents WHERE ${whereClause}`;
   const { total } = db.prepare(countSql).get(params) as { total: number };
 
-  const useCursor = options.cursor && SORTABLE_COLUMNS.has(sort.startsWith("-") ? sort.slice(1) : sort);
-  const dataSql = useCursor
-    ? `SELECT ${LISTING_COLUMNS} FROM documents WHERE ${cursorWhereClause} ORDER BY ${orderClause} LIMIT @limit`
-    : `SELECT ${LISTING_COLUMNS} FROM documents WHERE ${whereClause} ORDER BY ${orderClause} LIMIT @limit OFFSET @offset`;
+  const dataSql =
+    `SELECT ${LISTING_COLUMNS} FROM documents WHERE ${whereClause} ` +
+    `ORDER BY ${parsedSort.clause} LIMIT @limit OFFSET @offset`;
 
-  const queryParams = useCursor ? { ...params, limit } : { ...params, limit, offset };
-
-  const rows = db.prepare(dataSql).all(queryParams) as Record<string, unknown>[];
+  const rows = db.prepare(dataSql).all({ ...params, limit, offset }) as Record<string, unknown>[];
 
   return {
     rows,
     total,
     limit,
-    offset: useCursor ? 0 : offset,
-    hasMore: useCursor ? rows.length === limit : offset + rows.length < total,
+    offset,
+    hasMore: offset + rows.length < total,
+    cursorUsed: false,
   };
 }

@@ -16,7 +16,7 @@ export interface ListingResponseBody {
     timestamp: string;
   };
   pagination: {
-    total: number;
+    total: number | null;
     limit: number;
     offset: number;
     has_more: boolean;
@@ -42,16 +42,24 @@ export function buildListingResponse(
 
   let next: string | null = null;
   if (result.hasMore) {
-    const nextOffset = result.offset + result.limit;
     const params = new URLSearchParams();
     for (const [key, value] of Object.entries(queryString)) {
       if (value !== undefined && value !== null && key !== "offset" && key !== "cursor") {
         params.set(key, String(value));
       }
     }
-    params.set("offset", String(nextOffset));
     params.set("limit", String(result.limit));
-    next = `${basePath}?${params.toString()}`;
+
+    if (result.cursorUsed) {
+      if (result.nextCursor) {
+        params.set("cursor", result.nextCursor);
+        next = `${basePath}?${params.toString()}`;
+      }
+    } else {
+      const nextOffset = result.offset + result.limit;
+      params.set("offset", String(nextOffset));
+      next = `${basePath}?${params.toString()}`;
+    }
   }
 
   return {

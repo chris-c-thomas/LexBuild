@@ -2,6 +2,9 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import type Database from "better-sqlite3";
 import { API_SOURCES, toDbSource } from "../lib/source-registry.js";
+import { memoizeForTtl } from "../lib/ttl-cache.js";
+
+const SOURCES_CACHE_TTL_MS = 60_000;
 
 const sourceSchema = z.object({
   id: z.string(),
@@ -42,20 +45,15 @@ const sourcesRoute = createRoute({
 /** Register the sources metadata endpoint. */
 export function registerSourceRoutes(app: OpenAPIHono, db: Database.Database): void {
   const countBySource = db.prepare("SELECT source, count(*) as count FROM documents GROUP BY source");
-
-  app.openapi(sourcesRoute, (c) => {
+  const getSourceData = memoizeForTtl(SOURCES_CACHE_TTL_MS, () => {
     const counts = new Map<string, number>();
-    try {
-      const rows = countBySource.all() as Array<{ source: string; count: number }>;
-      for (const row of rows) {
-        counts.set(row.source, row.count);
-      }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error(`[sources] Failed to query document counts: ${msg}`);
+    const rows = countBySource.all() as Array<{ source: string; count: number }>;
+
+    for (const row of rows) {
+      counts.set(row.source, row.count);
     }
 
-    const data = Object.values(API_SOURCES).map((source) => {
+    return Object.values(API_SOURCES).map((source) => {
       const dbSource = toDbSource(source.id);
       return {
         id: source.id,
@@ -70,6 +68,16 @@ export function registerSourceRoutes(app: OpenAPIHono, db: Database.Database): v
         document_count: counts.get(dbSource) ?? 0,
       };
     });
+  });
+
+  app.openapi(sourcesRoute, (c) => {
+    let data: Array<z.infer<typeof sourceSchema>> = [];
+    try {
+      data = getSourceData();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`[sources] Failed to query document counts: ${msg}`);
+    }
 
     return c.json({
       data,

@@ -2,6 +2,9 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import type Database from "better-sqlite3";
 import { API_VERSION } from "../lib/version.js";
+import { memoizeForTtl } from "../lib/ttl-cache.js";
+
+const HEALTH_CACHE_TTL_MS = 30_000;
 
 const healthResponseSchema = z.object({
   status: z.enum(["ok", "degraded", "error"]),
@@ -30,21 +33,26 @@ const healthRoute = createRoute({
 
 /** Register the health check endpoint. */
 export function registerHealthRoutes(app: OpenAPIHono, db: Database.Database): void {
+  const getDatabaseStatus = memoizeForTtl(HEALTH_CACHE_TTL_MS, () => {
+    const count = db.prepare("SELECT count(*) as count FROM documents").get() as {
+      count: number;
+    };
+    const version = db.prepare("SELECT value FROM schema_meta WHERE key = 'schema_version'").get() as {
+      value: string;
+    };
+
+    return {
+      connected: true,
+      documents: count.count,
+      schema_version: Number.parseInt(version.value, 10),
+    };
+  });
+
   app.openapi(healthRoute, (c) => {
     let dbStatus = { connected: false, documents: 0, schema_version: 0 };
 
     try {
-      const count = db.prepare("SELECT count(*) as count FROM documents").get() as {
-        count: number;
-      };
-      const version = db.prepare("SELECT value FROM schema_meta WHERE key = 'schema_version'").get() as {
-        value: string;
-      };
-      dbStatus = {
-        connected: true,
-        documents: count.count,
-        schema_version: parseInt(version.value, 10),
-      };
+      dbStatus = getDatabaseStatus();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error(`[health] Database check failed: ${msg}`);

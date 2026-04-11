@@ -72,6 +72,40 @@ describe("queryDocuments", () => {
       const result = queryDocuments(db, { ...defaults, source: "usc", offset: 1 });
       expect(result.offset).toBe(1);
     });
+
+    it("skips total counts for cursor pagination", () => {
+      const firstPage = queryDocuments(db, { ...defaults, source: "usc", limit: 2 });
+      const cursor = firstPage.rows[1]!.identifier as string;
+
+      const result = queryDocuments(db, {
+        ...defaults,
+        source: "usc",
+        limit: 1,
+        cursor,
+      });
+
+      expect(result.cursorUsed).toBe(true);
+      expect(result.total).toBeNull();
+      expect(result.offset).toBe(0);
+      expect(result.rows[0]!.identifier).not.toBe(cursor);
+      expect(result.nextCursor).toBe(result.rows[0]!.identifier);
+    });
+
+    it("uses an extra row to determine when cursor pagination has more results", () => {
+      const all = queryDocuments(db, { ...defaults, source: "usc" });
+      const penultimateIdentifier = all.rows.at(-2)!.identifier as string;
+
+      const result = queryDocuments(db, {
+        ...defaults,
+        source: "usc",
+        limit: 1,
+        cursor: penultimateIdentifier,
+      });
+
+      expect(result.rows).toHaveLength(1);
+      expect(result.hasMore).toBe(false);
+      expect(result.nextCursor).toBeUndefined();
+    });
   });
 
   describe("column filters", () => {

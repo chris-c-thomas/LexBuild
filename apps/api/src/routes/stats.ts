@@ -3,6 +3,9 @@ import type { OpenAPIHono } from "@hono/zod-openapi";
 import type Database from "better-sqlite3";
 import { SCHEMA_VERSION } from "@lexbuild/core";
 import { cacheHeaders } from "../middleware/cache-headers.js";
+import { memoizeForTtl } from "../lib/ttl-cache.js";
+
+const STATS_CACHE_TTL_MS = 300_000;
 
 const statsResponseSchema = z.object({
   data: z.object({
@@ -77,7 +80,7 @@ export function registerStatsRoutes(app: OpenAPIHono, db: Database.Database): vo
       "WHERE source = 'fr' AND document_type IS NOT NULL GROUP BY document_type",
   );
 
-  app.openapi(statsRoute, (c) => {
+  const getStatsData = memoizeForTtl(STATS_CACHE_TTL_MS, () => {
     const { total } = totalCount.get() as { total: number };
     const usc = uscStats.get() as { document_count: number; title_count: number; last_updated: string | null };
     const ecfr = ecfrStats.get() as { document_count: number; title_count: number; last_updated: string | null };
@@ -89,30 +92,36 @@ export function registerStatsRoutes(app: OpenAPIHono, db: Database.Database): vo
       documentTypes[dt.document_type] = dt.count;
     }
 
-    return c.json({
-      data: {
-        total_documents: total,
-        sources: {
-          usc: {
-            document_count: usc.document_count,
-            title_count: usc.title_count,
-            last_updated: usc.last_updated,
-          },
-          ecfr: {
-            document_count: ecfr.document_count,
-            title_count: ecfr.title_count,
-            last_updated: ecfr.last_updated,
-          },
-          fr: {
-            document_count: fr.document_count,
-            date_range: { earliest: fr.earliest, latest: fr.latest },
-            document_types: documentTypes,
-          },
+    return {
+      total_documents: total,
+      sources: {
+        usc: {
+          document_count: usc.document_count,
+          title_count: usc.title_count,
+          last_updated: usc.last_updated,
         },
-        database: {
-          schema_version: SCHEMA_VERSION,
+        ecfr: {
+          document_count: ecfr.document_count,
+          title_count: ecfr.title_count,
+          last_updated: ecfr.last_updated,
+        },
+        fr: {
+          document_count: fr.document_count,
+          date_range: { earliest: fr.earliest, latest: fr.latest },
+          document_types: documentTypes,
         },
       },
+      database: {
+        schema_version: SCHEMA_VERSION,
+      },
+    };
+  });
+
+  app.openapi(statsRoute, (c) => {
+    const data = getStatsData();
+
+    return c.json({
+      data,
       meta: { api_version: "v1", timestamp: new Date().toISOString() },
     });
   });

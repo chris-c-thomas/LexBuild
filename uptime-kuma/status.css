@@ -1,0 +1,474 @@
+/*
+ * LexBuild Status Page Theme for Uptime Kuma
+ * Paste into: Uptime Kuma > Status Page > Custom CSS
+ *
+ * Matches the LexBuild design system at lexbuild.dev:
+ *   - IBM Plex font family (Sans, Serif, Mono)
+ *   - Slate Blue primary palette
+ *   - Summer Green for operational/up states
+ *   - Putty for warnings, Chestnut for danger
+ *   - Consistent border radius, shadow, and spacing
+ */
+
+/* --- Fonts --- */
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@500;600;700&display=swap");
+
+/* --- Bootstrap Variable Overrides --- */
+:root {
+  --bs-primary: #98b8ab !important;
+  --bs-primary-rgb: 111, 164, 142 !important;
+  --bs-success: #6fa48e;
+  --bs-warning: #dca756;
+  --bs-danger: #c56e6e;
+  --bs-info: #5285a3;
+  --bs-body-font-family: "IBM Plex Sans", system-ui, sans-serif;
+  --bs-font-sans-serif: "IBM Plex Sans", system-ui, sans-serif;
+  --bs-body-color: #1f2c38;
+}
+
+/* ============================================================
+ * LIGHT MODE
+ * ============================================================ */
+
+body.light {
+  background-color: #f5f9fa;
+  color: #1f2c38;
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+}
+
+/* --- Page Title --- */
+
+h1 {
+  font-family: "IBM Plex Serif", serif !important;
+  font-weight: 600 !important;
+  font-size: 32px !important;
+  color: #3f5869;
+  letter-spacing: -0.01em;
+}
+
+/* --- Cards (Shadow Boxes) --- */
+
+.shadow-box {
+  background-color: #ffffff;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 3px rgba(31, 44, 56, 0.06),
+    0 6px 20px rgba(31, 44, 56, 0.04) !important;
+  border: 1px solid #d3e3e9;
+}
+
+/* --- Overall Status Banner --- */
+
+.overall-status {
+  font-family: "IBM Plex Serif", serif !important;
+  color: #3f5869 !important;
+  border-color: #d3e3e9 !important;
+}
+
+.overall-status .ok {
+  color: #6fa48e !important;
+}
+
+.overall-status .warning {
+  color: #ce872c !important;
+}
+
+.overall-status .danger {
+  color: #ab4e52 !important;
+}
+
+/* --- Group Title (Services) --- */
+
+.group-title {
+  font-family: "IBM Plex Serif", serif !important;
+  font-weight: 600 !important;
+  color: #3f5869 !important;
+  letter-spacing: -0.01em;
+}
+
+/* --- Monitor List Items --- */
+
+.monitor-list .item {
+  border-radius: 8px !important;
+}
+
+.monitor-list .item:hover {
+  background-color: #f5f9fa !important;
+}
+
+.monitor-list .item .item-name {
+  color: #1f2c38;
+  font-weight: 500;
+}
+
+/* --- Uptime Badge --- */
+
+.badge.bg-primary {
+  background-color: #5285a3 !important;
+  color: #ffffff !important;
+  font-family: "IBM Plex Mono", monospace;
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  border-radius: 6px !important;
+  padding: 4px 8px;
+}
+
+.badge.bg-warning {
+  background-color: #ce872c !important;
+}
+
+.badge.bg-danger {
+  background-color: #ab4e52 !important;
+}
+
+/* --- Heartbeat Bar --- */
+
+.hp-bar-big {
+  --beat-empty-color: #e7f0f3 !important;
+}
+
+/* --- Time Labels (56m / now) --- */
+
+.d-flex.justify-content-between.word {
+  color: #94b7c7 !important;
+  font-family: "IBM Plex Mono", monospace !important;
+  font-size: 12px !important;
+}
+
+/* --- Buttons --- */
+
+.btn-outline-primary {
+  color: #5285a3 !important;
+  border-color: #b4cfda !important;
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  border-radius: 8px !important;
+}
+
+.btn-outline-primary:hover {
+  color: #ffffff !important;
+  background-color: #5285a3 !important;
+  border-color: #5285a3 !important;
+}
+
+.btn-outline-primary:focus,
+.btn-check:focus + .btn-outline-primary {
+  box-shadow: 0 0 0 0.25rem rgba(82, 133, 163, 0.3) !important;
+}
+
+.btn-outline-secondary {
+  color: #476c85 !important;
+  border-color: #d3e3e9 !important;
+  border-radius: 8px !important;
+}
+
+.btn-outline-secondary:hover {
+  color: #ffffff !important;
+  background-color: #476c85 !important;
+  border-color: #476c85 !important;
+}
+
+.btn-outline-secondary:focus,
+.btn-check:focus + .btn-outline-secondary {
+  box-shadow: 0 0 0 0.25rem rgba(71, 108, 133, 0.3) !important;
+}
+
+.btn.sort-button {
+  border-radius: 6px !important;
+  font-size: 13px;
+}
+
+/* --- Sort Dropdown Menu --- */
+
+.sort-dropdown .dropdown-menu {
+  border-radius: 8px;
+  border-color: #d3e3e9;
+  box-shadow: 0 4px 16px rgba(31, 44, 56, 0.08);
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+}
+
+.sort-dropdown .dropdown-item:hover {
+  background-color: #f5f9fa;
+}
+
+.sort-dropdown .arrow-active {
+  color: #98b8ab !important;
+}
+
+/* --- Footer --- */
+
+footer {
+  color: #476c85;
+  font-size: 14px;
+}
+
+footer .alert-heading a {
+  color: #5285a3 !important;
+  text-decoration: none;
+  border-bottom: 1px solid #d3e3e9;
+  transition: border-color 0.15s ease;
+}
+
+footer .alert-heading a:hover {
+  border-bottom-color: #5285a3;
+}
+
+.refresh-info {
+  color: #5285a3 !important;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+}
+
+/* --- Links (global) --- */
+
+a {
+  color: #5285a3;
+  transition: color 0.15s ease;
+}
+
+a:hover {
+  color: #3f5869;
+}
+
+/* --- Form Controls --- */
+
+.form-control,
+.form-select {
+  border-color: #d3e3e9;
+  border-radius: 6px;
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: #94b7c7;
+  box-shadow: 0 0 0 3px rgba(82, 133, 163, 0.15);
+}
+
+/* --- Modals --- */
+
+.modal-content {
+  border-radius: 8px;
+  border-color: #d3e3e9;
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+}
+
+.modal-header {
+  border-bottom-color: #e7f0f3;
+}
+
+.modal-footer {
+  border-top-color: #e7f0f3;
+}
+
+.modal-title {
+  font-family: "IBM Plex Serif", serif;
+  font-weight: 600;
+  color: #3f5869;
+}
+
+/* --- Container --- */
+
+.container {
+  max-width: 896px;
+}
+
+/* --- Incident / Maintenance Cards --- */
+
+.bg-maintenance .alert-heading {
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-weight: 600;
+}
+
+/* ============================================================
+ * DARK MODE
+ * ============================================================ */
+
+body.dark {
+  background-color: #0e1821 !important;
+  color: #dce8f0 !important;
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+}
+
+.dark h1,
+.dark h2 {
+  color: #dce8f0 !important;
+}
+
+/* --- Dark Cards --- */
+
+.dark .shadow-box:not(.alert) {
+  background-color: #182838 !important;
+  border-color: #243a4e !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2),
+    0 6px 20px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* --- Dark Status Banner --- */
+
+.dark .overall-status {
+  border-color: #243a4e !important;
+  color: #dce8f0 !important;
+}
+
+.dark .overall-status .ok {
+  color: #98b8ab !important;
+}
+
+.dark .overall-status .warning {
+  color: #e7c788 !important;
+}
+
+.dark .overall-status .danger {
+  color: #d79795 !important;
+}
+
+/* --- Dark Group Title --- */
+
+.dark .group-title {
+  color: #dce8f0 !important;
+}
+
+/* --- Dark Monitor Items --- */
+
+.dark .monitor-list .item:hover,
+.dark .monitor-list .item.active {
+  background-color: #132230 !important;
+}
+
+.dark .monitor-list .item .item-name {
+  color: #dce8f0;
+}
+
+/* --- Dark Badge --- */
+
+.dark .badge.bg-primary {
+  background-color: #3f5869 !important;
+}
+
+/* --- Dark Heartbeat Bar --- */
+
+.dark .hp-bar-big {
+  --beat-empty-color: #243a4e !important;
+}
+
+/* --- Dark Time Labels --- */
+
+.dark .d-flex.justify-content-between.word {
+  color: #7a98ab !important;
+}
+
+/* --- Dark Buttons --- */
+
+.dark .btn-outline-primary {
+  color: #94b7c7 !important;
+  border-color: #243a4e !important;
+}
+
+.dark .btn-outline-primary:hover {
+  color: #ffffff !important;
+  background-color: #5285a3 !important;
+  border-color: #5285a3 !important;
+}
+
+.dark .btn-outline-secondary {
+  color: #7a98ab !important;
+  border-color: #243a4e !important;
+}
+
+.dark .btn-outline-secondary:hover {
+  color: #ffffff !important;
+  background-color: #476c85 !important;
+  border-color: #476c85 !important;
+}
+
+/* --- Dark Sort Dropdown --- */
+
+.dark .sort-dropdown .dropdown-menu {
+  background-color: #182838;
+  border-color: #243a4e;
+}
+
+.dark .sort-dropdown .dropdown-item {
+  color: #dce8f0;
+}
+
+.dark .sort-dropdown .dropdown-item:hover {
+  background-color: #132230;
+}
+
+/* --- Dark Footer --- */
+
+.dark footer {
+  color: #7a98ab;
+}
+
+.dark footer .alert-heading a {
+  color: #94b7c7 !important;
+  border-bottom-color: #243a4e;
+}
+
+.dark footer .alert-heading a:hover {
+  border-bottom-color: #94b7c7;
+}
+
+.dark .refresh-info {
+  color: #7a98ab !important;
+}
+
+/* --- Dark Links --- */
+
+.dark a {
+  color: #94b7c7;
+}
+
+.dark a:hover {
+  color: #b4cfda;
+}
+
+/* --- Dark Form Controls --- */
+
+.dark .form-control,
+.dark .form-select {
+  background-color: #0e1821;
+  border-color: #243a4e;
+  color: #dce8f0;
+}
+
+.dark .form-control:focus,
+.dark .form-select:focus {
+  border-color: #6c9fb7;
+  box-shadow: 0 0 0 3px rgba(82, 133, 163, 0.25);
+}
+
+/* --- Dark Modals --- */
+
+.dark .modal-content {
+  background-color: #182838;
+  border-color: #243a4e;
+}
+
+.dark .modal-header {
+  border-bottom-color: #243a4e;
+}
+
+.dark .modal-footer {
+  border-top-color: #243a4e;
+}
+
+.dark .modal-title {
+  color: #dce8f0;
+}
+
+/* --- Dark Tooltip --- */
+
+.dark .tooltip-inner {
+  background-color: #182838;
+  border-color: #243a4e;
+}
+
+/* --- Toast Notifications --- */
+
+.Vue-Toastification__toast {
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  border-radius: 8px;
+}

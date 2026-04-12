@@ -27,8 +27,9 @@ function safeJsonParse(value: string | null, field: string, identifier: string):
   if (!value) return null;
   try {
     return JSON.parse(value);
-  } catch {
-    console.warn(`[documents] Malformed JSON in ${field} for ${identifier}: ${value.slice(0, 100)}`);
+  } catch (err: unknown) {
+    const parseMsg = err instanceof Error ? err.message : String(err);
+    console.warn(`[documents] Malformed JSON in ${field} for ${identifier}: ${parseMsg}`);
     return null;
   }
 }

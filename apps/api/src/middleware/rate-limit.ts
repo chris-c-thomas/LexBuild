@@ -101,8 +101,19 @@ export function rateLimitMiddleware(keysDb: Database.Database): MiddlewareHandle
         }
         // Invalid/expired/revoked key: treat as anonymous (don't reveal key validity)
       } catch (err: unknown) {
+        // Database error — return 503 rather than silently downgrading to anonymous limits
         const msg = err instanceof Error ? err.message : String(err);
-        console.error(`[rate-limit] API key validation failed, falling back to anonymous: ${msg}`);
+        console.error(`[rate-limit] API key validation failed (keys DB error): ${msg}`);
+        return c.json(
+          {
+            error: {
+              status: 503,
+              code: "SERVICE_UNAVAILABLE",
+              message: "Authentication service temporarily unavailable",
+            },
+          },
+          503,
+        );
       }
     }
 

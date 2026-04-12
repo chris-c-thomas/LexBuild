@@ -41,13 +41,13 @@ const titleDetailResponseSchema = z.object({
   meta: z.object({ api_version: z.string(), timestamp: z.string() }),
 });
 
-function createTitleRoutes(sourceId: string, tag: string, urlPrefix: string) {
+function createTitleRoutes(tag: string, urlPrefix: string) {
   const listTitlesRoute = createRoute({
     method: "get",
     path: `/${urlPrefix}/titles`,
     tags: [tag],
     summary: "List Titles",
-    description: `Returns all ${sourceId.toUpperCase()} titles with document and chapter counts.`,
+    description: `Returns all ${tag} titles with document and chapter counts.`,
     responses: {
       200: {
         content: { "application/json": { schema: titlesResponseSchema } },
@@ -85,7 +85,7 @@ function createTitleRoutes(sourceId: string, tag: string, urlPrefix: string) {
 /** Register USC hierarchy browsing endpoints. */
 export function registerUscHierarchyRoutes(app: OpenAPIHono, db: Database.Database): void {
   const dbSource = toDbSource("usc");
-  const { listTitlesRoute, getTitleRoute } = createTitleRoutes("usc", "U.S. Code", "usc");
+  const { listTitlesRoute, getTitleRoute } = createTitleRoutes("U.S. Code", "usc");
 
   const listTitles = db.prepare(
     "SELECT title_number, title_name, count(*) as document_count, " +
@@ -165,7 +165,7 @@ export function registerUscHierarchyRoutes(app: OpenAPIHono, db: Database.Databa
 /** Register eCFR hierarchy browsing endpoints. */
 export function registerEcfrHierarchyRoutes(app: OpenAPIHono, db: Database.Database): void {
   const dbSource = toDbSource("ecfr");
-  const { listTitlesRoute, getTitleRoute } = createTitleRoutes("ecfr", "eCFR", "ecfr");
+  const { listTitlesRoute, getTitleRoute } = createTitleRoutes("eCFR", "ecfr");
 
   const listTitles = db.prepare(
     "SELECT title_number, title_name, count(*) as document_count, " +
@@ -217,7 +217,7 @@ export function registerEcfrHierarchyRoutes(app: OpenAPIHono, db: Database.Datab
       | undefined;
 
     if (!meta) {
-      throw new HTTPException(404, { message: `No CFR title ${titleNumber} found` });
+      throw new HTTPException(404, { message: `No eCFR title ${titleNumber} found` });
     }
 
     const chapters = titleChapters.all(dbSource, titleNumber) as Array<{

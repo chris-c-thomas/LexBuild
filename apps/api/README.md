@@ -58,8 +58,8 @@ Navigate to [http://localhost:4321/docs/api](http://localhost:4321/docs/api) for
 
 The shared Postman files live in `apps/api/postman/`:
 
-- `lexbuild-api.postman_collection.json`
-- `lexbuild-api.postman_environment.json`
+- `lexbuild-api.postman-collection.json`
+- `lexbuild-api.postman-environment.json`
 
 The committed environment file keeps `api_key` blank for anonymous requests at the default rate limit.
 

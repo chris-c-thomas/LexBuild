@@ -39,6 +39,6 @@ Generated legal corpus files under `downloads/`, `output/`, `output-chapter/`, `
   - the API provides proxy behavior
 - For API and MCP docs, use the current public surface names and routes:
   - API paths use `/api/`
-  - CFR endpoints use `/api/cfr/`
+  - eCFR endpoints use `/api/ecfr/`
   - the interactive API reference lives in the docs site
 - Update examples and surrounding prose together. Do not change commands in one place and leave contradictory text nearby.

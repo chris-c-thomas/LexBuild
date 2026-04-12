@@ -130,7 +130,7 @@ describe("eCFR hierarchy", () => {
       const body = (await res.json()) as any;
       expect(body.error.status).toBe(404);
       expect(body.error.code).toBe("REQUEST_ERROR");
-      expect(body.error.message).toContain("No CFR title 999 found");
+      expect(body.error.message).toContain("No eCFR title 999 found");
     });
   });
 });

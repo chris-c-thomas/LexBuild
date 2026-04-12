@@ -8,7 +8,7 @@ import { memoizeForTtl } from "../lib/ttl-cache.js";
 const HEALTH_CACHE_TTL_MS = 30_000;
 
 const healthResponseSchema = z.object({
-  status: z.enum(["ok", "degraded", "error"]),
+  status: z.enum(["ok", "error"]),
   version: z.string(),
   database: z.object({
     connected: z.boolean(),

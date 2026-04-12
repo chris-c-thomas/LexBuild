@@ -17,7 +17,7 @@ import type {
 } from "./types.js";
 
 /** API source identifiers used in URL paths. */
-export type ApiSource = "usc" | "cfr" | "fr";
+export type ApiSource = "usc" | "ecfr" | "fr";
 
 /** Options for creating a LexBuild API client. */
 export interface ApiClientOptions {
@@ -148,13 +148,13 @@ export class LexBuildApiClient {
   }
 
   /** List titles for USC or CFR. */
-  async listTitles(source: "usc" | "cfr", options?: { signal?: AbortSignal | undefined }): Promise<TitlesResponse> {
+  async listTitles(source: "usc" | "ecfr", options?: { signal?: AbortSignal | undefined }): Promise<TitlesResponse> {
     return this.json<TitlesResponse>(`/api/${source}/titles`, options);
   }
 
   /** Get detail for a specific title (chapters). */
   async getTitleDetail(
-    source: "usc" | "cfr",
+    source: "usc" | "ecfr",
     titleNumber: number,
     options?: { signal?: AbortSignal | undefined },
   ): Promise<TitleDetailResponse> {

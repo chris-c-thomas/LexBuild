@@ -86,3 +86,4 @@ src/
 - **Stdio transport logs to stderr**: All logging goes to `console.error` to avoid corrupting the stdout JSON-RPC stream.
 - **SSRF protection**: The API client validates that all requests go to the configured `LEXBUILD_API_URL` host only.
 - **Response budget**: Tool responses are checked against `LEXBUILD_MCP_MAX_RESPONSE_BYTES` after JSON serialization. Oversized responses throw `McpServerError` with code `response_too_large`.
+- **API source renames touch many files**: Changing a source identifier (e.g., `"cfr"` → `"ecfr"`) requires updates in: `api/client.ts` (type + methods), `api/types.ts`, `resources/uri.ts` (parser + return value), all `tools/*.ts` (Zod enum + descriptions), all `prompts/*.ts` (Zod enum + descriptions), and their corresponding test files. Grep for the old string literal to find all references.

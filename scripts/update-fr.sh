@@ -120,15 +120,39 @@ if [ "$DEPLOY_ONLY" = false ]; then
   echo "==> FR update for $DATE_FROM to $DATE_TO"
   echo ""
 
+  # Pipeline-start marker: used after convert to verify that downloaded XML
+  # files produced corresponding Markdown output. Catches silent regressions
+  # where download succeeds but convert returns 0 docs (e.g., the date-filter
+  # bug we hit on 2026-04-19 where mid-month --from excluded all files).
+  PIPELINE_MARKER="$(mktemp -t lexbuild-fr-update.XXXXXX)"
+  trap 'rm -f "$PIPELINE_MARKER"' EXIT
+
   # Step 1: Download
   echo "--- Step 1/4: Downloading FR documents ($DATE_FROM to $DATE_TO)"
   $CLI download-fr --from "$DATE_FROM" --to "$DATE_TO"
   echo ""
 
+  NEW_XML_COUNT=$(find downloads/fr -name "*.xml" -newer "$PIPELINE_MARKER" 2>/dev/null | wc -l | tr -d ' ')
+
   # Step 2: Convert (date-filtered — only converts files in the date range)
   echo "--- Step 2/4: Converting FR documents ($DATE_FROM to $DATE_TO)"
   $CLI convert-fr --all --from "$DATE_FROM" --to "$DATE_TO"
   echo ""
+
+  # Sanity check: downloaded XML must yield converted Markdown. writeFileIfChanged
+  # preserves mtimes on unchanged content, so a genuinely new download from the
+  # API should always produce at least one new/modified .md file.
+  if [ "$NEW_XML_COUNT" -gt 0 ]; then
+    NEW_MD_COUNT=$(find output/fr -name "*.md" -newer "$PIPELINE_MARKER" 2>/dev/null | wc -l | tr -d ' ')
+    if [ "$NEW_MD_COUNT" -eq 0 ]; then
+      echo "Error: download-fr added $NEW_XML_COUNT XML file(s) but convert-fr produced 0 new .md files." >&2
+      echo "       This indicates a bug in the convert-fr pipeline (likely a date-filter mismatch)." >&2
+      echo "       Aborting before deploy to prevent publishing a stale sitemap." >&2
+      exit 1
+    fi
+    echo "    Pipeline check: $NEW_XML_COUNT XML in → $NEW_MD_COUNT .md out"
+    echo ""
+  fi
 
   # Step 3: Regenerate FR nav
   echo "--- Step 3/4: Generating FR nav JSON"
@@ -177,16 +201,14 @@ if [ ${#SITEMAP_FILES[@]} -gt 0 ] && [ -e "${SITEMAP_FILES[0]}" ]; then
 fi
 echo ""
 
-# Step 6: Incremental search index on VPS
-echo "--- Step 6/6: Indexing new FR documents on VPS"
-ssh "$VPS_HOST" << 'REMOTE'
-  set -euo pipefail
-  source ~/.lexbuild-secrets
-  cd ~/lexbuild/apps/astro
-  MEILI_URL=http://127.0.0.1:7700 \
-  MEILI_MASTER_KEY="$MEILI_MASTER_KEY" \
-  pnpm dlx tsx scripts/index-search-incremental.ts /srv/lexbuild/content --source fr
-REMOTE
+# Step 6: Build search index locally in Docker, ship the data directory to VPS.
+# Delegating to deploy.sh --search-docker --source fr avoids running heavy
+# bulk upserts against the single production Meilisearch (caused PM2
+# restart-storms under memory pressure). The deploy script handles: local
+# Docker Meilisearch, incremental indexing, tar+scp of the LMDB data dir,
+# and the atomic PM2 swap on the VPS.
+echo "--- Step 6/6: Building and shipping search index via local Docker"
+"$SCRIPT_DIR/deploy.sh" --search-docker --source fr
 
 echo ""
 echo "==> FR update complete ($DATE_FROM to $DATE_TO)"

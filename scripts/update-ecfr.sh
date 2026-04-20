@@ -223,16 +223,14 @@ if [ ${#SITEMAP_FILES[@]} -gt 0 ] && [ -e "${SITEMAP_FILES[0]}" ]; then
 fi
 echo ""
 
-# Step 9: Incremental search index on VPS
-echo "--- Step 9/9: Indexing eCFR documents on VPS"
-ssh "$VPS_HOST" << 'REMOTE'
-  set -euo pipefail
-  source ~/.lexbuild-secrets
-  cd ~/lexbuild/apps/astro
-  MEILI_URL=http://127.0.0.1:7700 \
-  MEILI_MASTER_KEY="$MEILI_MASTER_KEY" \
-  pnpm dlx tsx scripts/index-search-incremental.ts /srv/lexbuild/content --source ecfr
-REMOTE
+# Step 9: Build search index locally in Docker, ship the data directory to VPS.
+# Delegating to deploy.sh --search-docker --source ecfr avoids running heavy
+# bulk upserts against the single production Meilisearch (caused PM2
+# restart-storms under memory pressure). The deploy script handles: local
+# Docker Meilisearch, incremental indexing, tar+scp of the LMDB data dir,
+# and the atomic PM2 swap on the VPS.
+echo "--- Step 9/9: Building and shipping search index via local Docker"
+"$SCRIPT_DIR/deploy.sh" --search-docker --source ecfr
 
 echo ""
 echo "==> eCFR update complete"

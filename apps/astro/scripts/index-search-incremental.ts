@@ -17,15 +17,22 @@
  *   npx tsx scripts/index-search-incremental.ts [content-dir] [--prune] [--source <name>]
  *
  * Options:
- *   content-dir      Path to content directory (default: ./content)
- *   --prune          Remove documents from the index for sections that no longer
- *                    exist on disk (compares Meilisearch IDs against filesystem)
- *   --source <name>  Only index a specific source: usc, ecfr, or fr
- *   --set-checkpoint Write the checkpoint timestamp and exit (no indexing)
+ *   content-dir           Path to content directory (default: ./content)
+ *   --prune               Remove documents from the index for sections that no longer
+ *                         exist on disk (compares Meilisearch IDs against filesystem)
+ *   --source <name>       Only index a specific source: usc, ecfr, or fr
+ *   --set-checkpoint      Write the checkpoint timestamp and exit (no indexing)
+ *   --batch-size <n>      Override docs-per-batch (default 500). Smaller batches use
+ *                         less Meilisearch memory per flush — useful to isolate
+ *                         pathological docs or avoid OOM on memory-tight hosts.
+ *   --verbose-batches     Print the first/last doc ID of each flushed batch. Combined
+ *                         with --batch-size 1 this produces a per-doc log that makes
+ *                         a poison document obvious (last printed ID before a crash).
  *
  * Environment:
  *   MEILI_URL          Meilisearch endpoint (default: http://127.0.0.1:7700)
  *   MEILI_MASTER_KEY   Master key for admin operations (default: none for dev)
+ *   MEILI_BATCH_SIZE   Fallback for --batch-size when the flag is not set.
  */
 
 import { readdir, readFile, writeFile, stat } from "node:fs/promises";
@@ -38,7 +45,7 @@ import matter from "gray-matter";
 const MEILI_URL = process.env.MEILI_URL ?? "http://127.0.0.1:7700";
 const MEILI_MASTER_KEY = process.env.MEILI_MASTER_KEY ?? "";
 const INDEX_NAME = "lexbuild";
-const BATCH_SIZE = 500;
+const DEFAULT_BATCH_SIZE = 500;
 const BODY_TRUNCATE_CHARS = 5000;
 const CHECKPOINT_PREFIX = ".search-indexed-at";
 const SOURCES = ["usc", "ecfr", "fr"] as const;
@@ -184,6 +191,7 @@ class BatchIndexer {
     private readonly client: Meilisearch,
     private readonly indexName: string,
     private readonly batchSize: number,
+    private readonly verbose: boolean = false,
   ) {}
 
   async add(doc: SearchDocument): Promise<void> {
@@ -200,6 +208,14 @@ class BatchIndexer {
     // if Meilisearch is down (otherwise the stale batch retriggers on every add)
     const toSend = this.batch;
     this.batch = [];
+
+    if (this.verbose) {
+      const firstId = toSend[0]?.id ?? "";
+      const lastId = toSend[toSend.length - 1]?.id ?? "";
+      const label = toSend.length === 1 ? firstId : `${firstId} … ${lastId}`;
+      // Force-flush stdout so the last logged batch is durable on crash.
+      process.stdout.write(`  → flushing ${toSend.length} docs: ${label}\n`);
+    }
 
     const index = this.client.index(this.indexName);
     const task = await index.addDocuments(toSend);
@@ -533,6 +549,19 @@ async function main(): Promise<void> {
   let prune = false;
   let sourceFilter: "usc" | "ecfr" | "fr" | null = null;
   let setCheckpoint = false;
+  let verboseBatches = false;
+
+  // Resolve batch size from env first; a --batch-size flag overrides.
+  let batchSize = DEFAULT_BATCH_SIZE;
+  const envBatch = process.env.MEILI_BATCH_SIZE;
+  if (envBatch) {
+    const parsed = Number.parseInt(envBatch, 10);
+    if (!Number.isFinite(parsed) || parsed < 1) {
+      console.error(`Invalid MEILI_BATCH_SIZE: ${envBatch}. Must be a positive integer.`);
+      process.exit(1);
+    }
+    batchSize = parsed;
+  }
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i]!;
@@ -540,6 +569,16 @@ async function main(): Promise<void> {
       setCheckpoint = true;
     } else if (arg === "--prune") {
       prune = true;
+    } else if (arg === "--verbose-batches") {
+      verboseBatches = true;
+    } else if (arg === "--batch-size" && args[i + 1]) {
+      const parsed = Number.parseInt(args[i + 1]!, 10);
+      if (!Number.isFinite(parsed) || parsed < 1) {
+        console.error(`Invalid --batch-size: ${args[i + 1]}. Must be a positive integer.`);
+        process.exit(1);
+      }
+      batchSize = parsed;
+      i++;
     } else if (arg === "--source" && args[i + 1]) {
       const val = args[i + 1]!;
       if (val !== "usc" && val !== "ecfr" && val !== "fr") {
@@ -570,6 +609,7 @@ async function main(): Promise<void> {
   console.log(`Meilisearch URL: ${MEILI_URL}`);
   console.log(`Index name: ${INDEX_NAME}`);
   console.log(`Mode: incremental upsert${prune ? " + prune" : ""}${sourceFilter ? ` (${sourceFilter} only)` : ""}`);
+  console.log(`Batch size: ${batchSize}${verboseBatches ? " (verbose)" : ""}`);
   console.log(`  Preserves the existing index. Adds new documents and updates existing ones.`);
 
   const client = new Meilisearch({
@@ -617,7 +657,7 @@ async function main(): Promise<void> {
     }
   }
 
-  const indexer = new BatchIndexer(client, INDEX_NAME, BATCH_SIZE);
+  const indexer = new BatchIndexer(client, INDEX_NAME, batchSize, verboseBatches);
 
   // Track all expected IDs for pruning
   const expectedIds = new Set<string>();

@@ -128,6 +128,16 @@ export async function convertFrDocuments(options: FrConvertOptions): Promise<FrC
         }
       }
 
+      // Precise day-level date filter using publication_date from the JSON
+      // sidecar. The discovery-time filter is only month-level (path-inferred
+      // dates use YYYY-MM-01), so mid-month --from/--to values would otherwise
+      // over- or under-include. When no JSON sidecar is present, fall back to
+      // the coarse month-level filter already applied at discovery time.
+      if ((options.from || options.to) && doc.jsonMeta) {
+        if (options.from && doc.publicationDate < options.from) continue;
+        if (options.to && doc.publicationDate > options.to) continue;
+      }
+
       if (options.dryRun) {
         documentsConverted++;
         continue;
@@ -249,8 +259,14 @@ async function parseXmlFile(xmlPath: string): Promise<CollectedDoc[]> {
 
 /**
  * Discover XML files in a directory or return the single file path.
+ *
+ * Applies a coarse month-level date filter when `from`/`to` are provided.
+ * Callers should apply precise day-level filtering using publication_date
+ * from each document's JSON sidecar.
+ *
+ * @internal Exported for testing.
  */
-async function discoverXmlFiles(input: string, from?: string, to?: string): Promise<string[]> {
+export async function discoverXmlFiles(input: string, from?: string, to?: string): Promise<string[]> {
   let inputStat;
   try {
     inputStat = await stat(input);
@@ -272,14 +288,21 @@ async function discoverXmlFiles(input: string, from?: string, to?: string): Prom
   const xmlFiles: string[] = [];
   await walkDir(input, xmlFiles);
 
-  // Apply date range filter based on file path structure (YYYY/MM/)
+  // Coarse month-level filter from file paths. Per-document paths only encode
+  // YYYY/MM, so `inferDateFromPath` returns YYYY-MM-01 — a strict day-level
+  // comparison against a mid-month `from` would exclude every file in that
+  // month. Filter by month here; precise day-level filtering happens in
+  // `convertFrDocuments` using publication_date from each JSON sidecar.
   let filtered = xmlFiles;
   if (from || to) {
+    const fromMonth = from?.slice(0, 7);
+    const toMonth = to?.slice(0, 7);
     filtered = xmlFiles.filter((f) => {
       const date = inferDateFromPath(f);
       if (!date) return true; // Can't filter if no date in path
-      if (from && date < from) return false;
-      if (to && date > to + "-32") return false; // Month-level comparison
+      const fileMonth = date.slice(0, 7);
+      if (fromMonth && fileMonth < fromMonth) return false;
+      if (toMonth && fileMonth > toMonth) return false;
       return true;
     });
   }

@@ -130,6 +130,8 @@ pnpm turbo build:api --filter=@lexbuild/api        # Production build
 ./scripts/deploy.sh --search-docker-seed          # Seed Docker volume from VPS (recover after volume loss)
 
 # Incremental content updates (from monorepo root)
+# Search indexing runs locally in Docker, not on the VPS — each update script's
+# final step delegates to `deploy.sh --search-docker --source <name>`.
 ./scripts/update.sh                                # All sources incrementally
 ./scripts/update.sh --source ecfr                  # One source
 ./scripts/update.sh --skip-deploy                  # Local only

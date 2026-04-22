@@ -113,6 +113,20 @@ should_run() {
 }
 
 FAILED=""
+SUCCEEDED=""
+
+# Defer sitemap regeneration to a single post-run step below. Without this,
+# each source script would regenerate the full sitemap index (covering every
+# source's URLs) and rsync it — 3x redundant work on a full update run.
+export LEXBUILD_DEFER_SITEMAP=1
+
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# Load deploy config (for final sitemap rsync below)
+if [ -f "$SCRIPT_DIR/.deploy.env" ]; then
+  # shellcheck disable=SC1091
+  source "$SCRIPT_DIR/.deploy.env"
+fi
 
 # --- Run sources ---
 
@@ -120,6 +134,7 @@ if should_run "ecfr"; then
   echo "===== eCFR Update ====="
   echo ""
   if "$SCRIPT_DIR/update-ecfr.sh" $ECFR_ARGS $SHARED_ARGS; then
+    SUCCEEDED="$SUCCEEDED ecfr"
     echo ""
   else
     ECFR_EXIT=$?
@@ -134,6 +149,7 @@ if should_run "fr"; then
   echo "===== FR Update ====="
   echo ""
   if "$SCRIPT_DIR/update-fr.sh" $FR_ARGS $SHARED_ARGS; then
+    SUCCEEDED="$SUCCEEDED fr"
     echo ""
   else
     FR_EXIT=$?
@@ -148,6 +164,7 @@ if should_run "usc"; then
   echo "===== USC Update ====="
   echo ""
   if "$SCRIPT_DIR/update-usc.sh" $USC_ARGS $SHARED_ARGS; then
+    SUCCEEDED="$SUCCEEDED usc"
     echo ""
   else
     USC_EXIT=$?
@@ -156,6 +173,30 @@ if should_run "usc"; then
     FAILED="$FAILED usc"
     echo ""
   fi
+fi
+
+# --- Post-run: regenerate sitemap index once, covering all sources ---
+
+if [ -n "$SUCCEEDED" ] && [ "$SKIP_DEPLOY" = false ]; then
+  echo "===== Regenerating unified sitemap index ====="
+  echo ""
+  ( cd "$REPO_ROOT/apps/astro" && npx tsx scripts/generate-sitemap.ts ) || {
+    echo "WARNING: sitemap regeneration failed"
+    FAILED="$FAILED sitemap"
+  }
+
+  if [ "$DEPLOY_ONLY" = true ] || [ "$SKIP_DEPLOY" = false ]; then
+    if [ -n "${VPS_HOST:-}" ]; then
+      SITEMAP_FILES=("$REPO_ROOT/apps/astro/public"/sitemap*.xml)
+      [ -f "$REPO_ROOT/apps/astro/public/robots.txt" ] && SITEMAP_FILES+=("$REPO_ROOT/apps/astro/public/robots.txt")
+      if [ ${#SITEMAP_FILES[@]} -gt 0 ] && [ -e "${SITEMAP_FILES[0]}" ]; then
+        echo "    Syncing sitemaps to VPS"
+        rsync -avz "${SITEMAP_FILES[@]}" "${VPS_HOST}:~/lexbuild/apps/astro/public/" || FAILED="$FAILED sitemap-rsync"
+        rsync -avz "${SITEMAP_FILES[@]}" "${VPS_HOST}:~/lexbuild/apps/astro/dist/client/" || FAILED="$FAILED sitemap-rsync"
+      fi
+    fi
+  fi
+  echo ""
 fi
 
 # --- Summary ---

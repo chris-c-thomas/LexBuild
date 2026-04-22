@@ -7,6 +7,22 @@ import { EcfrASTBuilder } from "./ecfr-builder.js";
 
 const FIXTURES_DIR = resolve(import.meta.dirname, "../../../fixtures/fragments/ecfr");
 
+/** Helper: walk a level node's subtree and collect descendants of a given level type. */
+function collectLevelsOfType(root: LevelNode, levelType: string): LevelNode[] {
+  const out: LevelNode[] = [];
+  const walk = (node: LevelNode): void => {
+    for (const child of node.children) {
+      if (child.type === "level") {
+        const lvl = child as LevelNode;
+        if (lvl.levelType === levelType) out.push(lvl);
+        walk(lvl);
+      }
+    }
+  };
+  walk(root);
+  return out;
+}
+
 /** Helper: parse an XML fixture and collect emitted nodes */
 async function parseFixture(
   fixtureName: string,
@@ -117,21 +133,36 @@ describe("EcfrASTBuilder", () => {
     expect(nums).toContain("2.2");
   });
 
-  it("emits at part level when configured", async () => {
+  it("emits at part level when configured, with sections aggregated as children", async () => {
     const collected = await parseFixture("title-structure.xml", "part");
-    // At part level, parts AND sections are emitted (sections have higher
-    // index in LEVEL_TYPES so they qualify for emission too). This matches
-    // the USLM builder behavior where emitAt is a minimum threshold.
-    const parts = collected.filter((c) => c.node.levelType === "part");
-    expect(parts.length).toBe(2);
+    // Only parts emit (strict equality with emitAt). Sections aggregate into
+    // their parent part's children — they are NOT emitted separately.
+    expect(collected.length).toBe(2);
+    expect(collected.every((c) => c.node.levelType === "part")).toBe(true);
 
-    const partNums = parts.map((c) => c.node.numValue);
+    const partNums = collected.map((c) => c.node.numValue);
     expect(partNums).toContain("1");
     expect(partNums).toContain("2");
 
-    // Sections are also emitted separately at part level
-    const sections = collected.filter((c) => c.node.levelType === "section");
-    expect(sections.length).toBe(3);
+    // Each emitted part should have its sections inlined as level children.
+    const allSections = collected.flatMap((c) =>
+      c.node.children.filter((ch) => ch.type === "level" && (ch as LevelNode).levelType === "section"),
+    );
+    expect(allSections.length).toBe(3);
+  });
+
+  it("emits at title level when configured, with full hierarchy as children", async () => {
+    const collected = await parseFixture("title-structure.xml", "title");
+    expect(collected.length).toBe(1);
+    expect(collected[0]!.node.levelType).toBe("title");
+
+    // The emitted title should contain the full tree (chapter → subchapter → parts → sections).
+    const title = collected[0]!.node;
+    const allLevels = collectLevelsOfType(title, "part");
+    expect(allLevels.length).toBe(2);
+
+    const allSections = collectLevelsOfType(title, "section");
+    expect(allSections.length).toBe(3);
   });
 
   it("strips section number prefix from headings", async () => {

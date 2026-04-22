@@ -49,6 +49,36 @@ const result = await convertEcfrTitle({
 console.log(`${result.sectionsWritten} sections, ${result.totalTokenEstimate} est. tokens`);
 ```
 
+### Multi-Granularity (Single Pass)
+
+Emit section, part, chapter, and title outputs from one parse. The XML is read once and nodes are fanned out to each requested directory.
+
+```ts
+const results = await convertEcfrTitle({
+  input: "./downloads/ecfr/xml/ECFR-title17.xml",
+  granularities: [
+    { granularity: "section", output: "./output" },
+    { granularity: "part", output: "./output-part" },
+    { granularity: "chapter", output: "./output-chapter" },
+    { granularity: "title", output: "./output-title" },
+  ],
+  linkStyle: "plaintext",
+  includeSourceCredits: true,
+  includeNotes: true,
+  includeEditorialNotes: false,
+  includeStatutoryNotes: false,
+  includeAmendments: false,
+  dryRun: false,
+});
+
+// One EcfrConvertResult per entry in `granularities`, preserving order.
+for (const r of results) {
+  console.log(`${r.granularity}: ${r.files.length} files → ${r.output}`);
+}
+```
+
+`granularity`/`output` (single mode) and `granularities` (multi mode) are mutually exclusive. Function overloads preserve the return shape: single mode returns `EcfrConvertResult`, multi returns `EcfrConvertResult[]`.
+
 ### Point-in-Time Downloads
 
 ```ts
@@ -102,8 +132,10 @@ const result = await downloadEcfrTitles({
 
 | Export | Description |
 |--------|-------------|
-| `EcfrConvertOptions` | Options for `convertEcfrTitle()` — input, output, granularity, link style, note filters, `currencyDate` |
-| `EcfrConvertResult` | Conversion result — sections written, parts, files, token estimate |
+| `EcfrConvertOptions` | Options for `convertEcfrTitle()`. `granularity`+`output` and `granularities` are mutually exclusive. |
+| `EcfrConvertResult` | Single-granularity result — sections written, parts, files, token estimate, plus `granularity` and `output` |
+| `EcfrGranularity` | `"section" \| "part" \| "chapter" \| "title"` |
+| `EcfrGranularityOutput` | `{ granularity: EcfrGranularity; output: string }` — one entry in the `granularities` array |
 | `EcfrApiDownloadOptions` | Options for `downloadEcfrTitlesFromApi()` — output, titles, optional date |
 | `EcfrApiDownloadResult` | API download result — files, bytes, as-of date |
 | `EcfrApiDownloadedFile` | Single API-downloaded file metadata |

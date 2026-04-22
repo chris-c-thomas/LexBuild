@@ -149,16 +149,18 @@ if [ "$DEPLOY_ONLY" = false ]; then
 
   NEW_XML_COUNT=$(find downloads/usc -name "*.xml" -newer "$PIPELINE_MARKER" 2>/dev/null | wc -l | tr -d ' ')
 
-  # Step 3: Convert at every granularity. Section is the default output; title
-  # and chapter re-emit the same parsed AST at higher levels for the Astro
-  # app's browsable landing pages. writeFileIfChanged preserves mtimes.
-  echo "--- Step 3/7: Converting USC titles"
-  echo "    section granularity"
-  $CLI convert-usc --all
-  echo "    title granularity"
-  $CLI convert-usc --all -g title -o ./output-title
-  echo "    chapter granularity"
-  $CLI convert-usc --all -g chapter -o ./output-chapter
+  # Step 3: Convert at every granularity in a single parse. --granularities
+  # emits section + title + chapter from one pass of the XML, writing each
+  # to its own output dir. writeFileIfChanged preserves mtimes.
+  # $CLI is intentionally unquoted so its embedded spaces word-split into
+  # "node ... dist/index.js" args. shellcheck disable=SC2086
+  echo "--- Step 3/7: Converting USC titles at all granularities"
+  # shellcheck disable=SC2086
+  $CLI convert-usc --all \
+    --granularities section,title,chapter \
+    --output ./output \
+    --output-title ./output-title \
+    --output-chapter ./output-chapter
   echo ""
 
   # Sanity check: if download fetched new XML, convert must produce new .md files.

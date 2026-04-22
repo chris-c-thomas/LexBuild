@@ -143,6 +143,8 @@ Update scripts handle change detection, download, convert, and deploy in one com
 ./scripts/update-usc.sh --skip-deploy
 ```
 
+`update-usc.sh` and `update-ecfr.sh` convert every granularity in one parse using the `--granularities` flag (see below), so the convert step no longer scales with the number of output granularities.
+
 ---
 
 ## Commands
@@ -173,6 +175,13 @@ lexbuild convert-usc --all                                   # All downloaded ti
 lexbuild convert-usc --titles 1 -g chapter                   # Chapter-level output
 lexbuild convert-usc --titles 26 --dry-run                   # Preview without writing
 lexbuild convert-usc ./downloads/usc/xml/usc01.xml           # Direct file path
+
+# Emit section + chapter + title in a single parse
+lexbuild convert-usc --all \
+  --granularities section,title,chapter \
+  --output ./output \
+  --output-title ./output-title \
+  --output-chapter ./output-chapter
 ```
 
 | Option | Default | Description |
@@ -182,6 +191,10 @@ lexbuild convert-usc ./downloads/usc/xml/usc01.xml           # Direct file path
 | `-i, --input-dir <dir>` | `./downloads/usc/xml` | Input XML directory |
 | `-o, --output <dir>` | `./output` | Output directory |
 | `-g, --granularity` | `section` | `section`, `chapter`, or `title` |
+| `--granularities <list>` | — | Comma-separated granularities. Mutually exclusive with `-g`. |
+| `--output-section <dir>` | — | Output dir for section when using `--granularities` (defaults to `--output`) |
+| `--output-chapter <dir>` | — | Output dir for chapter when using `--granularities` |
+| `--output-title <dir>` | — | Output dir for title when using `--granularities` |
 | `--link-style` | `plaintext` | `plaintext`, `canonical`, or `relative` |
 | `--no-include-source-credits` | — | Exclude source credits |
 | `--no-include-notes` | — | Exclude all notes |
@@ -235,6 +248,14 @@ lexbuild convert-ecfr --all                                  # All downloaded ti
 lexbuild convert-ecfr --titles 17 -g part                    # Part-level output
 lexbuild convert-ecfr --all --dry-run                        # Preview without writing
 lexbuild convert-ecfr ./downloads/ecfr/xml/ECFR-title17.xml  # Direct file path
+
+# Emit all four granularities in a single parse
+lexbuild convert-ecfr --all \
+  --granularities section,title,chapter,part \
+  --output ./output \
+  --output-title ./output-title \
+  --output-chapter ./output-chapter \
+  --output-part ./output-part
 ```
 
 | Option | Default | Description |
@@ -244,6 +265,11 @@ lexbuild convert-ecfr ./downloads/ecfr/xml/ECFR-title17.xml  # Direct file path
 | `-i, --input-dir <dir>` | `./downloads/ecfr/xml` | Input XML directory |
 | `-o, --output <dir>` | `./output` | Output directory |
 | `-g, --granularity` | `section` | `section`, `part`, `chapter`, or `title` |
+| `--granularities <list>` | — | Comma-separated granularities. Mutually exclusive with `-g`. |
+| `--output-section <dir>` | — | Output dir for section when using `--granularities` (defaults to `--output`) |
+| `--output-part <dir>` | — | Output dir for part when using `--granularities` |
+| `--output-chapter <dir>` | — | Output dir for chapter when using `--granularities` |
+| `--output-title <dir>` | — | Output dir for title when using `--granularities` |
 | `--link-style` | `plaintext` | `plaintext`, `canonical`, or `relative` |
 | `--no-include-source-credits` | — | Exclude source credits |
 | `--no-include-notes` | — | Exclude all notes |

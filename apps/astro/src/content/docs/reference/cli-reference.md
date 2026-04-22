@@ -134,6 +134,10 @@ lexbuild convert-usc [input] [options]
 | `--all` | `false` | Convert all downloaded titles found in `--input-dir` |
 | `-i, --input-dir <dir>` | `./downloads/usc/xml` | Directory containing USC XML files |
 | `-g, --granularity <level>` | `section` | Output granularity: `section`, `chapter`, or `title` |
+| `--granularities <list>` | -- | Comma-separated granularities for single-pass multi-granularity output (see below). Mutually exclusive with `-g`. |
+| `--output-section <dir>` | -- | Output directory for section granularity when using `--granularities` (defaults to `--output`) |
+| `--output-chapter <dir>` | -- | Output directory for chapter granularity when using `--granularities` |
+| `--output-title <dir>` | -- | Output directory for title granularity when using `--granularities` |
 | `--link-style <style>` | `plaintext` | Link style: `plaintext`, `relative`, or `canonical` |
 | `--include-source-credits` | `true` | Include source credit annotations |
 | `--no-include-source-credits` | -- | Exclude source credit annotations |
@@ -164,6 +168,20 @@ Controls how many Markdown files are produced per title.
 | Section (default) | `-g section` | One `.md` file per section |
 | Chapter | `-g chapter` | One `.md` file per chapter, with sections inlined |
 | Title | `-g title` | One `.md` file per title, with the entire hierarchy inlined |
+
+### Multi-Granularity Mode
+
+`--granularities` emits several granularities from a single parse of the source XML. Each listed granularity needs a matching output directory (section reuses `-o/--output` or `--output-section`; chapter and title each take their own `--output-<granularity>`).
+
+```bash
+lexbuild convert-usc --all \
+  --granularities section,title,chapter \
+  --output ./output \
+  --output-title ./output-title \
+  --output-chapter ./output-chapter
+```
+
+Mutually exclusive with `-g/--granularity`. Use this form when you need more than one granularity — parsing happens once, so it's ~40–50% faster than running `convert-usc` N times with different `-g` values.
 
 ### Link Styles
 
@@ -285,6 +303,11 @@ lexbuild convert-ecfr [input] [options]
 | `--all` | `false` | Convert all downloaded eCFR titles found in `--input-dir` |
 | `-i, --input-dir <dir>` | `./downloads/ecfr/xml` | Directory containing eCFR XML files |
 | `-g, --granularity <level>` | `section` | Output granularity: `section`, `part`, `chapter`, or `title` |
+| `--granularities <list>` | -- | Comma-separated granularities for single-pass multi-granularity output (see below). Mutually exclusive with `-g`. |
+| `--output-section <dir>` | -- | Output directory for section granularity when using `--granularities` (defaults to `--output`) |
+| `--output-part <dir>` | -- | Output directory for part granularity when using `--granularities` |
+| `--output-chapter <dir>` | -- | Output directory for chapter granularity when using `--granularities` |
+| `--output-title <dir>` | -- | Output directory for title granularity when using `--granularities` |
 | `--link-style <style>` | `plaintext` | Link style: `plaintext`, `relative`, or `canonical` |
 | `--include-source-credits` | `true` | Accepted but currently a no-op for eCFR |
 | `--no-include-source-credits` | -- | Accepted but currently a no-op for eCFR |
@@ -317,6 +340,21 @@ The eCFR converter supports an additional `part` level compared to the USC conve
 | Part | `-g part` | One `.md` file per part, with sections inlined |
 | Chapter | `-g chapter` | One `.md` file per chapter, with parts and sections inlined |
 | Title | `-g title` | One `.md` file per title, with the entire hierarchy inlined |
+
+### Multi-Granularity Mode
+
+Same contract as `convert-usc --granularities`, with `part` available as an additional level. Each listed granularity requires a matching output directory.
+
+```bash
+lexbuild convert-ecfr --all \
+  --granularities section,title,chapter,part \
+  --output ./output \
+  --output-title ./output-title \
+  --output-chapter ./output-chapter \
+  --output-part ./output-part
+```
+
+Mutually exclusive with `-g/--granularity`. The XML is parsed once and emissions fan out to each requested output directory.
 
 ### Link Styles
 

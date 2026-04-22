@@ -52,6 +52,10 @@ These flags are available on all convert commands:
 |---|---|---|
 | `-o, --output <dir>` | `./output` | Output directory for converted Markdown |
 | `-g, --granularity <level>` | `section` | Output granularity (varies by source) |
+| `--granularities <list>` | -- | Comma-separated granularities for single-pass multi-granularity output. Mutually exclusive with `-g`. |
+| `--output-chapter <dir>` | -- | Output directory for chapter granularity (when using `--granularities`) |
+| `--output-title <dir>` | -- | Output directory for title granularity (when using `--granularities`) |
+| `--output-part <dir>` | -- | Output directory for part granularity, eCFR only (when using `--granularities`) |
 | `--link-style <style>` | `plaintext` | Cross-reference link style: `plaintext`, `relative`, or `canonical` |
 | `--dry-run` | off | Parse and report statistics without writing files |
 | `-v, --verbose` | off | Print detailed output including file paths |
@@ -62,6 +66,29 @@ These flags are available on all convert commands:
 
 > [!NOTE]
 > Setting any selective note flag (`--include-editorial-notes`, `--include-statutory-notes`, `--include-amendments`) automatically disables the broad `--include-notes` flag.
+
+### Multi-Granularity Single-Pass Mode
+
+Use `--granularities` to emit several granularity levels from a single parse of the source XML. Each listed granularity needs a matching output directory — section uses `--output` (or `--output-section`); chapter, title, and part (eCFR only) each take their own `--output-<granularity>` flag.
+
+```bash
+# USC: three granularities in one parse
+lexbuild convert-usc --all \
+  --granularities section,title,chapter \
+  --output ./output \
+  --output-title ./output-title \
+  --output-chapter ./output-chapter
+
+# eCFR: four granularities in one parse
+lexbuild convert-ecfr --all \
+  --granularities section,title,chapter,part \
+  --output ./output \
+  --output-title ./output-title \
+  --output-chapter ./output-chapter \
+  --output-part ./output-part
+```
+
+`--granularities` is mutually exclusive with `-g/--granularity`. The builder parses the XML once and emits at every requested level, so multi-granularity runs are roughly ~40–50% faster than N separate single-granularity invocations.
 
 ## Full Pipeline Examples
 
@@ -110,7 +137,7 @@ For routine updates, wrapper scripts handle the full pipeline (detect changes, d
 ./scripts/update-usc.sh                  # USC, checks release point
 ```
 
-Each script auto-detects what changed and only processes updates. See [Incremental Updates](/docs/guides/bulk-download#incremental-updates) for details.
+Each script auto-detects what changed and only processes updates. `update-usc.sh` and `update-ecfr.sh` convert all granularities in one call using `--granularities` (see above), so the convert step parses the XML once per title rather than once per granularity. See [Incremental Updates](/docs/guides/bulk-download#incremental-updates) for details.
 
 ## Getting Help
 

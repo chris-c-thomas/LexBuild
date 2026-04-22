@@ -2,10 +2,13 @@
  * eCFR conversion orchestrator.
  *
  * Follows the same collect-then-write pattern as the USC converter:
- * 1. Parse XML via SAX → feed EcfrASTBuilder
- * 2. Collect emitted sections/parts/titles
- * 3. Two-pass link registration (with duplicate detection)
- * 4. Write Markdown files, _meta.json, and README.md
+ * 1. Parse XML via SAX → feed EcfrASTBuilder (emitting at one or more levels)
+ * 2. Collect emitted sections/parts/titles per level
+ * 3. Two-pass link registration (section granularity)
+ * 4. Write Markdown files, _meta.json, and README.md per requested granularity
+ *
+ * A single parse feeds all requested granularities, so emitting at multiple
+ * levels in one call is the same work as emitting at just one.
  */
 
 import { createReadStream } from "node:fs";
@@ -33,14 +36,19 @@ import { EcfrASTBuilder } from "./ecfr-builder.js";
 import { buildEcfrFrontmatter } from "./ecfr-frontmatter.js";
 import { buildEcfrOutputPath, buildTitleDir } from "./ecfr-path.js";
 
-/** Options for converting an eCFR XML file */
-export interface EcfrConvertOptions {
+/** eCFR output granularity */
+export type EcfrGranularity = "section" | "part" | "chapter" | "title";
+
+/** One (granularity, output) pair for multi-granularity conversion */
+export interface EcfrGranularityOutput {
+  granularity: EcfrGranularity;
+  output: string;
+}
+
+/** Fields shared by single- and multi-granularity conversion options. */
+export interface BaseEcfrConvertOptions {
   /** Path to input eCFR XML file */
   input: string;
-  /** Output root directory */
-  output: string;
-  /** Output granularity: section (default), part, chapter, or title */
-  granularity: "section" | "part" | "chapter" | "title";
   /** Link style for cross-references */
   linkStyle: "relative" | "canonical" | "plaintext";
   /** Include source credits in output */
@@ -58,6 +66,44 @@ export interface EcfrConvertOptions {
   /** Currency date (YYYY-MM-DD) from eCFR API metadata. Defaults to today if not provided. */
   currencyDate?: string | undefined;
 }
+
+/** Single-granularity mode: one output directory, one granularity. */
+export interface SingleEcfrConvertOptions extends BaseEcfrConvertOptions {
+  /** Output root directory. Required in single-granularity mode. */
+  output: string;
+  /** Output granularity. Defaults to `"section"` when omitted. */
+  granularity?: EcfrGranularity | undefined;
+  /** @internal — must not be set in single-granularity mode */
+  granularities?: undefined;
+}
+
+/**
+ * Multi-granularity mode: a set of `{granularity, output}` pairs emitted from
+ * one parse.
+ *
+ * The builder emits at the set of unique `LevelType`s needed to satisfy the
+ * requested granularities. `section` and `chapter` both emit at the section
+ * level — chapter output is synthesized from the section bucket at write
+ * time (by grouping sections under their chapter ancestor). `part` and
+ * `title` each emit at their own level.
+ */
+export interface MultiEcfrConvertOptions extends BaseEcfrConvertOptions {
+  /** Multiple `{granularity, output}` pairs to produce in a single parse. */
+  granularities: readonly EcfrGranularityOutput[];
+  /** @internal — must not be set in multi-granularity mode */
+  output?: undefined;
+  /** @internal — must not be set in multi-granularity mode */
+  granularity?: undefined;
+}
+
+/**
+ * Options for converting an eCFR XML file.
+ *
+ * Discriminated union: pass either `output` (+ optional `granularity`) for
+ * single-granularity output, or `granularities` for multi-granularity output
+ * from a single parse. The two modes are mutually exclusive at the type level.
+ */
+export type EcfrConvertOptions = SingleEcfrConvertOptions | MultiEcfrConvertOptions;
 
 /** Result of an eCFR conversion */
 export interface EcfrConvertResult {
@@ -77,6 +123,10 @@ export interface EcfrConvertResult {
   totalTokenEstimate: number;
   /** Peak RSS in bytes during conversion */
   peakMemoryBytes: number;
+  /** Granularity this result corresponds to */
+  granularity: EcfrGranularity;
+  /** Output directory this result was written to */
+  output: string;
 }
 
 /** Internal collected section data */
@@ -100,60 +150,179 @@ interface SectionMeta {
   partName: string;
 }
 
+/** Map a granularity to the LevelType the builder must emit. */
+function emitLevelFor(granularity: EcfrGranularity): LevelType {
+  if (granularity === "title") return "title";
+  if (granularity === "part") return "part";
+  // Both "section" and "chapter" emit at section — chapter groups sections at write time.
+  return "section";
+}
+
+/** Resolve the normalized granularity list from options. */
+function resolveGranularities(options: EcfrConvertOptions): EcfrGranularityOutput[] {
+  const hasMulti = options.granularities !== undefined;
+  const hasSingle = options.granularity !== undefined || options.output !== undefined;
+
+  if (hasMulti && hasSingle) {
+    throw new Error(
+      "convertEcfrTitle: `granularities` is mutually exclusive with `granularity`/`output`",
+    );
+  }
+
+  if (hasMulti) {
+    const list = options.granularities ?? [];
+    if (list.length === 0) {
+      throw new Error("convertEcfrTitle: `granularities` must contain at least one entry");
+    }
+    const seen = new Set<EcfrGranularity>();
+    for (const entry of list) {
+      if (seen.has(entry.granularity)) {
+        throw new Error(
+          `convertEcfrTitle: duplicate granularity "${entry.granularity}" in \`granularities\``,
+        );
+      }
+      seen.add(entry.granularity);
+    }
+    return [...list];
+  }
+
+  const granularity = options.granularity ?? "section";
+  const output = options.output;
+  if (output === undefined) {
+    throw new Error("convertEcfrTitle: `output` is required in single-granularity mode");
+  }
+  return [{ granularity, output }];
+}
+
 /**
  * Convert an eCFR XML file to structured Markdown.
+ *
+ * - Single-granularity mode (`output` + optional `granularity`) returns one `EcfrConvertResult`.
+ * - Multi-granularity mode (`granularities`) parses once and returns one result per entry.
  */
-export async function convertEcfrTitle(options: EcfrConvertOptions): Promise<EcfrConvertResult> {
-  const { input, output, granularity, dryRun } = options;
+export async function convertEcfrTitle(
+  options: MultiEcfrConvertOptions,
+): Promise<EcfrConvertResult[]>;
+export async function convertEcfrTitle(
+  options: SingleEcfrConvertOptions,
+): Promise<EcfrConvertResult>;
+export async function convertEcfrTitle(
+  options: EcfrConvertOptions,
+): Promise<EcfrConvertResult | EcfrConvertResult[]> {
+  const granularityList = resolveGranularities(options);
+
+  // Build the emit set as the union of levels needed across requested granularities.
+  const emitSet = new Set<LevelType>();
+  for (const g of granularityList) emitSet.add(emitLevelFor(g.granularity));
+
+  // --- Parse phase (single pass) ---
   let peakMemory = process.memoryUsage().rss;
+  const collectedByLevel = new Map<LevelType, CollectedSection[]>();
+  for (const lt of emitSet) collectedByLevel.set(lt, []);
 
-  // Map granularity to emit level.
-  // Chapter and section granularity both emit at section level — chapter mode
-  // groups sections by chapter ancestor in the write phase.
-  const emitAt: LevelType = granularity === "title" ? "title" : granularity === "part" ? "part" : "section";
-
-  // Collect phase
-  const collected: CollectedSection[] = [];
   const builder = new EcfrASTBuilder({
-    emitAt,
+    emitAt: emitSet,
     onEmit: (node, context) => {
-      collected.push({ node, context });
+      const bucket = collectedByLevel.get(node.levelType);
+      if (bucket) bucket.push({ node, context });
     },
   });
 
-  // Parse XML — no namespace (eCFR XML has no namespace declarations)
   const parser = new XMLParser({ defaultNamespace: "" });
   parser.on("openElement", (name, attrs) => builder.onOpenElement(name, attrs));
   parser.on("closeElement", (name) => builder.onCloseElement(name));
   parser.on("text", (text) => builder.onText(text));
 
-  const stream = createReadStream(input, "utf-8");
+  const stream = createReadStream(options.input, "utf-8");
   await parser.parseStream(stream);
 
-  // Track peak memory
-  const rss = process.memoryUsage().rss;
-  if (rss > peakMemory) peakMemory = rss;
+  const postParseRss = process.memoryUsage().rss;
+  if (postParseRss > peakMemory) peakMemory = postParseRss;
 
-  // Get part-level notes captured by the builder during parsing
   const partNotes = builder.getPartNotes();
 
-  // Extract title info
-  let titleNumber = "0";
-  let titleName = "";
-  const firstCollected = collected[0];
-  if (firstCollected) {
-    const firstCtx = firstCollected.context;
-    const titleAncestor = firstCtx.ancestors.find((a) => a.levelType === "title");
+  // Extract title info from any collected node (prefer section for its ancestor chain).
+  const { titleNumber, titleName } = extractTitleInfo(collectedByLevel);
+
+  // --- Write phase (per requested granularity, reusing the same buckets) ---
+  const results: EcfrConvertResult[] = [];
+  for (const { granularity, output } of granularityList) {
+    const bucket = collectedByLevel.get(emitLevelFor(granularity)) ?? [];
+    const result = await writeGranularity({
+      granularity,
+      output,
+      options,
+      collected: bucket,
+      partNotes,
+      titleNumber,
+      titleName,
+    });
+    if (result.peakMemoryBytes > peakMemory) peakMemory = result.peakMemoryBytes;
+    result.peakMemoryBytes = peakMemory;
+    results.push(result);
+  }
+
+  if (options.granularities !== undefined) return results;
+  const [first] = results;
+  if (!first) throw new Error("convertEcfrTitle: no conversion result produced");
+  return first;
+}
+
+/**
+ * Extract title number and name from the first available collected node.
+ *
+ * Falls back to `{"0", ""}` when no emitted node has a title ancestor and no
+ * title-level node was emitted. That path produces `/us/cfr/t0/...` canonical
+ * identifiers, which is almost always a sign of malformed source XML — we
+ * warn rather than silently corrupt downstream data.
+ */
+function extractTitleInfo(collectedByLevel: Map<LevelType, CollectedSection[]>): {
+  titleNumber: string;
+  titleName: string;
+} {
+  // Prefer section emissions (richest ancestor chain), fall back to others.
+  const probeOrder: LevelType[] = ["section", "part", "chapter", "title"];
+  for (const lt of probeOrder) {
+    const bucket = collectedByLevel.get(lt);
+    const first = bucket?.[0];
+    if (!first) continue;
+    const titleAncestor = first.context.ancestors.find((a) => a.levelType === "title");
     if (titleAncestor) {
-      titleNumber = titleAncestor.numValue ?? "0";
-      titleName = titleAncestor.heading ?? firstCtx.documentMeta.dcTitle ?? "";
-    } else if (firstCollected.node.levelType === "title") {
-      titleNumber = firstCollected.node.numValue ?? "0";
-      titleName = firstCollected.node.heading ?? "";
+      return {
+        titleNumber: titleAncestor.numValue ?? "0",
+        titleName: titleAncestor.heading ?? first.context.documentMeta.dcTitle ?? "",
+      };
+    }
+    if (first.node.levelType === "title") {
+      return {
+        titleNumber: first.node.numValue ?? "0",
+        titleName: first.node.heading ?? first.context.documentMeta.dcTitle ?? "",
+      };
     }
   }
 
-  // Notes filter
+  console.warn(
+    "[@lexbuild/ecfr] convertEcfrTitle: could not resolve title number from emitted nodes; " +
+      "output will use `/us/cfr/t0/...` identifiers. Source XML likely missing a DIV1 TYPE=\"TITLE\".",
+  );
+  return { titleNumber: "0", titleName: "" };
+}
+
+interface WriteGranularityArgs {
+  granularity: EcfrGranularity;
+  output: string;
+  options: EcfrConvertOptions;
+  collected: CollectedSection[];
+  partNotes: ReadonlyMap<string, { authority?: string | undefined; regulatorySource?: string | undefined }>;
+  titleNumber: string;
+  titleName: string;
+}
+
+/** Write one granularity's outputs from its pre-collected bucket. */
+async function writeGranularity(args: WriteGranularityArgs): Promise<EcfrConvertResult> {
+  const { granularity, output, options, collected, partNotes, titleNumber, titleName } = args;
+  let peakMemory = process.memoryUsage().rss;
+
   const notesFilter = buildNotesFilter(options);
   const renderOpts: RenderOptions = {
     headingOffset: 0,
@@ -161,120 +330,21 @@ export async function convertEcfrTitle(options: EcfrConvertOptions): Promise<Ecf
     notesFilter,
   };
 
-  if (dryRun) {
-    return buildDryRunResult(collected, granularity, titleNumber, titleName, peakMemory);
+  if (options.dryRun) {
+    return buildDryRunResult(collected, granularity, output, titleNumber, titleName, peakMemory);
   }
 
-  // Two-pass link registration for section granularity
-  const linkResolver = createLinkResolver();
-  const sectionMetas: SectionMeta[] = [];
-
   if (granularity === "section") {
-    // Pass 1: compute output paths, detect duplicates, and register all
-    // identifiers with the link resolver BEFORE rendering. This ensures
-    // both forward and backward cross-references can resolve.
-    const counts = new Map<string, number>();
-    for (const { node, context } of collected) {
-      const partNum = context.ancestors.find((a) => a.levelType === "part")?.numValue ?? "__root__";
-      const secNum = node.numValue ?? "0";
-      const key = `${partNum}/${secNum}`;
-      counts.set(key, (counts.get(key) ?? 0) + 1);
-    }
-
-    // Assign occurrence-based suffixes (-2, -3, ...) to duplicate sections.
-    // First occurrence keeps the canonical (unsuffixed) path for stable URLs.
-    const seen = new Map<string, number>();
-    const outputPaths: string[] = [];
-
-    for (const { node, context } of collected) {
-      const partNum = context.ancestors.find((a) => a.levelType === "part")?.numValue ?? "__root__";
-      const secNum = node.numValue ?? "0";
-      const key = `${partNum}/${secNum}`;
-      const occurrence = (seen.get(key) ?? 0) + 1;
-      seen.set(key, occurrence);
-
-      const total = counts.get(key) ?? 1;
-      const suffix = total > 1 && occurrence > 1 ? `-${occurrence}` : "";
-
-      const filePath = buildEcfrOutputPath(node, context, output);
-      const suffixedPath = suffix ? filePath.replace(/\.md$/, `${suffix}.md`) : filePath;
-      outputPaths.push(suffixedPath);
-
-      // Register canonical identifier for first occurrence only
-      if (node.identifier && occurrence === 1) {
-        linkResolver.register(node.identifier, suffixedPath);
-      }
-    }
-
-    // Pass 2: render and write files (all identifiers are now registered)
-    for (let i = 0; i < collected.length; i++) {
-      const item = collected[i];
-      const suffixedPath = outputPaths[i];
-      if (!item || !suffixedPath) continue;
-      const { node, context } = item;
-
-      const frontmatter = buildEcfrFrontmatter(node, context, options.currencyDate);
-      // Enrich with part-level authority/source from builder's captured notes
-      const partId = context.ancestors.find((a) => a.levelType === "part")?.identifier;
-      if (partId && (!frontmatter.authority || !frontmatter.regulatory_source)) {
-        const partNoteData = partNotes.get(partId);
-        if (partNoteData) {
-          if (!frontmatter.authority && partNoteData.authority) {
-            frontmatter.authority = partNoteData.authority;
-          }
-          if (!frontmatter.regulatory_source && partNoteData.regulatorySource) {
-            frontmatter.regulatory_source = partNoteData.regulatorySource;
-          }
-        }
-      }
-
-      const fromFile = suffixedPath;
-      const markdown = renderDocument(node, frontmatter, {
-        ...renderOpts,
-        resolveLink: (identifier: string) => linkResolver.resolve(identifier, fromFile),
-      });
-
-      await mkdir(dirname(suffixedPath), { recursive: true });
-      await writeFileIfChanged(suffixedPath, markdown, "utf-8");
-
-      const hasNotes = node.children.some((c) => c.type === "note" || c.type === "notesContainer");
-      const secNum = node.numValue ?? "0";
-      const partNum = context.ancestors.find((a) => a.levelType === "part")?.numValue ?? "__root__";
-
-      sectionMetas.push({
-        identifier: node.identifier ?? `/us/cfr/t${titleNumber}/s${secNum}`,
-        number: secNum,
-        name: node.heading?.trim() ?? "",
-        fileName: basename(suffixedPath),
-        relativeFile: relative(buildTitleDir(titleNumber, output), suffixedPath),
-        contentLength: markdown.length,
-        hasNotes,
-        status: node.status ?? "current",
-        partIdentifier: context.ancestors.find((a) => a.levelType === "part")?.identifier ?? "",
-        partNumber: partNum,
-        partName: context.ancestors.find((a) => a.levelType === "part")?.heading?.trim() ?? "",
-      });
-
-      // Track peak memory
-      const currentRss = process.memoryUsage().rss;
-      if (currentRss > peakMemory) peakMemory = currentRss;
-    }
-
-    // Write _meta.json and README (dryRun returns early above, so this always runs)
-    await writeMetaFiles(sectionMetas, titleNumber, titleName, output, granularity, input, options.currencyDate);
-
-    const files = sectionMetas.map((m) => join(buildTitleDir(titleNumber, output), m.relativeFile));
-
-    return {
-      sectionsWritten: sectionMetas.length,
-      files,
+    return writeSectionGranularity({
+      collected,
+      output,
+      options,
+      renderOpts,
+      partNotes,
       titleNumber,
       titleName,
-      dryRun: false,
-      partCount: new Set(sectionMetas.map((s) => s.partNumber)).size,
-      totalTokenEstimate: Math.ceil(sectionMetas.reduce((sum, m) => sum + m.contentLength, 0) / 4),
-      peakMemoryBytes: peakMemory,
-    };
+      peakMemory,
+    });
   }
 
   // Chapter, part, or title granularity
@@ -282,30 +352,40 @@ export async function convertEcfrTitle(options: EcfrConvertOptions): Promise<Ecf
   let totalLength = 0;
 
   if (granularity === "chapter") {
-    // Chapter granularity: group emitted sections by chapter ancestor,
-    // then render each chapter as a composite document with all sections inlined.
+    // Group emitted sections by chapter ancestor, render each chapter as a composite document.
     const chapterMap = new Map<
       string,
       { sections: CollectedSection[]; chapterAncestor: AncestorInfo; firstContext: EmitContext }
     >();
 
+    let skippedRootless = 0;
     for (const item of collected) {
       const chapterAnc = item.context.ancestors.find((a) => a.levelType === "chapter");
-      const chapterKey = chapterAnc?.numValue ?? "__root__";
-      const existing = chapterMap.get(chapterKey);
+      if (!chapterAnc?.numValue) {
+        // Section without a chapter ancestor cannot be placed in a chapter
+        // file. Rare in eCFR (e.g. parts directly under subtitle with no
+        // surrounding chapter). Drop rather than synthesize a junk filename.
+        skippedRootless++;
+        continue;
+      }
+      const existing = chapterMap.get(chapterAnc.numValue);
       if (existing) {
         existing.sections.push(item);
       } else {
-        chapterMap.set(chapterKey, {
+        chapterMap.set(chapterAnc.numValue, {
           sections: [item],
-          chapterAncestor: chapterAnc ?? { levelType: "chapter", numValue: chapterKey },
+          chapterAncestor: chapterAnc,
           firstContext: item.context,
         });
       }
     }
+    if (skippedRootless > 0) {
+      console.warn(
+        `[@lexbuild/ecfr] convertEcfrTitle: chapter granularity skipped ${skippedRootless} section(s) with no chapter ancestor`,
+      );
+    }
 
     for (const [_chapterKey, { sections, chapterAncestor, firstContext }] of chapterMap) {
-      // Build a synthetic chapter LevelNode containing all sections
       const chapterNode: LevelNode = {
         type: "level",
         levelType: "chapter",
@@ -326,11 +406,8 @@ export async function convertEcfrTitle(options: EcfrConvertOptions): Promise<Ecf
       totalLength += markdown.length;
     }
   } else {
-    // Part or title granularity — filter to target level
-    const targetLevel = emitAt;
-    const filtered = collected.filter((c) => c.node.levelType === targetLevel);
-
-    for (const { node, context } of filtered) {
+    // Part or title granularity — each emitted node is written as-is.
+    for (const { node, context } of collected) {
       const frontmatter = buildEcfrFrontmatter(node, context, options.currencyDate);
       const markdown = renderDocument(node, frontmatter, renderOpts);
 
@@ -342,13 +419,17 @@ export async function convertEcfrTitle(options: EcfrConvertOptions): Promise<Ecf
     }
   }
 
-  // Compute partCount based on granularity
+  const currentRss = process.memoryUsage().rss;
+  if (currentRss > peakMemory) peakMemory = currentRss;
+
   const partCount =
     granularity === "part"
       ? files.length
       : granularity === "chapter"
         ? new Set(
-            collected.map((c) => c.context.ancestors.find((a) => a.levelType === "part")?.numValue).filter(Boolean),
+            collected
+              .map((c) => c.context.ancestors.find((a) => a.levelType === "part")?.numValue)
+              .filter(Boolean),
           ).size
         : 0;
 
@@ -361,12 +442,142 @@ export async function convertEcfrTitle(options: EcfrConvertOptions): Promise<Ecf
     partCount,
     totalTokenEstimate: Math.ceil(totalLength / 4),
     peakMemoryBytes: peakMemory,
+    granularity,
+    output,
+  };
+}
+
+interface SectionWriteArgs {
+  collected: CollectedSection[];
+  output: string;
+  options: EcfrConvertOptions;
+  renderOpts: RenderOptions;
+  partNotes: ReadonlyMap<string, { authority?: string | undefined; regulatorySource?: string | undefined }>;
+  titleNumber: string;
+  titleName: string;
+  peakMemory: number;
+}
+
+async function writeSectionGranularity(args: SectionWriteArgs): Promise<EcfrConvertResult> {
+  const { collected, output, options, renderOpts, partNotes, titleNumber, titleName } = args;
+  let peakMemory = args.peakMemory;
+
+  const linkResolver = createLinkResolver();
+  const sectionMetas: SectionMeta[] = [];
+
+  // Pass 1: compute output paths, detect duplicates, register identifiers.
+  const counts = new Map<string, number>();
+  for (const { node, context } of collected) {
+    const partNum = context.ancestors.find((a) => a.levelType === "part")?.numValue ?? "__root__";
+    const secNum = node.numValue ?? "0";
+    const key = `${partNum}/${secNum}`;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+
+  const seen = new Map<string, number>();
+  const outputPaths: string[] = [];
+
+  for (const { node, context } of collected) {
+    const partNum = context.ancestors.find((a) => a.levelType === "part")?.numValue ?? "__root__";
+    const secNum = node.numValue ?? "0";
+    const key = `${partNum}/${secNum}`;
+    const occurrence = (seen.get(key) ?? 0) + 1;
+    seen.set(key, occurrence);
+
+    const total = counts.get(key) ?? 1;
+    const suffix = total > 1 && occurrence > 1 ? `-${occurrence}` : "";
+
+    const filePath = buildEcfrOutputPath(node, context, output);
+    const suffixedPath = suffix ? filePath.replace(/\.md$/, `${suffix}.md`) : filePath;
+    outputPaths.push(suffixedPath);
+
+    if (node.identifier && occurrence === 1) {
+      linkResolver.register(node.identifier, suffixedPath);
+    }
+  }
+
+  // Pass 2: render and write.
+  for (let i = 0; i < collected.length; i++) {
+    const item = collected[i];
+    const suffixedPath = outputPaths[i];
+    if (!item || !suffixedPath) continue;
+    const { node, context } = item;
+
+    const frontmatter = buildEcfrFrontmatter(node, context, options.currencyDate);
+    const partId = context.ancestors.find((a) => a.levelType === "part")?.identifier;
+    if (partId && (!frontmatter.authority || !frontmatter.regulatory_source)) {
+      const partNoteData = partNotes.get(partId);
+      if (partNoteData) {
+        if (!frontmatter.authority && partNoteData.authority) {
+          frontmatter.authority = partNoteData.authority;
+        }
+        if (!frontmatter.regulatory_source && partNoteData.regulatorySource) {
+          frontmatter.regulatory_source = partNoteData.regulatorySource;
+        }
+      }
+    }
+
+    const fromFile = suffixedPath;
+    const markdown = renderDocument(node, frontmatter, {
+      ...renderOpts,
+      resolveLink: (identifier: string) => linkResolver.resolve(identifier, fromFile),
+    });
+
+    await mkdir(dirname(suffixedPath), { recursive: true });
+    await writeFileIfChanged(suffixedPath, markdown, "utf-8");
+
+    const hasNotes = node.children.some((c) => c.type === "note" || c.type === "notesContainer");
+    const secNum = node.numValue ?? "0";
+    const partNum = context.ancestors.find((a) => a.levelType === "part")?.numValue ?? "__root__";
+
+    sectionMetas.push({
+      identifier: node.identifier ?? `/us/cfr/t${titleNumber}/s${secNum}`,
+      number: secNum,
+      name: node.heading?.trim() ?? "",
+      fileName: basename(suffixedPath),
+      relativeFile: relative(buildTitleDir(titleNumber, output), suffixedPath),
+      contentLength: markdown.length,
+      hasNotes,
+      status: node.status ?? "current",
+      partIdentifier: context.ancestors.find((a) => a.levelType === "part")?.identifier ?? "",
+      partNumber: partNum,
+      partName: context.ancestors.find((a) => a.levelType === "part")?.heading?.trim() ?? "",
+    });
+
+    const currentRss = process.memoryUsage().rss;
+    if (currentRss > peakMemory) peakMemory = currentRss;
+  }
+
+  await writeMetaFiles(
+    sectionMetas,
+    titleNumber,
+    titleName,
+    output,
+    "section",
+    options.input,
+    options.currencyDate,
+  );
+
+  const files = sectionMetas.map((m) => join(buildTitleDir(titleNumber, output), m.relativeFile));
+
+  return {
+    sectionsWritten: sectionMetas.length,
+    files,
+    titleNumber,
+    titleName,
+    dryRun: false,
+    partCount: new Set(sectionMetas.map((s) => s.partNumber)).size,
+    totalTokenEstimate: Math.ceil(sectionMetas.reduce((sum, m) => sum + m.contentLength, 0) / 4),
+    peakMemoryBytes: peakMemory,
+    granularity: "section",
+    output,
   };
 }
 
 function buildDryRunResult(
   collected: CollectedSection[],
-  granularity: string,
+  granularity: EcfrGranularity,
+  output: string,
   titleNumber: string,
   titleName: string,
   peakMemory: number,
@@ -375,20 +586,20 @@ function buildDryRunResult(
   let count: number;
 
   if (granularity === "chapter") {
-    // Count unique chapter ancestors from section-level emissions
+    // Mirror the write-phase filter: sections with no chapter ancestor
+    // would be dropped rather than grouped under a synthetic key.
     const chapterKeys = new Set<string>();
     for (const { node, context } of collected) {
       const chapterAnc = context.ancestors.find((a) => a.levelType === "chapter");
-      const key = chapterAnc?.numValue ?? "__root__";
-      chapterKeys.add(key);
+      if (!chapterAnc?.numValue) continue;
+      chapterKeys.add(chapterAnc.numValue);
       totalEstimate += estimateTokens(node);
     }
     count = chapterKeys.size;
   } else {
-    const targetLevel = granularity === "title" ? "title" : granularity === "part" ? "part" : "section";
-    const filtered = collected.filter((c) => c.node.levelType === targetLevel);
-    count = filtered.length;
-    for (const { node } of filtered) {
+    // section/part/title: each collected item of the matching level is a file
+    count = collected.length;
+    for (const { node } of collected) {
       totalEstimate += estimateTokens(node);
     }
   }
@@ -402,6 +613,8 @@ function buildDryRunResult(
     partCount: 0,
     totalTokenEstimate: totalEstimate,
     peakMemoryBytes: peakMemory,
+    granularity,
+    output,
   };
 }
 
@@ -424,9 +637,8 @@ function estimateTokens(node: LevelNode): number {
 }
 
 function buildNotesFilter(options: EcfrConvertOptions): NotesFilter | undefined {
-  if (options.includeNotes) return undefined; // Include all
+  if (options.includeNotes) return undefined;
 
-  // Check if any selective flag is set
   const hasSelective = options.includeEditorialNotes || options.includeStatutoryNotes || options.includeAmendments;
 
   if (!hasSelective) {

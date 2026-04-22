@@ -90,6 +90,24 @@ const builder = new ASTBuilder({
 
 Levels above the emit level (for example, `title` and `chapter` when emitting at `section`) are tracked as lightweight `AncestorInfo` objects containing just the level type, identifier, number, and heading. Their child subtrees are never accumulated in memory.
 
+### Multi-Level Emit
+
+`emitAt` also accepts a `ReadonlySet<LevelType>`. Deeper levels fire first (sections before their containing title), and emitted nodes remain attached to their parents so a higher-level emission sees the full subtree. Attach-to-parent is gated by "any enclosing stack frame is itself an emit target" — this live stack check is what keeps the logic correct for USLM's permissive level nesting (for example, an appendix inside a part), where hierarchy index ordering would be misleading.
+
+```typescript
+const byLevel = new Map<LevelType, CollectedSection[]>();
+
+const builder = new ASTBuilder({
+  emitAt: new Set(["section", "chapter", "title"]),
+  onEmit: (node, context) => {
+    const bucket = byLevel.get(node.levelType);
+    if (bucket) bucket.push({ node, context });
+  },
+});
+```
+
+The converter uses this to collect per-level buckets in a single pass and write every requested granularity from the matching bucket. This is how `--granularities` on the CLI produces multiple output trees without re-parsing the XML.
+
 ## The Collect-Then-Write Pattern
 
 Both USC and eCFR converters collect all emitted nodes synchronously during parsing, then write files after parsing completes. The collect phase pushes `{ node, context }` pairs into an array; the write phase iterates this array to render and write each file.

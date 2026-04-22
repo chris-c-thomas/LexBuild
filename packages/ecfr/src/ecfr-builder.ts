@@ -7,6 +7,7 @@
  */
 
 import type { Attributes } from "@lexbuild/core";
+import { LEVEL_TYPES } from "@lexbuild/core";
 import type {
   LevelType,
   LevelNode,
@@ -38,8 +39,14 @@ import {
 
 /** Options for configuring the eCFR AST builder */
 export interface EcfrASTBuilderOptions {
-  /** Emit completed nodes at this level instead of accumulating */
-  emitAt: LevelType;
+  /**
+   * Emit completed nodes at these levels instead of accumulating. Accepts a
+   * single `LevelType` or a `ReadonlySet<LevelType>`. When multiple levels are
+   * specified, deeper levels fire first (e.g. `section` before its ancestor
+   * `title`), and emitted nodes remain attached to their parents so a
+   * higher-level emission sees the complete subtree.
+   */
+  emitAt: LevelType | ReadonlySet<LevelType>;
   /** Callback when a completed node is ready */
   onEmit: (node: LevelNode, context: EmitContext) => void | Promise<void>;
 }
@@ -90,6 +97,33 @@ export class EcfrASTBuilder {
 
   constructor(options: EcfrASTBuilderOptions) {
     this.options = options;
+    // Validate emit configuration up front.
+    resolveEmitIndexes(options.emitAt);
+  }
+
+  private shouldEmit(levelType: LevelType): boolean {
+    const at = this.options.emitAt;
+    return typeof at === "string" ? levelType === at : at.has(levelType);
+  }
+
+  /**
+   * True iff some level frame currently on the stack is itself an emit
+   * target. Used by `closeLevel` to decide whether the closing node must be
+   * attached to its parent so a higher emission sees the full subtree.
+   *
+   * This is the correct check for USLM's permissive level nesting (e.g. an
+   * `<appendix>` inside a `<part>`) — reasoning via `LEVEL_TYPES` index
+   * ordering would drop the appendix because its index is shallower than
+   * the containing part's. Live stack membership handles anomalous nesting
+   * correctly.
+   */
+  private hasEmittingAncestorOnStack(): boolean {
+    for (const f of this.stack) {
+      if (f.kind === "level" && f.node?.type === "level") {
+        if (this.shouldEmit((f.node as LevelNode).levelType)) return true;
+      }
+    }
+    return false;
   }
 
   /** Get part-level notes (authority/source) captured during parsing */
@@ -500,12 +534,10 @@ export class EcfrASTBuilder {
       }
     }
 
-    // Emit only at the exact configured level. Anything else aggregates into
-    // its parent level frame, whether it's "below" emitAt (children of the
-    // emitted node, e.g. sections under a part) or "above" emitAt (outer
-    // containers we skip, e.g. a title when emitAt === "part"). Matches the
-    // USLM builder's strict-equality behavior in @lexbuild/core.
-    if (levelNode.levelType === this.options.emitAt) {
+    // Emit at any level named in the configured emit set. Ancestors are
+    // computed from the live stack (already popped by popFrame above), so an
+    // emitted level never lists itself as its own ancestor.
+    if (this.shouldEmit(levelNode.levelType)) {
       const ancestors: AncestorInfo[] = [];
       for (const f of this.stack) {
         if (f.kind === "level" && f.node?.type === "level") {
@@ -525,12 +557,20 @@ export class EcfrASTBuilder {
       };
 
       this.options.onEmit(levelNode, context);
-      return;
     }
 
-    const parentLevel = this.findParentLevel();
-    if (parentLevel?.node && parentLevel.node.type === "level") {
-      (parentLevel.node as LevelNode).children.push(levelNode);
+    // Attach to parent iff some enclosing frame is itself an emit target, so
+    // descendants bubble up into that higher emission. When no emitting
+    // ancestor remains on the stack, the node has nothing further to feed
+    // into and is dropped, matching prior memory behavior for single-level
+    // emit. This check uses live stack membership (not hierarchy indexes) so
+    // it stays correct for USLM's permissive level nesting (e.g. an appendix
+    // inside a part).
+    if (this.hasEmittingAncestorOnStack()) {
+      const parentLevel = this.findParentLevel();
+      if (parentLevel?.node && parentLevel.node.type === "level") {
+        (parentLevel.node as LevelNode).children.push(levelNode);
+      }
     }
   }
 
@@ -845,6 +885,20 @@ export class EcfrASTBuilder {
     }
     return parts.join("").trim();
   }
+}
+
+const LEVEL_TYPES_ARRAY: readonly string[] = LEVEL_TYPES;
+
+function resolveEmitIndexes(emitAt: LevelType | ReadonlySet<LevelType>): number[] {
+  const levels = typeof emitAt === "string" ? [emitAt] : [...emitAt];
+  if (levels.length === 0) {
+    throw new Error("EcfrASTBuilder: emitAt must contain at least one LevelType");
+  }
+  return levels.map((lt) => {
+    const idx = LEVEL_TYPES_ARRAY.indexOf(lt);
+    if (idx < 0) throw new Error(`EcfrASTBuilder: unknown LevelType "${lt}" in emitAt`);
+    return idx;
+  });
 }
 
 /**

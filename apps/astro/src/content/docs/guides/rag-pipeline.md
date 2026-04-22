@@ -41,13 +41,17 @@ You can convert the same source at different granularity levels to support diffe
 | `chapter` / `part` | 10-100k tokens | Topic-level context, summarization with large context models |
 | `title` | 100k-2M tokens | Whole-title analysis, full corpus summarization |
 
-Generate multiple granularities to different output directories:
+Generate multiple granularities to different output directories in a single parse:
 
 ```bash
-lexbuild convert-usc --all -g section -o ./output/section
-lexbuild convert-usc --all -g chapter -o ./output/chapter
-lexbuild convert-usc --all -g title -o ./output/title
+lexbuild convert-usc --all \
+  --granularities section,title,chapter \
+  --output ./output/section \
+  --output-title ./output/title \
+  --output-chapter ./output/chapter
 ```
+
+`--granularities` emits every requested level from one read of the XML. For a single granularity, use the older `-g <level> -o <dir>` form.
 
 ## Parsing Frontmatter
 

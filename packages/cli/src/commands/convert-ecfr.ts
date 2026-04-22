@@ -27,6 +27,11 @@ interface ConvertEcfrCommandOptions {
   all: boolean;
   inputDir: string;
   granularity: "section" | "part" | "chapter" | "title";
+  granularities?: string | undefined;
+  outputSection?: string | undefined;
+  outputPart?: string | undefined;
+  outputChapter?: string | undefined;
+  outputTitle?: string | undefined;
   linkStyle: "relative" | "canonical" | "plaintext";
   includeSourceCredits: boolean;
   includeNotes: boolean;
@@ -38,6 +43,53 @@ interface ConvertEcfrCommandOptions {
   currencyDate?: string | undefined;
 }
 
+type EcfrGranularityName = "section" | "part" | "chapter" | "title";
+
+/**
+ * Parse `--granularities` list and pair with per-granularity output flags.
+ *
+ * Exported for unit testing. Rejects unknown granularity names, duplicate
+ * entries, and missing matching `--output-<g>` flags.
+ */
+export function parseEcfrGranularityList(
+  options: ConvertEcfrCommandOptions,
+): Array<{ granularity: EcfrGranularityName; output: string }> {
+  const spec = (options.granularities ?? "").trim();
+  if (!spec) return [];
+  const names = spec
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const valid: ReadonlySet<string> = new Set(["section", "part", "chapter", "title"]);
+  const seen = new Set<string>();
+  const pairs: Array<{ granularity: EcfrGranularityName; output: string }> = [];
+  for (const name of names) {
+    if (!valid.has(name)) {
+      throw new Error(`Unknown granularity "${name}". Choose from section, part, chapter, title.`);
+    }
+    if (seen.has(name)) {
+      throw new Error(`Duplicate granularity "${name}" in --granularities list.`);
+    }
+    seen.add(name);
+    const g = name as EcfrGranularityName;
+    const out =
+      g === "section"
+        ? (options.outputSection ?? options.output)
+        : g === "part"
+          ? options.outputPart
+          : g === "chapter"
+            ? options.outputChapter
+            : options.outputTitle;
+    if (!out) {
+      const flag = g === "section" ? "--output" : `--output-${g}`;
+      throw new Error(`Missing ${flag} for granularity "${g}".`);
+    }
+    pairs.push({ granularity: g, output: resolve(out) });
+  }
+  return pairs;
+}
+
 /** Build EcfrConvertOptions from CLI flags. */
 function buildConvertOptions(
   inputPath: string,
@@ -47,10 +99,8 @@ function buildConvertOptions(
   const hasSelectiveFlags = options.includeEditorialNotes || options.includeStatutoryNotes || options.includeAmendments;
   const includeNotes = hasSelectiveFlags ? false : options.includeNotes;
 
-  return {
+  const base = {
     input: inputPath,
-    output: outputPath,
-    granularity: options.granularity,
     linkStyle: options.linkStyle,
     includeSourceCredits: options.includeSourceCredits,
     includeNotes,
@@ -59,6 +109,17 @@ function buildConvertOptions(
     includeAmendments: options.includeAmendments,
     dryRun: options.dryRun,
     currencyDate: options.currencyDate,
+  };
+
+  const multi = parseEcfrGranularityList(options);
+  if (multi.length > 0) {
+    return { ...base, granularities: multi };
+  }
+
+  return {
+    ...base,
+    output: outputPath,
+    granularity: options.granularity,
   };
 }
 
@@ -83,7 +144,8 @@ function discoverEcfrTitles(inputDir: string): number[] {
 
 /** Result from running a conversion including elapsed time. */
 interface ConversionRun {
-  result: EcfrConvertResult;
+  /** One entry per granularity produced (length 1 for single-granularity mode). */
+  results: EcfrConvertResult[];
   elapsed: number;
 }
 
@@ -94,9 +156,13 @@ async function runConversion(
   options: ConvertEcfrCommandOptions,
 ): Promise<ConversionRun> {
   const startTime = performance.now();
-  const result = await convertEcfrTitle(buildConvertOptions(inputPath, outputPath, options));
+  const opts = buildConvertOptions(inputPath, outputPath, options);
+  // Narrow on the discriminant so each overload is called with its exact
+  // input type — no casts, and the return type is concrete per branch.
+  const results: EcfrConvertResult[] =
+    opts.granularities !== undefined ? await convertEcfrTitle(opts) : [await convertEcfrTitle(opts)];
   const elapsed = performance.now() - startTime;
-  return { result, elapsed };
+  return { results, elapsed };
 }
 
 /** Convert a single file and print its detailed summary. */
@@ -110,16 +176,21 @@ async function convertSingleFile(
   spinner.start();
 
   try {
-    const { result, elapsed } = await runConversion(inputPath, outputPath, options);
+    const { results, elapsed } = await runConversion(inputPath, outputPath, options);
     spinner.stop();
 
+    // Use the first result as the primary display subject; other granularities
+    // are shown as additional Output rows. runConversion guarantees the array
+    // is non-empty.
+    const [result] = results;
+    if (!result) throw new Error("convertEcfrTitle produced no result");
     const rows: Array<[string, string]> = [];
-    if (options.granularity === "section") {
+    if (result.granularity === "section") {
       rows.push(["Sections", formatNumber(result.sectionsWritten)]);
       rows.push(["Parts", formatNumber(result.partCount)]);
-    } else if (options.granularity === "part") {
+    } else if (result.granularity === "part") {
       rows.push(["Parts", formatNumber(result.partCount)]);
-    } else if (options.granularity === "chapter") {
+    } else if (result.granularity === "chapter") {
       rows.push(["Chapters", formatNumber(result.sectionsWritten)]);
     }
     rows.push(["Est. Tokens", formatNumber(result.totalTokenEstimate)]);
@@ -134,11 +205,14 @@ async function convertSingleFile(
       ? `lexbuild — eCFR Title ${result.titleNumber}: ${result.titleName} [dry-run]`
       : `lexbuild — eCFR Title ${result.titleNumber}: ${result.titleName}`;
 
-    const outputRelative = relative(process.cwd(), outputPath) || outputPath;
+    const outputRows: Array<[string, string]> = results.map((r) => {
+      const rel = relative(process.cwd(), r.output) || r.output;
+      return [results.length === 1 ? "Output" : `Output (${r.granularity})`, rel];
+    });
 
     const output = summaryBlock({
       title: titleLabel,
-      rows: [...rows, ["Output", outputRelative]],
+      rows: [...rows, ...outputRows],
       footer: result.dryRun ? success("Dry run complete") : success("Conversion complete"),
     });
     process.stdout.write(output);
@@ -170,6 +244,14 @@ export const convertEcfrCommand = new Command("convert-ecfr")
       .choices(["section", "part", "chapter", "title"])
       .default("section"),
   )
+  .option(
+    "--granularities <list>",
+    "Comma-separated granularities (e.g. section,part,chapter,title) — mutually exclusive with -g. Each listed granularity must have a matching --output or --output-<g> flag.",
+  )
+  .option("--output-section <dir>", "Output directory for section granularity (defaults to --output)")
+  .option("--output-part <dir>", "Output directory for part granularity")
+  .option("--output-chapter <dir>", "Output directory for chapter granularity")
+  .option("--output-title <dir>", "Output directory for title granularity")
   .addOption(
     new Option("--link-style <style>", "Link style: relative, canonical, or plaintext")
       .choices(["relative", "canonical", "plaintext"])
@@ -206,7 +288,7 @@ Examples:
   $ lexbuild convert-ecfr --all --dry-run               Preview stats only
   $ lexbuild convert-ecfr ./downloads/ecfr/xml/ECFR-title1.xml -o ./out`,
   )
-  .action(async (input: string | undefined, options: ConvertEcfrCommandOptions) => {
+  .action(async function action(this: Command, input: string | undefined, options: ConvertEcfrCommandOptions) {
     const modeCount = [input, options.titles, options.all].filter(Boolean).length;
     if (modeCount === 0) {
       console.error(error("Specify an input file, --titles <spec>, or --all (e.g. --titles 1-5,17)"));
@@ -214,6 +296,14 @@ Examples:
     }
     if (modeCount > 1) {
       console.error(error("Cannot combine <input>, --titles, and --all — use only one"));
+      process.exit(1);
+    }
+
+    if (
+      options.granularities !== undefined &&
+      this.getOptionValueSource("granularity") === "cli"
+    ) {
+      console.error(error("Cannot combine --granularity and --granularities — use one or the other"));
       process.exit(1);
     }
 
@@ -283,19 +373,36 @@ Examples:
     const headerTitle = options.dryRun
       ? "lexbuild — eCFR Conversion Summary [dry-run]"
       : "lexbuild — eCFR Conversion Summary";
-    const header = summaryBlock({
-      title: headerTitle,
-      rows: [["Directory", outputRelative]],
-    });
+
+    // In multi-granularity mode the per-granularity output dirs carry more
+    // context than the single --output; show them all.
+    const firstRun = results[0];
+    const headerRows: Array<[string, string]> = [];
+    if (firstRun && firstRun.results.length > 1) {
+      for (const r of firstRun.results) {
+        headerRows.push([`Output (${r.granularity})`, relative(process.cwd(), r.output) || r.output]);
+      }
+    } else {
+      headerRows.push(["Directory", outputRelative]);
+    }
+
+    const header = summaryBlock({ title: headerTitle, rows: headerRows });
     process.stdout.write(header);
 
-    const granularity = options.granularity;
+    // Primary granularity drives the table column layout.
+    const granularity = (firstRun?.results[0]?.granularity ?? options.granularity) as
+      | "section"
+      | "part"
+      | "chapter"
+      | "title";
     let totalSections = 0;
     let totalParts = 0;
     let totalTokens = 0;
     let totalElapsed = 0;
 
-    const tableRows = results.map(({ result, elapsed }) => {
+    const tableRows = results.map(({ results: runResults, elapsed }) => {
+      const [result] = runResults;
+      if (!result) throw new Error("convertEcfrTitle produced no result");
       totalSections += result.sectionsWritten;
       totalParts += result.partCount;
       totalTokens += result.totalTokenEstimate;

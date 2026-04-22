@@ -197,6 +197,29 @@ lexbuild convert-usc --all -g title -o ./output/title
 
 Produces 54 files for USC, 50 for eCFR. Files can be large (1-100 MB). Title-level files include extra frontmatter fields: `chapter_count`, `section_count`, and `total_token_estimate`.
 
+### All Granularities in One Pass
+
+If you need more than one granularity, `--granularities` emits them from a single parse of the source XML (~40–50% faster than running `convert-*` N times):
+
+```bash
+# USC: section + chapter + title from one parse
+lexbuild convert-usc --all \
+  --granularities section,title,chapter \
+  --output ./output \
+  --output-title ./output-title \
+  --output-chapter ./output-chapter
+
+# eCFR: all four granularities from one parse
+lexbuild convert-ecfr --all \
+  --granularities section,title,chapter,part \
+  --output ./output \
+  --output-title ./output-title \
+  --output-chapter ./output-chapter \
+  --output-part ./output-part
+```
+
+`--granularities` is mutually exclusive with `-g/--granularity`.
+
 > [!NOTE]
 > The `-o` flag appends source subdirectories automatically. `convert-usc -o /some/path` writes to `/some/path/usc/`, not `/some/path/` directly.
 

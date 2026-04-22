@@ -25,8 +25,10 @@ import {
 } from "@lexbuild/core";
 import type {
   LevelNode,
+  LevelType,
   ASTNode,
   EmitContext,
+  DocumentMeta,
   FrontmatterData,
   RenderOptions,
   NotesFilter,
@@ -34,14 +36,19 @@ import type {
   LinkResolver,
 } from "@lexbuild/core";
 
-/** Options for converting a USC XML file */
-export interface ConvertOptions {
+/** USC output granularity */
+export type UscGranularity = "section" | "chapter" | "title";
+
+/** One (granularity, output) pair for multi-granularity conversion */
+export interface UscGranularityOutput {
+  granularity: UscGranularity;
+  output: string;
+}
+
+/** Fields shared by single- and multi-granularity conversion options. */
+export interface BaseConvertOptions {
   /** Path to the input XML file */
   input: string;
-  /** Output directory root */
-  output: string;
-  /** Output granularity: "section" (one file per section), "chapter" (sections inline), or "title" (entire title) */
-  granularity: "section" | "chapter" | "title";
   /** How to render cross-references */
   linkStyle: "relative" | "canonical" | "plaintext";
   /** Include source credits in output */
@@ -57,6 +64,35 @@ export interface ConvertOptions {
   /** Dry-run mode: parse and report structure without writing files */
   dryRun: boolean;
 }
+
+/** Single-granularity mode: one output directory, one granularity. */
+export interface SingleConvertOptions extends BaseConvertOptions {
+  /** Output directory root. Required in single-granularity mode. */
+  output: string;
+  /** Output granularity. Defaults to `"section"` when omitted. */
+  granularity?: UscGranularity | undefined;
+  /** @internal — must not be set in single-granularity mode */
+  granularities?: undefined;
+}
+
+/** Multi-granularity mode: a set of `{granularity, output}` pairs emitted from one parse. */
+export interface MultiConvertOptions extends BaseConvertOptions {
+  /** Multiple `{granularity, output}` pairs to produce in a single parse. */
+  granularities: readonly UscGranularityOutput[];
+  /** @internal — must not be set in multi-granularity mode */
+  output?: undefined;
+  /** @internal — must not be set in multi-granularity mode */
+  granularity?: undefined;
+}
+
+/**
+ * Options for converting a USC XML file.
+ *
+ * Discriminated union: pass either `output` (+ optional `granularity`) for
+ * single-granularity output, or `granularities` for multi-granularity output
+ * from a single parse. The two modes are mutually exclusive at the type level.
+ */
+export type ConvertOptions = SingleConvertOptions | MultiConvertOptions;
 
 /** Result of a conversion */
 export interface ConvertResult {
@@ -76,12 +112,15 @@ export interface ConvertResult {
   totalTokenEstimate: number;
   /** Peak resident set size in bytes during conversion */
   peakMemoryBytes: number;
+  /** Granularity this result corresponds to */
+  granularity: UscGranularity;
+  /** Output directory this result was written to */
+  output: string;
 }
 
-/** Default convert options */
-const DEFAULTS: Omit<ConvertOptions, "input" | "output"> = {
-  granularity: "section",
-  linkStyle: "plaintext",
+/** Defaults for fields not supplied by callers */
+const DEFAULTS = {
+  linkStyle: "plaintext" as const,
   includeSourceCredits: true,
   includeNotes: true,
   includeEditorialNotes: false,
@@ -89,6 +128,53 @@ const DEFAULTS: Omit<ConvertOptions, "input" | "output"> = {
   includeAmendments: false,
   dryRun: false,
 };
+
+/** Map a granularity to the builder's emit level. Direct 1:1 for USC. */
+function emitLevelFor(granularity: UscGranularity): LevelType {
+  return granularity;
+}
+
+/**
+ * Resolve the normalized granularity list from options.
+ *
+ * The type-level mutex already prevents illegal shapes at compile time; these
+ * runtime checks defend against callers who bypass TypeScript (e.g. dynamic
+ * JS, JSON-decoded options).
+ */
+function resolveGranularities(options: ConvertOptions): UscGranularityOutput[] {
+  const hasMulti = options.granularities !== undefined;
+  const hasSingle = options.granularity !== undefined || options.output !== undefined;
+
+  if (hasMulti && hasSingle) {
+    throw new Error(
+      "convertTitle: `granularities` is mutually exclusive with `granularity`/`output`",
+    );
+  }
+
+  if (hasMulti) {
+    const list = options.granularities ?? [];
+    if (list.length === 0) {
+      throw new Error("convertTitle: `granularities` must contain at least one entry");
+    }
+    const seen = new Set<UscGranularity>();
+    for (const entry of list) {
+      if (seen.has(entry.granularity)) {
+        throw new Error(
+          `convertTitle: duplicate granularity "${entry.granularity}" in \`granularities\``,
+        );
+      }
+      seen.add(entry.granularity);
+    }
+    return [...list];
+  }
+
+  const granularity = options.granularity ?? "section";
+  const output = options.output;
+  if (output === undefined) {
+    throw new Error("convertTitle: `output` is required in single-granularity mode");
+  }
+  return [{ granularity, output }];
+}
 
 /** Metadata collected for a written section (used to build _meta.json) */
 interface SectionMeta {
@@ -116,53 +202,81 @@ interface CollectedSection {
 }
 
 /**
- * Convert a single USC XML file to section-level Markdown files.
+ * Convert a single USC XML file.
+ *
+ * - Single-granularity mode (`output` + optional `granularity`) returns one `ConvertResult`.
+ * - Multi-granularity mode (`granularities`) parses once and returns one result per entry.
  */
-export async function convertTitle(options: ConvertOptions): Promise<ConvertResult> {
-  const opts = { ...DEFAULTS, ...options };
-  const files: string[] = [];
+export async function convertTitle(options: MultiConvertOptions): Promise<ConvertResult[]>;
+export async function convertTitle(options: SingleConvertOptions): Promise<ConvertResult>;
+export async function convertTitle(
+  options: ConvertOptions,
+): Promise<ConvertResult | ConvertResult[]> {
+  const opts: ConvertOptions = { ...DEFAULTS, ...options };
+  const granularityList = resolveGranularities(opts);
+
+  // Emit set: section→section, chapter→chapter, title→title (direct mapping).
+  const emitSet = new Set<LevelType>();
+  for (const g of granularityList) emitSet.add(emitLevelFor(g.granularity));
+
+  // --- Parse phase (single pass) ---
   let peakMemory = process.memoryUsage.rss();
-  let titleLevelTokenEstimate: number | undefined;
+  const collectedByLevel = new Map<LevelType, CollectedSection[]>();
+  for (const lt of emitSet) collectedByLevel.set(lt, []);
 
-  // Collect emitted nodes during parsing (synchronous), write after parsing completes
-  const collected: CollectedSection[] = [];
-
-  // Set up the AST builder — emit level depends on granularity
-  const emitAt =
-    opts.granularity === "title"
-      ? ("title" as const)
-      : opts.granularity === "chapter"
-        ? ("chapter" as const)
-        : ("section" as const);
   const builder = new ASTBuilder({
-    emitAt,
+    emitAt: emitSet,
     onEmit: (node, context) => {
-      collected.push({ node, context });
+      const bucket = collectedByLevel.get(node.levelType);
+      if (bucket) bucket.push({ node, context });
     },
   });
 
-  // Set up the XML parser
   const parser = new XMLParser();
   parser.on("openElement", (name, attrs) => builder.onOpenElement(name, attrs));
   parser.on("closeElement", (name) => builder.onCloseElement(name));
   parser.on("text", (text) => builder.onText(text));
 
-  // Parse the XML file
   const stream = createReadStream(opts.input, "utf-8");
   await parser.parseStream(stream);
   peakMemory = Math.max(peakMemory, process.memoryUsage.rss());
 
+  const docMeta = builder.getDocumentMeta();
+
+  // --- Write phase per requested granularity ---
+  const results: ConvertResult[] = [];
+  for (const { granularity, output } of granularityList) {
+    const bucket = collectedByLevel.get(emitLevelFor(granularity)) ?? [];
+    const result = await writeGranularity(opts, granularity, output, bucket, docMeta);
+    if (result.peakMemoryBytes > peakMemory) peakMemory = result.peakMemoryBytes;
+    result.peakMemoryBytes = peakMemory;
+    results.push(result);
+  }
+
+  if (options.granularities !== undefined) return results;
+  const [first] = results;
+  if (!first) throw new Error("convertTitle: no conversion result produced");
+  return first;
+}
+
+/** Dispatch to the granularity-specific write routine. */
+async function writeGranularity(
+  opts: ConvertOptions,
+  granularity: UscGranularity,
+  output: string,
+  collected: CollectedSection[],
+  docMeta: DocumentMeta,
+): Promise<ConvertResult> {
+  const files: string[] = [];
   const sectionMetas: SectionMeta[] = [];
-  const meta = builder.getDocumentMeta();
+  let peakMemory = process.memoryUsage.rss();
+  let titleLevelTokenEstimate: number | undefined;
 
   if (opts.dryRun) {
-    // Dry-run: collect metadata without writing files
     for (const { node, context } of collected) {
-      if (opts.granularity === "title") {
-        // Walk title tree → chapters → sections
+      if (granularity === "title") {
         collectSectionMetasFromTree(node, context, sectionMetas);
-      } else if (opts.granularity === "chapter") {
-        // Recursively extract section metadata from chapter children (including nested big levels)
+      } else if (granularity === "chapter") {
         collectChapterSectionsDryRun(node, node, context, sectionMetas);
       } else {
         if (node.numValue) {
@@ -170,23 +284,20 @@ export async function convertTitle(options: ConvertOptions): Promise<ConvertResu
         }
       }
     }
-  } else if (opts.granularity === "title") {
-    // Title-level: each emitted node is an entire title
+  } else if (granularity === "title") {
     let titleTokenEstimate = 0;
     for (const { node, context } of collected) {
-      const result = await writeWholeTitle(node, context, opts);
+      const result = await writeWholeTitle(node, context, opts, output);
       files.push(result.filePath);
       titleTokenEstimate += result.totalTokenEstimate;
       for (const m of result.sectionMetas) {
         sectionMetas.push(m);
       }
     }
-    // Store the accurate title-level estimate for use in ConvertResult
     titleLevelTokenEstimate = titleTokenEstimate;
-  } else if (opts.granularity === "chapter") {
-    // Chapter-level: each emitted node is a chapter containing sections
+  } else if (granularity === "chapter") {
     for (const { node, context } of collected) {
-      const result = await writeChapter(node, context, opts);
+      const result = await writeChapter(node, context, opts, output);
       if (result) {
         files.push(result.filePath);
         for (const m of result.sectionMetas) {
@@ -195,8 +306,7 @@ export async function convertTitle(options: ConvertOptions): Promise<ConvertResu
       }
     }
   } else {
-    // Section-level with relative links: need two-pass for link resolver
-    // Track duplicate section numbers per chapter to disambiguate filenames
+    // Section granularity: two-pass for link resolver + duplicate disambiguation.
     const sectionCounts = new Map<string, number>();
     const suffixes: (string | undefined)[] = [];
     for (const { node, context } of collected) {
@@ -216,11 +326,9 @@ export async function convertTitle(options: ConvertOptions): Promise<ConvertResu
     for (const [i, { node, context }] of collected.entries()) {
       const sectionNum = node.numValue;
       if (sectionNum && node.identifier) {
-        const filePath = buildOutputPath(context, sectionNum, opts.output, suffixes[i]);
-        // For duplicates, register with the XML element @id to disambiguate
+        const filePath = buildOutputPath(context, sectionNum, output, suffixes[i]);
         const regId = suffixes[i] ? `${node.identifier}#${suffixes[i]}` : node.identifier;
         linkResolver.register(regId, filePath);
-        // Always register the first occurrence under the canonical identifier
         if (!suffixes[i]) {
           linkResolver.register(node.identifier, filePath);
         }
@@ -228,7 +336,7 @@ export async function convertTitle(options: ConvertOptions): Promise<ConvertResu
     }
 
     for (const [i, { node, context }] of collected.entries()) {
-      const result = await writeSection(node, context, opts, linkResolver, suffixes[i]);
+      const result = await writeSection(node, context, opts, output, linkResolver, suffixes[i]);
       if (result) {
         files.push(result.filePath);
         sectionMetas.push(result.meta);
@@ -236,41 +344,37 @@ export async function convertTitle(options: ConvertOptions): Promise<ConvertResu
     }
   }
 
-  // Extract the title heading from the first collected node
   const firstCollected = collected[0];
   const titleHeading = firstCollected
-    ? opts.granularity === "title"
+    ? granularity === "title"
       ? firstCollected.node.heading?.trim()
       : findAncestor(firstCollected.context.ancestors, "title")?.heading?.trim()
     : undefined;
 
-  // Generate _meta.json and README.md files (skip in dry-run)
   if (!opts.dryRun) {
-    await writeMetaFiles(sectionMetas, meta, opts, titleHeading);
+    await writeMetaFiles(sectionMetas, docMeta, opts, granularity, output, titleHeading);
   }
 
-  // Final memory sample
   peakMemory = Math.max(peakMemory, process.memoryUsage.rss());
 
-  // Compute stats
   const chapterIds = new Set(sectionMetas.map((s) => s.chapterIdentifier).filter(Boolean));
-  // For title granularity, use the accurate estimate from the full rendered body
-  // (includes structural headings); for other modes, sum per-section content lengths
   const totalTokens =
     titleLevelTokenEstimate ?? sectionMetas.reduce((sum, s) => sum + Math.ceil(s.contentLength / 4), 0);
 
   return {
     sectionsWritten:
-      opts.dryRun || opts.granularity === "title" || opts.granularity === "chapter"
+      opts.dryRun || granularity === "title" || granularity === "chapter"
         ? sectionMetas.length
         : files.length,
     files,
-    titleNumber: meta.docNumber ?? "unknown",
-    titleName: titleHeading ?? meta.dcTitle ?? "Unknown Title",
+    titleNumber: docMeta.docNumber ?? "unknown",
+    titleName: titleHeading ?? docMeta.dcTitle ?? "Unknown Title",
     dryRun: opts.dryRun,
     chapterCount: chapterIds.size,
     totalTokenEstimate: totalTokens,
     peakMemoryBytes: peakMemory,
+    granularity,
+    output,
   };
 }
 
@@ -288,6 +392,7 @@ async function writeSection(
   node: LevelNode,
   context: EmitContext,
   options: ConvertOptions,
+  output: string,
   linkResolver?: LinkResolver | undefined,
   /** Disambiguation suffix for duplicate section numbers (e.g., "-2") */
   dupSuffix?: string | undefined,
@@ -296,7 +401,7 @@ async function writeSection(
   if (!sectionNum) return null;
 
   // Build the output file path (with optional duplicate suffix)
-  const filePath = buildOutputPath(context, sectionNum, options.output, dupSuffix);
+  const filePath = buildOutputPath(context, sectionNum, output, dupSuffix);
 
   // Build frontmatter data
   const frontmatter = buildFrontmatter(node, context);
@@ -353,23 +458,18 @@ async function writeSection(
  */
 async function writeMetaFiles(
   sectionMetas: SectionMeta[],
-  docMeta: {
-    dcTitle?: string | undefined;
-    docNumber?: string | undefined;
-    positivelaw?: boolean | undefined;
-    docPublicationName?: string | undefined;
-    created?: string | undefined;
-    identifier?: string | undefined;
-  },
+  docMeta: DocumentMeta,
   options: ConvertOptions,
+  granularity: UscGranularity,
+  output: string,
   titleHeading?: string | undefined,
 ): Promise<void> {
   if (sectionMetas.length === 0) return;
-  if (options.granularity === "title") return;
+  if (granularity === "title") return;
 
   const docNum = docMeta.docNumber ?? "0";
   const titleDirName = buildTitleDirFromDocNumber(docNum);
-  const titleDir = join(options.output, "usc", titleDirName);
+  const titleDir = join(output, "usc", titleDirName);
   const currency = parseCurrency(docMeta.docPublicationName ?? "");
 
   // Group sections by chapter
@@ -458,7 +558,7 @@ async function writeMetaFiles(
     currency,
     release_point: releasePoint,
     source_xml: basename(options.input),
-    granularity: options.granularity,
+    granularity,
     stats: {
       chapter_count: chapterEntries.length,
       section_count: sectionMetas.length,
@@ -553,6 +653,7 @@ async function writeChapter(
   chapterNode: LevelNode,
   context: EmitContext,
   options: ConvertOptions,
+  output: string,
 ): Promise<WriteChapterResult | null> {
   const chapterNum = chapterNode.numValue;
   if (!chapterNum) return null;
@@ -561,7 +662,7 @@ async function writeChapter(
   const titleDir = `title-${padTwo(titleNum)}`;
   const chapterDir = `chapter-${padTwo(chapterNum)}`;
   const chapterFile = `chapter-${padTwo(chapterNum)}.md`;
-  const filePath = join(options.output, "usc", titleDir, chapterDir, chapterFile);
+  const filePath = join(output, "usc", titleDir, chapterDir, chapterFile);
 
   // Build chapter-level frontmatter
   const titleAncestor = findAncestor(context.ancestors, "title");
@@ -720,6 +821,7 @@ async function writeWholeTitle(
   titleNode: LevelNode,
   context: EmitContext,
   options: ConvertOptions,
+  output: string,
 ): Promise<WriteTitleResult> {
   const meta = context.documentMeta;
   const docNum = meta.docNumber ?? titleNode.numValue ?? "0";
@@ -769,7 +871,7 @@ async function writeWholeTitle(
 
   // Output path: output/usc/title-NN.md (or title-NN-appendix.md for appendix titles)
   const titleFile = `${buildTitleDirFromDocNumber(docNum)}.md`;
-  const filePath = join(options.output, "usc", titleFile);
+  const filePath = join(output, "usc", titleFile);
 
   await mkdir(dirname(filePath), { recursive: true });
   await writeFileIfChanged(filePath, markdown, "utf-8");

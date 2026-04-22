@@ -4,12 +4,12 @@ import { mkdtemp, rm, readFile, readdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { convertTitle } from "./converter.js";
-import type { ConvertOptions } from "./converter.js";
+import type { SingleConvertOptions } from "./converter.js";
 
 const FIXTURES_DIR = resolve(import.meta.dirname, "../../../fixtures/fragments");
 
-/** Default options for tests */
-const DEFAULTS: Omit<ConvertOptions, "input" | "output"> = {
+/** Default options for tests (single-granularity mode) */
+const DEFAULTS: Omit<SingleConvertOptions, "input" | "output"> = {
   granularity: "section",
   linkStyle: "plaintext",
   includeSourceCredits: true,
@@ -449,6 +449,139 @@ describe("convertTitle", () => {
       expect(byNumber["1002"]).toBe("transferred");
       expect(byNumber["1003"]).toBe("reserved");
       expect(byNumber["1004"]).toBe("current");
+    });
+  });
+
+  describe("multi-granularity parity", () => {
+    /** Recursively list all files under a directory (relative paths, sorted). */
+    async function listFiles(dir: string): Promise<string[]> {
+      const { readdir } = await import("node:fs/promises");
+      const out: string[] = [];
+      const walk = async (current: string, rel: string): Promise<void> => {
+        let entries;
+        try {
+          entries = await readdir(current, { withFileTypes: true });
+        } catch {
+          return;
+        }
+        for (const entry of entries) {
+          const childAbs = join(current, entry.name);
+          const childRel = rel ? `${rel}/${entry.name}` : entry.name;
+          if (entry.isDirectory()) {
+            await walk(childAbs, childRel);
+          } else if (entry.isFile()) {
+            out.push(childRel);
+          }
+        }
+      };
+      await walk(dir, "");
+      return out.sort();
+    }
+
+    it("multi-granularity run produces identical output to N single-granularity runs", async () => {
+      const input = resolve(FIXTURES_DIR, "section-with-subsections.xml");
+      // Omit `granularity`/`output` so we can switch modes per call.
+      const baseOpts = {
+        linkStyle: "plaintext" as const,
+        includeSourceCredits: true,
+        includeNotes: true,
+        includeEditorialNotes: false,
+        includeStatutoryNotes: false,
+        includeAmendments: false,
+        dryRun: false,
+      };
+
+      // Reference: three separate single-granularity conversions.
+      const singleSection = await mkdtemp(join(tmpdir(), "usc-single-section-"));
+      const singleChapter = await mkdtemp(join(tmpdir(), "usc-single-chapter-"));
+      const singleTitle = await mkdtemp(join(tmpdir(), "usc-single-title-"));
+
+      // Multi-granularity: one pass emitting all three.
+      const multiSection = await mkdtemp(join(tmpdir(), "usc-multi-section-"));
+      const multiChapter = await mkdtemp(join(tmpdir(), "usc-multi-chapter-"));
+      const multiTitle = await mkdtemp(join(tmpdir(), "usc-multi-title-"));
+
+      try {
+        for (const [g, out] of [
+          ["section", singleSection],
+          ["chapter", singleChapter],
+          ["title", singleTitle],
+        ] as const) {
+          await convertTitle({
+            ...baseOpts,
+            input,
+            output: out,
+            granularity: g,
+          });
+        }
+
+        const results = await convertTitle({
+          ...baseOpts,
+          input,
+          granularities: [
+            { granularity: "section", output: multiSection },
+            { granularity: "chapter", output: multiChapter },
+            { granularity: "title", output: multiTitle },
+          ],
+        });
+        expect(results).toHaveLength(3);
+
+        for (const [g, singleDir, multiDir] of [
+          ["section", singleSection, multiSection],
+          ["chapter", singleChapter, multiChapter],
+          ["title", singleTitle, multiTitle],
+        ] as const) {
+          const singleFiles = await listFiles(singleDir);
+          const multiFiles = await listFiles(multiDir);
+          expect(multiFiles, `${g}: file list mismatch`).toEqual(singleFiles);
+
+          for (const relPath of singleFiles) {
+            // _meta.json and the title-level README include `generated_at`, which is a
+            // wall-clock timestamp; skip byte-compare on those files but still assert
+            // they exist in both outputs.
+            if (relPath.endsWith("_meta.json") || relPath.endsWith("README.md")) continue;
+            const singleBuf = await readFile(join(singleDir, relPath));
+            const multiBuf = await readFile(join(multiDir, relPath));
+            expect(multiBuf.equals(singleBuf), `mismatch at ${g}/${relPath}`).toBe(true);
+          }
+        }
+      } finally {
+        for (const d of [singleSection, singleChapter, singleTitle, multiSection, multiChapter, multiTitle]) {
+          await rm(d, { recursive: true, force: true });
+        }
+      }
+    });
+
+    it("rejects granularity+output combined with granularities", async () => {
+      // The discriminated union already prevents this shape at compile time;
+      // cast to `any` to verify the runtime guard still fires for untyped
+      // callers (e.g. JSON-decoded options).
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- testing runtime validation for illegal shape
+      const illegal: any = {
+        ...DEFAULTS,
+        input: resolve(FIXTURES_DIR, "simple-section.xml"),
+        output: outputDir,
+        granularities: [{ granularity: "title", output: outputDir }],
+      };
+      await expect(convertTitle(illegal)).rejects.toThrow(/mutually exclusive/);
+    });
+
+    it("requires at least one entry in granularities", async () => {
+      // Don't spread DEFAULTS (which sets granularity) — it would trigger the
+      // mutually-exclusive check first.
+      await expect(
+        convertTitle({
+          input: resolve(FIXTURES_DIR, "simple-section.xml"),
+          linkStyle: "plaintext",
+          includeSourceCredits: true,
+          includeNotes: true,
+          includeEditorialNotes: false,
+          includeStatutoryNotes: false,
+          includeAmendments: false,
+          dryRun: false,
+          granularities: [],
+        }),
+      ).rejects.toThrow(/at least one entry/);
     });
   });
 });

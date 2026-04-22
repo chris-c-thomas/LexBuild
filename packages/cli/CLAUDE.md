@@ -92,3 +92,4 @@ All errors call `process.exit(1)`:
 - **Dynamic table columns**: Summary tables adapt columns based on granularity (section shows chapters + sections, title shows only tokens)
 - **Relative path reporting**: File paths in output use `relative(cwd, absolutePath)` for readability
 - **Performance timing**: Uses `performance.now()` for high-resolution elapsed time
+- **Detecting user-explicit flags** (for mutex validation when a flag has a default): `this.getOptionValueSource("name") === "cli"` inside a Commander `.action(function action(this: Command, ...))`. Used by `convert-usc`/`convert-ecfr` to reject `--granularity` + `--granularities` together.

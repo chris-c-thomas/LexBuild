@@ -29,8 +29,14 @@ import type {
 
 /** Options for configuring the AST builder */
 export interface ASTBuilderOptions {
-  /** Emit completed nodes at this level instead of accumulating */
-  emitAt: LevelType;
+  /**
+   * Emit completed nodes at these levels instead of accumulating. Accepts a
+   * single `LevelType` or a `ReadonlySet<LevelType>`. When multiple levels are
+   * specified, deeper levels fire first (e.g. `section` before its ancestor
+   * `title`), and emitted nodes remain attached to their parents so a
+   * higher-level emission sees the complete subtree.
+   */
+  emitAt: LevelType | ReadonlySet<LevelType>;
   /** Callback when a completed node is ready */
   onEmit: (node: LevelNode, context: EmitContext) => void | Promise<void>;
 }
@@ -102,6 +108,8 @@ export class ASTBuilder {
   private readonly stack: StackFrame[] = [];
   private readonly ancestors: AncestorInfo[] = [];
   private readonly documentMeta: DocumentMeta = {};
+  /** Pre-computed: the deepest (highest-index) emit level. Used to decide whether a level tracks itself in the ancestors chain. */
+  private readonly deepestEmitIndex: number;
 
   /** Whether we are currently inside the <meta> block */
   private inMeta = false;
@@ -120,6 +128,45 @@ export class ASTBuilder {
 
   constructor(options: ASTBuilderOptions) {
     this.options = options;
+    const indexes = this.resolveEmitIndexes(options.emitAt);
+    this.deepestEmitIndex = Math.max(...indexes);
+  }
+
+  private resolveEmitIndexes(emitAt: LevelType | ReadonlySet<LevelType>): number[] {
+    const levels = typeof emitAt === "string" ? [emitAt] : [...emitAt];
+    if (levels.length === 0) {
+      throw new Error("ASTBuilder: emitAt must contain at least one LevelType");
+    }
+    return levels.map((lt) => {
+      const idx = LEVEL_TYPES_ARRAY.indexOf(lt);
+      if (idx < 0) throw new Error(`ASTBuilder: unknown LevelType "${lt}" in emitAt`);
+      return idx;
+    });
+  }
+
+  private shouldEmit(levelType: LevelType): boolean {
+    const at = this.options.emitAt;
+    return typeof at === "string" ? levelType === at : at.has(levelType);
+  }
+
+  /**
+   * True iff some level frame currently on the stack is itself an emit
+   * target. Used by `closeLevel` to decide whether the closing node must be
+   * attached to its parent so a higher emission sees the full subtree.
+   *
+   * This is the correct check for USLM's permissive level nesting (e.g. an
+   * `<appendix>` inside a `<part>`) — reasoning via `LEVEL_TYPES` index
+   * ordering would drop the appendix because its index is shallower than
+   * the containing part's. Live stack membership handles anomalous nesting
+   * correctly.
+   */
+  private hasEmittingAncestorOnStack(): boolean {
+    for (const f of this.stack) {
+      if (f.kind === "level" && f.node?.type === "level") {
+        if (this.shouldEmit((f.node as LevelNode).levelType)) return true;
+      }
+    }
+    return false;
   }
 
   /** Returns the document metadata collected so far */
@@ -572,11 +619,11 @@ export class ASTBuilder {
       children: [],
     };
 
-    // If this is a big level (above the emit level) and we're NOT inside quotedContent,
-    // push an ancestor placeholder. The heading and numValue will be filled in later.
-    const emitIndex = LEVEL_TYPES_ARRAY.indexOf(this.options.emitAt);
+    // If this level sits above the deepest emit level (i.e. could be an
+    // ancestor of something we emit), track it in the ancestors chain. Skip
+    // while inside quotedContent, since those nested levels are not emitted.
     const thisIndex = LEVEL_TYPES_ARRAY.indexOf(levelType);
-    if (thisIndex >= 0 && thisIndex < emitIndex && this.quotedContentDepth === 0) {
+    if (thisIndex >= 0 && thisIndex < this.deepestEmitIndex && this.quotedContentDepth === 0) {
       this.ancestors.push({
         levelType,
         identifier: attrs["identifier"],
@@ -598,29 +645,33 @@ export class ASTBuilder {
       return;
     }
 
-    // Should we emit this node?
-    if (levelType === this.options.emitAt) {
+    const thisIndex = LEVEL_TYPES_ARRAY.indexOf(levelType);
+
+    // Pop the ancestor entry first so that a level which is both an emit
+    // target and above the deepest emit (e.g. title in emit={section,title})
+    // doesn't list itself among its own ancestors when emitting.
+    if (thisIndex >= 0 && thisIndex < this.deepestEmitIndex) {
+      this.ancestors.pop();
+    }
+
+    if (this.shouldEmit(levelType)) {
       const context: EmitContext = {
         ancestors: [...this.ancestors],
         documentMeta: { ...this.documentMeta },
       };
       this.options.onEmit(node, context);
-      return;
     }
 
-    // Is this an ancestor level above the emit level?
-    // If so, track it in the ancestors array but don't add to parent
-    const emitIndex = LEVEL_TYPES_ARRAY.indexOf(this.options.emitAt);
-    const thisIndex = LEVEL_TYPES_ARRAY.indexOf(levelType);
-
-    if (thisIndex < emitIndex) {
-      // Closing a big level — remove from ancestors
-      this.ancestors.pop();
-      return;
+    // Attach to parent iff some enclosing frame is itself an emit target, so
+    // descendants bubble up into that higher emission. When no emitting
+    // ancestor remains on the stack, the node has nothing further to feed
+    // into and is dropped, matching prior memory behavior for single-level
+    // emit. Using live stack membership (not hierarchy indexes) keeps this
+    // correct for USLM's permissive level nesting (e.g. an appendix inside
+    // a part).
+    if (this.hasEmittingAncestorOnStack()) {
+      this.addToParent(node);
     }
-
-    // Small level below emit level — add to parent as a child
-    this.addToParent(node);
   }
 
   // ---------------------------------------------------------------------------

@@ -22,15 +22,35 @@ The web application for [LexBuild](https://github.com/chris-c-thomas/LexBuild) �
 
 - **Node.js** >= 22
 - **pnpm** >= 10
-- **Converted content** — run the CLI to generate Markdown files before starting the app:
+- **Converted content** — run the CLI to generate Markdown files before starting the app. The app browses every granularity (section, chapter, title, and part for eCFR), so emit them all in a single parse using `--granularities`:
 
 ```bash
 # From the monorepo root
 pnpm turbo build
-node packages/cli/dist/index.js download-usc --all && node packages/cli/dist/index.js convert-usc --all
-node packages/cli/dist/index.js download-ecfr --all && node packages/cli/dist/index.js convert-ecfr --all
-node packages/cli/dist/index.js download-fr --recent 30 && node packages/cli/dist/index.js convert-fr --all
+
+# USC: download once, then emit section + chapter + title from one parse
+node packages/cli/dist/index.js download-usc --all
+node packages/cli/dist/index.js convert-usc --all \
+  --granularities section,title,chapter \
+  --output ./output \
+  --output-title ./output-title \
+  --output-chapter ./output-chapter
+
+# eCFR: download once, then emit all four granularities from one parse
+node packages/cli/dist/index.js download-ecfr --all
+node packages/cli/dist/index.js convert-ecfr --all \
+  --granularities section,title,chapter,part \
+  --output ./output \
+  --output-title ./output-title \
+  --output-chapter ./output-chapter \
+  --output-part ./output-part
+
+# Federal Register (no granularities — documents are atomic)
+node packages/cli/dist/index.js download-fr --recent 30
+node packages/cli/dist/index.js convert-fr --all
 ```
+
+For routine updates, use `./scripts/update.sh` — the wrapper scripts already use `--granularities` internally.
 
 ## Local Development
 

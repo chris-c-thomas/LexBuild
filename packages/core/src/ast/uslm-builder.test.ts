@@ -183,6 +183,91 @@ describe("ASTBuilder", () => {
     });
   });
 
+  describe("multi-level emit", () => {
+    /** Recursively find descendants of a given levelType in a subtree. */
+    const findDescendantsOfType = (root: LevelNode, levelType: string): LevelNode[] => {
+      const out: LevelNode[] = [];
+      const walk = (n: LevelNode): void => {
+        for (const child of n.children) {
+          if (child.type === "level") {
+            if (child.levelType === levelType) out.push(child);
+            walk(child);
+          }
+        }
+      };
+      walk(root);
+      return out;
+    };
+
+    it("emits both section and title when emitAt is a Set containing both", async () => {
+      const { emitted } = await parseFileAndCollect(
+        "section-with-subsections.xml",
+        new Set<LevelNode["levelType"]>(["section", "title"]),
+      );
+
+      const sectionEmits = emitted.filter((e) => e.node.levelType === "section");
+      const titleEmits = emitted.filter((e) => e.node.levelType === "title");
+
+      expect(sectionEmits.length).toBe(1);
+      expect(titleEmits.length).toBe(1);
+
+      // Sections fire before their ancestor titles.
+      const sectionIdx = emitted.findIndex((e) => e.node.levelType === "section");
+      const titleIdx = emitted.findIndex((e) => e.node.levelType === "title");
+      expect(sectionIdx).toBeLessThan(titleIdx);
+    });
+
+    it("title emission contains the same section node by reference", async () => {
+      const { emitted } = await parseFileAndCollect(
+        "section-with-subsections.xml",
+        new Set<LevelNode["levelType"]>(["section", "title"]),
+      );
+
+      const sectionEmit = emitted.find((e) => e.node.levelType === "section")!;
+      const titleEmit = emitted.find((e) => e.node.levelType === "title")!;
+
+      const sectionsUnderTitle = findDescendantsOfType(titleEmit.node, "section");
+      expect(sectionsUnderTitle).toHaveLength(1);
+      // Reference identity: the emitted section node IS the node attached to
+      // the title's subtree. Mutating one would affect the other.
+      expect(sectionsUnderTitle[0]).toBe(sectionEmit.node);
+    });
+
+    it("section emit context has correct ancestors in multi-emit mode", async () => {
+      const { emitted } = await parseFileAndCollect(
+        "section-with-subsections.xml",
+        new Set<LevelNode["levelType"]>(["section", "title"]),
+      );
+
+      const sectionEmit = emitted.find((e) => e.node.levelType === "section")!;
+      const ancestorTypes = sectionEmit.context.ancestors.map((a) => a.levelType);
+      // Section should still list its containing title and chapter as ancestors,
+      // and must NOT list itself among them.
+      expect(ancestorTypes).toContain("title");
+      expect(ancestorTypes).toContain("chapter");
+      expect(ancestorTypes).not.toContain("section");
+    });
+
+    it("title emit context has empty ancestors when title is outermost", async () => {
+      const { emitted } = await parseFileAndCollect(
+        "section-with-subsections.xml",
+        new Set<LevelNode["levelType"]>(["section", "title"]),
+      );
+
+      const titleEmit = emitted.find((e) => e.node.levelType === "title")!;
+      // Title is the root here — no ancestor, and certainly not itself.
+      expect(titleEmit.context.ancestors.map((a) => a.levelType)).not.toContain("title");
+    });
+
+    it("single-emit section behavior is preserved", async () => {
+      const { emitted } = await parseFileAndCollect("section-with-subsections.xml", "section");
+      expect(emitted).toHaveLength(1);
+      expect(emitted[0]!.node.levelType).toBe("section");
+      // Ancestors chain is populated as before.
+      expect(emitted[0]!.context.ancestors.map((a) => a.levelType)).toEqual(["title", "chapter"]);
+    });
+  });
+
   describe("inline XML elements", () => {
     it("handles inline string parsing", () => {
       const xml = `<uscDoc xmlns="http://xml.house.gov/schemas/uslm/1.0" identifier="/us/usc/t1">

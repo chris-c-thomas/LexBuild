@@ -134,7 +134,7 @@ lexbuild convert-usc [input] [options]
 | `--all` | `false` | Convert all downloaded titles found in `--input-dir` |
 | `-i, --input-dir <dir>` | `./downloads/usc/xml` | Directory containing USC XML files |
 | `-g, --granularity <level>` | `section` | Output granularity: `section`, `chapter`, or `title` |
-| `--granularities <list>` | -- | Comma-separated granularities for multi-pass output (see below). Mutually exclusive with `-g`. |
+| `--granularities <list>` | -- | Comma-separated granularities for single-pass multi-granularity output (see below). Mutually exclusive with `-g`. |
 | `--output-section <dir>` | -- | Output directory for section granularity when using `--granularities` (defaults to `--output`) |
 | `--output-chapter <dir>` | -- | Output directory for chapter granularity when using `--granularities` |
 | `--output-title <dir>` | -- | Output directory for title granularity when using `--granularities` |
@@ -303,7 +303,7 @@ lexbuild convert-ecfr [input] [options]
 | `--all` | `false` | Convert all downloaded eCFR titles found in `--input-dir` |
 | `-i, --input-dir <dir>` | `./downloads/ecfr/xml` | Directory containing eCFR XML files |
 | `-g, --granularity <level>` | `section` | Output granularity: `section`, `part`, `chapter`, or `title` |
-| `--granularities <list>` | -- | Comma-separated granularities for multi-pass output (see below). Mutually exclusive with `-g`. |
+| `--granularities <list>` | -- | Comma-separated granularities for single-pass multi-granularity output (see below). Mutually exclusive with `-g`. |
 | `--output-section <dir>` | -- | Output directory for section granularity when using `--granularities` (defaults to `--output`) |
 | `--output-part <dir>` | -- | Output directory for part granularity when using `--granularities` |
 | `--output-chapter <dir>` | -- | Output directory for chapter granularity when using `--granularities` |

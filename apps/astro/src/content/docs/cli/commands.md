@@ -52,7 +52,7 @@ These flags are available on all convert commands:
 |---|---|---|
 | `-o, --output <dir>` | `./output` | Output directory for converted Markdown |
 | `-g, --granularity <level>` | `section` | Output granularity (varies by source) |
-| `--granularities <list>` | -- | Comma-separated granularities for multi-pass output. Mutually exclusive with `-g`. |
+| `--granularities <list>` | -- | Comma-separated granularities for single-pass multi-granularity output. Mutually exclusive with `-g`. |
 | `--output-chapter <dir>` | -- | Output directory for chapter granularity (when using `--granularities`) |
 | `--output-title <dir>` | -- | Output directory for title granularity (when using `--granularities`) |
 | `--output-part <dir>` | -- | Output directory for part granularity, eCFR only (when using `--granularities`) |

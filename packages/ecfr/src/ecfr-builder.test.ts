@@ -26,7 +26,12 @@ function collectLevelsOfType(root: LevelNode, levelType: string): LevelNode[] {
 /** Helper: parse an XML fixture and collect emitted nodes */
 async function parseFixture(
   fixtureName: string,
-  emitAt: "section" | "part" | "title" = "section",
+  emitAt:
+    | "section"
+    | "part"
+    | "chapter"
+    | "title"
+    | ReadonlySet<"section" | "part" | "chapter" | "title"> = "section",
 ): Promise<Array<{ node: LevelNode; context: EmitContext }>> {
   const collected: Array<{ node: LevelNode; context: EmitContext }> = [];
 
@@ -181,6 +186,54 @@ describe("EcfrASTBuilder", () => {
     // The fixture has an FP element: "in connection with the purchase or sale..."
     const contentNodes = node.children.filter((c) => c.type === "content");
     expect(contentNodes.length).toBeGreaterThan(3); // (a), (b), (c) + FP
+  });
+
+  it("emits section, part, and title in a single pass when emitAt is a Set", async () => {
+    const collected = await parseFixture(
+      "title-structure.xml",
+      new Set<"section" | "part" | "title">(["section", "part", "title"]),
+    );
+
+    const sectionEmits = collected.filter((c) => c.node.levelType === "section");
+    const partEmits = collected.filter((c) => c.node.levelType === "part");
+    const titleEmits = collected.filter((c) => c.node.levelType === "title");
+
+    expect(sectionEmits.length).toBe(3);
+    expect(partEmits.length).toBe(2);
+    expect(titleEmits.length).toBe(1);
+
+    // Deeper levels fire before their ancestors.
+    const firstSectionIdx = collected.findIndex((c) => c.node.levelType === "section");
+    const firstPartIdx = collected.findIndex((c) => c.node.levelType === "part");
+    const firstTitleIdx = collected.findIndex((c) => c.node.levelType === "title");
+    expect(firstSectionIdx).toBeLessThan(firstPartIdx);
+    expect(firstPartIdx).toBeLessThan(firstTitleIdx);
+
+    // The emitted title contains all three sections as descendants, by reference.
+    const titleNode = titleEmits[0]!.node;
+    const sectionsInTitle = collectLevelsOfType(titleNode, "section");
+    expect(sectionsInTitle.length).toBe(3);
+    for (const sec of sectionEmits) {
+      expect(sectionsInTitle).toContain(sec.node);
+    }
+
+    // The emitted part contains its sections as descendants, by reference.
+    const part1 = partEmits.find((p) => p.node.numValue === "1")!.node;
+    const sectionsInPart1 = collectLevelsOfType(part1, "section");
+    expect(sectionsInPart1.map((s) => s.numValue)).toEqual(["1.1"]);
+  });
+
+  it("a multi-emit section's context still lists its ancestors (no self-reference)", async () => {
+    const collected = await parseFixture(
+      "title-structure.xml",
+      new Set<"section" | "part" | "title">(["section", "title"]),
+    );
+
+    const firstSection = collected.find((c) => c.node.levelType === "section")!;
+    const types = firstSection.context.ancestors.map((a) => a.levelType);
+    expect(types).toContain("title");
+    expect(types).toContain("part");
+    expect(types).not.toContain("section");
   });
 
   it("handles appendix structure", async () => {

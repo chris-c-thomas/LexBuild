@@ -7,6 +7,7 @@ import { Command, Option } from "commander";
 import { existsSync, readdirSync } from "node:fs";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { convertTitle } from "@lexbuild/usc";
+import type { ConvertResult } from "@lexbuild/usc";
 import {
   createSpinner,
   summaryBlock,
@@ -26,6 +27,10 @@ interface ConvertCommandOptions {
   all: boolean;
   inputDir: string;
   granularity: "section" | "chapter" | "title";
+  granularities?: string | undefined;
+  outputSection?: string | undefined;
+  outputChapter?: string | undefined;
+  outputTitle?: string | undefined;
   linkStyle: "relative" | "canonical" | "plaintext";
   includeSourceCredits: boolean;
   includeNotes: boolean;
@@ -36,15 +41,49 @@ interface ConvertCommandOptions {
   verbose: boolean;
 }
 
+type UscGranularity = "section" | "chapter" | "title";
+
+/** Parse `--granularities` list and pair with per-granularity output flags. */
+function parseGranularityList(
+  options: ConvertCommandOptions,
+): Array<{ granularity: UscGranularity; output: string }> {
+  const spec = (options.granularities ?? "").trim();
+  if (!spec) return [];
+  const names = spec
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const valid: ReadonlySet<string> = new Set(["section", "chapter", "title"]);
+  const pairs: Array<{ granularity: UscGranularity; output: string }> = [];
+  for (const name of names) {
+    if (!valid.has(name)) {
+      throw new Error(`Unknown granularity "${name}". Choose from section, chapter, title.`);
+    }
+    const g = name as UscGranularity;
+    // Section uses `-o/--output` for back-compat; others take `--output-<g>`.
+    const out =
+      g === "section"
+        ? (options.outputSection ?? options.output)
+        : g === "chapter"
+          ? options.outputChapter
+          : options.outputTitle;
+    if (!out) {
+      const flag = g === "section" ? "--output" : `--output-${g}`;
+      throw new Error(`Missing ${flag} for granularity "${g}".`);
+    }
+    pairs.push({ granularity: g, output: resolve(out) });
+  }
+  return pairs;
+}
+
 /** Build the shared convert options from CLI flags. */
 function buildConvertOptions(inputPath: string, outputPath: string, options: ConvertCommandOptions) {
   const hasSelectiveFlags = options.includeEditorialNotes || options.includeStatutoryNotes || options.includeAmendments;
   const includeNotes = hasSelectiveFlags ? false : options.includeNotes;
 
-  return {
+  const base = {
     input: inputPath,
-    output: outputPath,
-    granularity: options.granularity,
     linkStyle: options.linkStyle,
     includeSourceCredits: options.includeSourceCredits,
     includeNotes,
@@ -52,6 +91,17 @@ function buildConvertOptions(inputPath: string, outputPath: string, options: Con
     includeStatutoryNotes: options.includeStatutoryNotes,
     includeAmendments: options.includeAmendments,
     dryRun: options.dryRun,
+  };
+
+  const multi = parseGranularityList(options);
+  if (multi.length > 0) {
+    return { ...base, granularities: multi };
+  }
+
+  return {
+    ...base,
+    output: outputPath,
+    granularity: options.granularity,
   };
 }
 
@@ -96,20 +146,24 @@ export function discoverTitles(inputDir: string): number[] {
 
 /** Result from runConversion including elapsed time. */
 interface ConversionRun {
-  result: Awaited<ReturnType<typeof convertTitle>>;
+  /** One entry per granularity produced (length 1 for single-granularity mode). */
+  results: ConvertResult[];
   elapsed: number;
 }
 
-/** Run a conversion without printing output. Returns the result and elapsed time. */
+/** Run a conversion without printing output. Returns the results and elapsed time. */
 async function runConversion(
   inputPath: string,
   outputPath: string,
   options: ConvertCommandOptions,
 ): Promise<ConversionRun> {
   const startTime = performance.now();
-  const result = await convertTitle(buildConvertOptions(inputPath, outputPath, options));
+  const converted = (await convertTitle(
+    buildConvertOptions(inputPath, outputPath, options) as Parameters<typeof convertTitle>[0],
+  )) as unknown;
   const elapsed = performance.now() - startTime;
-  return { result, elapsed };
+  const results = Array.isArray(converted) ? (converted as ConvertResult[]) : [converted as ConvertResult];
+  return { results, elapsed };
 }
 
 /** Convert a single XML file and print its detailed summary. */
@@ -123,15 +177,21 @@ async function convertSingleFile(
   spinner.start();
 
   try {
-    const { result, elapsed } = await runConversion(inputPath, outputPath, options);
+    const { results, elapsed } = await runConversion(inputPath, outputPath, options);
 
     spinner.stop();
 
+    // Use the first result as the primary display subject (section for multi,
+    // or the single-granularity result otherwise). Additional granularities
+    // are listed beneath as extra output rows. runConversion guarantees the
+    // array is non-empty.
+    const [result] = results;
+    if (!result) throw new Error("convertTitle produced no result");
     const rows: Array<[string, string]> = [];
-    if (options.granularity === "section") {
+    if (result.granularity === "section") {
       rows.push(["Sections", formatNumber(result.sectionsWritten)]);
       rows.push(["Chapters", formatNumber(result.chapterCount)]);
-    } else if (options.granularity === "chapter") {
+    } else if (result.granularity === "chapter") {
       rows.push(["Chapters", formatNumber(result.chapterCount)]);
     }
     rows.push(["Est. Tokens", formatNumber(result.totalTokenEstimate)]);
@@ -146,11 +206,14 @@ async function convertSingleFile(
       ? `lexbuild — Title ${result.titleNumber}: ${result.titleName} [dry-run]`
       : `lexbuild — Title ${result.titleNumber}: ${result.titleName}`;
 
-    const outputRelative = relative(process.cwd(), outputPath) || outputPath;
+    const outputRows: Array<[string, string]> = results.map((r) => {
+      const rel = relative(process.cwd(), r.output) || r.output;
+      return [results.length === 1 ? "Output" : `Output (${r.granularity})`, rel];
+    });
 
     const output = summaryBlock({
       title: titleLabel,
-      rows: [...rows, ["Output", outputRelative]],
+      rows: [...rows, ...outputRows],
       footer: result.dryRun ? success("Dry run complete") : success("Conversion complete"),
     });
     process.stdout.write(output);
@@ -182,6 +245,13 @@ export const convertUscCommand = new Command("convert-usc")
       .choices(["section", "chapter", "title"])
       .default("section"),
   )
+  .option(
+    "--granularities <list>",
+    "Comma-separated granularities (e.g. section,chapter,title) — mutually exclusive with -g. Each listed granularity must have a matching --output or --output-<g> flag.",
+  )
+  .option("--output-section <dir>", "Output directory for section granularity (defaults to --output)")
+  .option("--output-chapter <dir>", "Output directory for chapter granularity")
+  .option("--output-title <dir>", "Output directory for title granularity")
   .addOption(
     new Option("--link-style <style>", "Link style: relative, canonical, or plaintext")
       .choices(["relative", "canonical", "plaintext"])
@@ -217,7 +287,7 @@ Examples:
   $ lexbuild convert-usc --all --dry-run              Preview stats only
   $ lexbuild convert-usc ./downloads/usc/xml/usc01.xml -o ./out`,
   )
-  .action(async (input: string | undefined, options: ConvertCommandOptions) => {
+  .action(async function action(this: Command, input: string | undefined, options: ConvertCommandOptions) {
     // Validate: must specify exactly one of <input>, --titles, or --all
     const modeCount = [input, options.titles, options.all].filter(Boolean).length;
     if (modeCount === 0) {
@@ -226,6 +296,16 @@ Examples:
     }
     if (modeCount > 1) {
       console.error(error("Cannot combine <input>, --titles, and --all — use only one"));
+      process.exit(1);
+    }
+
+    // --granularity and --granularities are mutually exclusive (ignoring the
+    // `-g section` default).
+    if (
+      options.granularities !== undefined &&
+      this.getOptionValueSource("granularity") === "cli"
+    ) {
+      console.error(error("Cannot combine --granularity and --granularities — use one or the other"));
       process.exit(1);
     }
 
@@ -295,20 +375,34 @@ Examples:
     // Summary header
     const outputRelative = relative(process.cwd(), outputPath) || outputPath;
     const headerTitle = options.dryRun ? "lexbuild — Conversion Summary [dry-run]" : "lexbuild — Conversion Summary";
-    const header = summaryBlock({
-      title: headerTitle,
-      rows: [["Directory", outputRelative]],
-    });
+
+    // In multi-granularity mode the per-granularity output dirs are richer
+    // context than the single --output; show them all.
+    const firstRun = results[0];
+    const headerRows: Array<[string, string]> = [];
+    if (firstRun && firstRun.results.length > 1) {
+      for (const r of firstRun.results) {
+        headerRows.push([`Output (${r.granularity})`, relative(process.cwd(), r.output) || r.output]);
+      }
+    } else {
+      headerRows.push(["Directory", outputRelative]);
+    }
+
+    const header = summaryBlock({ title: headerTitle, rows: headerRows });
     process.stdout.write(header);
 
-    // Build data table rows — adapt columns to granularity
-    const granularity = options.granularity;
+    // Build data table rows from the primary (first) result per title — the
+    // column layout follows the primary granularity. In multi mode the other
+    // granularities are surfaced via the header's Output rows above.
+    const granularity = (firstRun?.results[0]?.granularity ?? options.granularity) as UscGranularity;
     let totalSections = 0;
     let totalChapters = 0;
     let totalTokens = 0;
     let totalElapsed = 0;
 
-    const tableRows = results.map(({ result, elapsed }) => {
+    const tableRows = results.map(({ results: runResults, elapsed }) => {
+      const [result] = runResults;
+      if (!result) throw new Error("convertTitle produced no result");
       totalSections += result.sectionsWritten;
       totalChapters += result.chapterCount;
       totalTokens += result.totalTokenEstimate;

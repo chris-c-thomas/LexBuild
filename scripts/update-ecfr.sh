@@ -166,18 +166,16 @@ if [ "$DEPLOY_ONLY" = false ]; then
 
   NEW_XML_COUNT=$(find downloads/ecfr -name "*.xml" -newer "$PIPELINE_MARKER" 2>/dev/null | wc -l | tr -d ' ')
 
-  # Step 3: Convert at every granularity. Section is the default output; title,
-  # chapter, and part re-emit the same parsed AST at higher levels for the
-  # Astro app's browsable landing pages. writeFileIfChanged preserves mtimes.
-  echo "--- Step 3/7: Converting eCFR titles ($TITLE_ARG)"
-  echo "    section granularity"
-  $CLI convert-ecfr $TITLE_ARG $CURRENCY_ARG
-  echo "    title granularity"
-  $CLI convert-ecfr $TITLE_ARG $CURRENCY_ARG -g title -o ./output-title
-  echo "    chapter granularity"
-  $CLI convert-ecfr $TITLE_ARG $CURRENCY_ARG -g chapter -o ./output-chapter
-  echo "    part granularity"
-  $CLI convert-ecfr $TITLE_ARG $CURRENCY_ARG -g part -o ./output-part
+  # Step 3: Convert at every granularity in a single parse. --granularities
+  # emits section + title + chapter + part from one pass of the XML, writing
+  # each to its own output dir. writeFileIfChanged preserves mtimes.
+  echo "--- Step 3/7: Converting eCFR titles ($TITLE_ARG) at all granularities"
+  $CLI convert-ecfr $TITLE_ARG $CURRENCY_ARG \
+    --granularities section,title,chapter,part \
+    --output ./output \
+    --output-title ./output-title \
+    --output-chapter ./output-chapter \
+    --output-part ./output-part
   echo ""
 
   # Sanity check: if download fetched new XML, convert must produce new .md files.

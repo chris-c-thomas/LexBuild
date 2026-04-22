@@ -120,29 +120,56 @@ if [ "$DEPLOY_ONLY" = false ]; then
   echo "==> FR update for $DATE_FROM to $DATE_TO"
   echo ""
 
+  # Pipeline-start marker: used after convert to verify that downloaded XML
+  # files produced corresponding Markdown output. Catches silent regressions
+  # where download succeeds but convert returns 0 docs (e.g., the date-filter
+  # bug we hit on 2026-04-19 where mid-month --from excluded all files).
+  PIPELINE_MARKER="$(mktemp -t lexbuild-fr-update.XXXXXX)"
+  trap 'rm -f "$PIPELINE_MARKER"' EXIT
+
   # Step 1: Download
   echo "--- Step 1/4: Downloading FR documents ($DATE_FROM to $DATE_TO)"
   $CLI download-fr --from "$DATE_FROM" --to "$DATE_TO"
   echo ""
+
+  NEW_XML_COUNT=$(find downloads/fr -name "*.xml" -newer "$PIPELINE_MARKER" 2>/dev/null | wc -l | tr -d ' ')
 
   # Step 2: Convert (date-filtered — only converts files in the date range)
   echo "--- Step 2/4: Converting FR documents ($DATE_FROM to $DATE_TO)"
   $CLI convert-fr --all --from "$DATE_FROM" --to "$DATE_TO"
   echo ""
 
+  # Sanity check: downloaded XML must yield converted Markdown. writeFileIfChanged
+  # preserves mtimes on unchanged content, so a genuinely new download from the
+  # API should always produce at least one new/modified .md file.
+  if [ "$NEW_XML_COUNT" -gt 0 ]; then
+    NEW_MD_COUNT=$(find output/fr -name "*.md" -newer "$PIPELINE_MARKER" 2>/dev/null | wc -l | tr -d ' ')
+    if [ "$NEW_MD_COUNT" -eq 0 ]; then
+      echo "Error: download-fr added $NEW_XML_COUNT XML file(s) but convert-fr produced 0 new .md files." >&2
+      echo "       This indicates a bug in the convert-fr pipeline (likely a date-filter mismatch)." >&2
+      echo "       Aborting before deploy to prevent publishing a stale sitemap." >&2
+      exit 1
+    fi
+    echo "    Pipeline check: $NEW_XML_COUNT XML in → $NEW_MD_COUNT .md out"
+    echo ""
+  fi
+
   # Step 3: Regenerate FR nav
   echo "--- Step 3/4: Generating FR nav JSON"
-  cd apps/astro
-  npx tsx scripts/generate-nav.ts --source fr
-  cd "$REPO_ROOT"
+  ( cd apps/astro && npx tsx scripts/generate-nav.ts --source fr ) || exit 1
   echo ""
 
-  # Step 4: Regenerate sitemaps (full rebuild to update sitemap index)
-  echo "--- Step 4/4: Generating sitemaps"
-  cd apps/astro
-  npx tsx scripts/generate-sitemap.ts
-  cd "$REPO_ROOT"
-  echo ""
+  # Step 4: Regenerate sitemaps (full rebuild to update sitemap index).
+  # Skipped when LEXBUILD_DEFER_SITEMAP=1 (set by update.sh to avoid
+  # regenerating the full sitemap index once per source).
+  if [ "${LEXBUILD_DEFER_SITEMAP:-}" != "1" ]; then
+    echo "--- Step 4/4: Generating sitemaps"
+    ( cd apps/astro && npx tsx scripts/generate-sitemap.ts ) || exit 1
+    echo ""
+  else
+    echo "--- Step 4/4: Skipping sitemap (deferred to update.sh)"
+    echo ""
+  fi
 fi
 
 # --- Step 5–6: Deploy to VPS (skip if --skip-deploy) ---
@@ -168,25 +195,25 @@ if [ -d "apps/astro/public/nav" ]; then
   rsync -avz --delete apps/astro/public/nav/ "${VPS_HOST}:~/lexbuild/apps/astro/dist/client/nav/"
 fi
 
-SITEMAP_FILES=(apps/astro/public/sitemap*.xml)
-[ -f apps/astro/public/robots.txt ] && SITEMAP_FILES+=(apps/astro/public/robots.txt)
-if [ ${#SITEMAP_FILES[@]} -gt 0 ] && [ -e "${SITEMAP_FILES[0]}" ]; then
-  echo "    Sitemaps"
-  rsync -avz "${SITEMAP_FILES[@]}" "${VPS_HOST}:~/lexbuild/apps/astro/public/"
-  rsync -avz "${SITEMAP_FILES[@]}" "${VPS_HOST}:~/lexbuild/apps/astro/dist/client/"
+if [ "${LEXBUILD_DEFER_SITEMAP:-}" != "1" ]; then
+  SITEMAP_FILES=(apps/astro/public/sitemap*.xml)
+  [ -f apps/astro/public/robots.txt ] && SITEMAP_FILES+=(apps/astro/public/robots.txt)
+  if [ ${#SITEMAP_FILES[@]} -gt 0 ] && [ -e "${SITEMAP_FILES[0]}" ]; then
+    echo "    Sitemaps"
+    rsync -avz "${SITEMAP_FILES[@]}" "${VPS_HOST}:~/lexbuild/apps/astro/public/"
+    rsync -avz "${SITEMAP_FILES[@]}" "${VPS_HOST}:~/lexbuild/apps/astro/dist/client/"
+  fi
 fi
 echo ""
 
-# Step 6: Incremental search index on VPS
-echo "--- Step 6/6: Indexing new FR documents on VPS"
-ssh "$VPS_HOST" << 'REMOTE'
-  set -euo pipefail
-  source ~/.lexbuild-secrets
-  cd ~/lexbuild/apps/astro
-  MEILI_URL=http://127.0.0.1:7700 \
-  MEILI_MASTER_KEY="$MEILI_MASTER_KEY" \
-  pnpm dlx tsx scripts/index-search-incremental.ts /srv/lexbuild/content --source fr
-REMOTE
+# Step 6: Build search index locally in Docker, ship the data directory to VPS.
+# Delegating to deploy.sh --search-docker --source fr avoids running heavy
+# bulk upserts against the single production Meilisearch (caused PM2
+# restart-storms under memory pressure). The deploy script handles: local
+# Docker Meilisearch, incremental indexing, tar+scp of the LMDB data dir,
+# and the atomic PM2 swap on the VPS.
+echo "--- Step 6/6: Building and shipping search index via local Docker"
+"$SCRIPT_DIR/deploy.sh" --search-docker --source fr
 
 echo ""
 echo "==> FR update complete ($DATE_FROM to $DATE_TO)"

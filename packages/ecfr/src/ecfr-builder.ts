@@ -21,7 +21,6 @@ import type {
   DocumentMeta,
   EmitContext,
 } from "@lexbuild/core";
-import { LEVEL_TYPES } from "@lexbuild/core";
 import {
   ECFR_DIV_ELEMENTS,
   ECFR_TYPE_TO_LEVEL,
@@ -79,7 +78,6 @@ export class EcfrASTBuilder {
   private readonly options: EcfrASTBuilderOptions;
   private readonly stack: StackFrame[] = [];
   private documentMeta: DocumentMeta = {};
-  private readonly emitAtIndex: number;
   /** Track title number from metadata header */
   private titleNumber = "";
   /** Depth inside CFRTOC or other ignored container */
@@ -92,7 +90,6 @@ export class EcfrASTBuilder {
 
   constructor(options: EcfrASTBuilderOptions) {
     this.options = options;
-    this.emitAtIndex = LEVEL_TYPES.indexOf(options.emitAt);
   }
 
   /** Get part-level notes (authority/source) captured during parsing */
@@ -482,7 +479,6 @@ export class EcfrASTBuilder {
     if (!frame || frame.kind !== "level" || !frame.node) return;
 
     const levelNode = frame.node as LevelNode;
-    const levelIndex = LEVEL_TYPES.indexOf(levelNode.levelType);
 
     // Capture part-level authority/source notes before the node is emitted or released
     if (levelNode.levelType === "part" && levelNode.identifier) {
@@ -504,9 +500,12 @@ export class EcfrASTBuilder {
       }
     }
 
-    // Should we emit this node?
-    if (levelIndex >= 0 && levelIndex >= this.emitAtIndex) {
-      // Build emit context
+    // Emit only at the exact configured level. Anything else aggregates into
+    // its parent level frame, whether it's "below" emitAt (children of the
+    // emitted node, e.g. sections under a part) or "above" emitAt (outer
+    // containers we skip, e.g. a title when emitAt === "part"). Matches the
+    // USLM builder's strict-equality behavior in @lexbuild/core.
+    if (levelNode.levelType === this.options.emitAt) {
       const ancestors: AncestorInfo[] = [];
       for (const f of this.stack) {
         if (f.kind === "level" && f.node?.type === "level") {
@@ -526,12 +525,12 @@ export class EcfrASTBuilder {
       };
 
       this.options.onEmit(levelNode, context);
-    } else {
-      // Add to parent level
-      const parentLevel = this.findParentLevel();
-      if (parentLevel?.node && parentLevel.node.type === "level") {
-        (parentLevel.node as LevelNode).children.push(levelNode);
-      }
+      return;
+    }
+
+    const parentLevel = this.findParentLevel();
+    if (parentLevel?.node && parentLevel.node.type === "level") {
+      (parentLevel.node as LevelNode).children.push(levelNode);
     }
   }
 

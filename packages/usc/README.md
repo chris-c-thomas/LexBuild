@@ -48,6 +48,35 @@ const result = await convertTitle({
 console.log(`${result.sectionsWritten} sections, ${result.totalTokenEstimate} est. tokens`);
 ```
 
+### Multi-Granularity (Single Pass)
+
+Emit section, chapter, and title outputs from one parse. The XML is read once and nodes are fanned out to each requested directory.
+
+```ts
+const results = await convertTitle({
+  input: "./downloads/usc/xml/usc01.xml",
+  granularities: [
+    { granularity: "section", output: "./output" },
+    { granularity: "chapter", output: "./output-chapter" },
+    { granularity: "title", output: "./output-title" },
+  ],
+  linkStyle: "plaintext",
+  includeSourceCredits: true,
+  includeNotes: true,
+  includeEditorialNotes: false,
+  includeStatutoryNotes: false,
+  includeAmendments: false,
+  dryRun: false,
+});
+
+// One ConvertResult per entry in `granularities`, preserving order.
+for (const r of results) {
+  console.log(`${r.granularity}: ${r.files.length} files → ${r.output}`);
+}
+```
+
+`granularity`/`output` (single mode) and `granularities` (multi mode) are mutually exclusive. Function overloads preserve the return shape: single mode returns `ConvertResult`, multi returns `ConvertResult[]`.
+
 ### Release Point Detection
 
 ```ts
@@ -87,8 +116,10 @@ const result = await downloadTitles({
 
 | Export | Description |
 |--------|-------------|
-| `ConvertOptions` | Options for `convertTitle()` — input, output, granularity, link style, note filters |
-| `ConvertResult` | Conversion result — sections written, chapters, files, token estimate, memory |
+| `ConvertOptions` | Options for `convertTitle()`. `granularity`+`output` and `granularities` are mutually exclusive. |
+| `ConvertResult` | Single-granularity result — sections written, chapters, files, token estimate, memory, plus `granularity` and `output` |
+| `UscGranularity` | `"section" \| "chapter" \| "title"` |
+| `UscGranularityOutput` | `{ granularity: UscGranularity; output: string }` — one entry in the `granularities` array |
 | `DownloadOptions` | Options for `downloadTitles()` — output dir, titles, optional release point |
 | `DownloadResult` | Download result — release point used, files, errors |
 | `DownloadedFile` | Single downloaded file metadata (title number, path, size) |

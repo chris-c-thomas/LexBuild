@@ -46,6 +46,10 @@ const builder = new ASTBuilder({
 });
 ```
 
+### Multi-Level Emit
+
+`emitAt` also accepts `ReadonlySet<LevelType>`. Deeper levels fire first, and ancestors pop before emit (so a level never lists itself). A closing level attaches to its parent iff any enclosing stack frame is an emit target — use the live stack check (`hasEmittingAncestorOnStack`), NOT `LEVEL_TYPES` index ordering, since USLM permits anomalous nesting (e.g. appendix inside part).
+
 ### Stack-Based SAX Processing
 
 The builder maintains a stack of `StackFrame` objects, each representing an in-progress element. Frames track their kind (`level`, `content`, `inline`, `note`, `ignore`, etc.), the AST node being built, and a text buffer. On element close, the frame pops and its node is added to the parent frame.

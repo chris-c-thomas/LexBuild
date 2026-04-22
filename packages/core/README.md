@@ -44,6 +44,25 @@ parser.on("text", (text) => builder.onText(text));
 await parser.parseStream(createReadStream("usc01.xml"));
 ```
 
+### Multi-Level Emit
+
+`emitAt` also accepts a `ReadonlySet<LevelType>`. Deeper levels fire first (sections before their containing title), and emitted nodes remain attached to their parents so a higher-level emission sees the full subtree. Attach-to-parent is gated by "any enclosing stack frame is itself an emit target" — do not reason via `LEVEL_TYPES` index ordering, which breaks on USLM's permissive nesting (e.g. an appendix inside a part).
+
+```ts
+const byLevel = new Map<LevelType, LevelNode[]>();
+
+const builder = new ASTBuilder({
+  emitAt: new Set(["section", "chapter", "title"]),
+  onEmit: (node, context) => {
+    const bucket = byLevel.get(node.levelType) ?? [];
+    bucket.push(node);
+    byLevel.set(node.levelType, bucket);
+  },
+});
+```
+
+This is how the `@lexbuild/usc` and `@lexbuild/ecfr` converters produce multiple output granularities from a single parse.
+
 ## API Reference
 
 ### XML Parsing
@@ -56,7 +75,7 @@ await parser.parseStream(createReadStream("usc01.xml"));
 
 | Export | Description |
 |--------|-------------|
-| `ASTBuilder` | Stack-based USLM XML-to-AST builder with configurable emit-at-level streaming. Handles the full USLM 1.0 element vocabulary. Source packages for other formats provide their own builders. |
+| `ASTBuilder` | Stack-based USLM XML-to-AST builder with configurable emit-at-level streaming. `emitAt` accepts `LevelType` (single) or `ReadonlySet<LevelType>` (multi-level emit). Handles the full USLM 1.0 element vocabulary. Source packages for other formats provide their own builders. |
 
 ### Rendering
 

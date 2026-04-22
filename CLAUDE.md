@@ -303,6 +303,7 @@ Note: identifiers use `/us/cfr/` (content type) not `/us/ecfr/` (data source). B
 - **VPS PM2 logs live at `/home/ubuntu/pm2/logs/lexbuild/`**, not `~/.pm2/logs/`. The latter is legacy — only `pm2-logrotate-out.log` still writes there. Check the new path when debugging PM2-managed services.
 - **VPS has 6 GiB swap** at `/swapfile` (persisted in `/etc/fstab`). Added as defense against Meilisearch OOM during bulk upserts on a 7.6 GiB RAM Lightsail box. Don't remove.
 - **Stuck Meilisearch tasks crash-loop across restarts**: document-addition tasks that OOM Meilisearch are persisted in LMDB and re-attempted after every PM2 restart (observed ~60s crash cycle, 160+ restarts in 2.5 hours). Cancel via `curl -XPOST -H "Authorization: Bearer $MEILI_MASTER_KEY" "http://127.0.0.1:7700/tasks/cancel?uids=<list>"` — the cancellation typically executes during a healthy window even if the stuck task itself can't complete.
+- **`_meta.json` / `README.md` carry wall-clock timestamps**: Converter outputs include a `generated_at` field. Byte-parity tests comparing outputs across runs must skip these files (assert existence, not content).
 
 ## When Adding New Source Types
 

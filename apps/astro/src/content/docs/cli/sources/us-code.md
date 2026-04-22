@@ -87,6 +87,20 @@ lexbuild convert-usc --all -g chapter
 lexbuild convert-usc --titles 26 -g title
 ```
 
+### Multi-Granularity (Single Pass)
+
+Emit section, chapter, and title outputs from one parse:
+
+```bash
+lexbuild convert-usc --all \
+  --granularities section,title,chapter \
+  --output ./output \
+  --output-title ./output-title \
+  --output-chapter ./output-chapter
+```
+
+`--granularities` is mutually exclusive with `-g`. Because the XML is parsed once and fanned out to each requested directory, this is roughly ~40–50% faster than running `convert-usc` three times with different `-g` values.
+
 ### Notes Filtering
 
 All notes (editorial, statutory, and amendment history) are included by default. Disable them entirely or filter selectively:

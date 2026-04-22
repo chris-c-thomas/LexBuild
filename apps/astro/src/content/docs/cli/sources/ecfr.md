@@ -99,6 +99,21 @@ lexbuild convert-ecfr --all -g part
 lexbuild convert-ecfr --titles 17 -g title
 ```
 
+### Multi-Granularity (Single Pass)
+
+Emit all four granularities from one parse:
+
+```bash
+lexbuild convert-ecfr --all \
+  --granularities section,title,chapter,part \
+  --output ./output \
+  --output-title ./output-title \
+  --output-chapter ./output-chapter \
+  --output-part ./output-part
+```
+
+`--granularities` is mutually exclusive with `-g`. Because the XML is parsed once and fanned out to each requested directory, this is roughly ~40–50% faster than running `convert-ecfr` four times with different `-g` values.
+
 ### Notes Filtering
 
 Notes filtering works the same as for the U.S. Code:

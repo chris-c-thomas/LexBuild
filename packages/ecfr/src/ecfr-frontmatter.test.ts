@@ -117,14 +117,17 @@ describe("buildEcfrFrontmatter", () => {
     });
 
     it("formats title display title with em dash", () => {
-      const node = makeSection({ levelType: "title", numValue: "17" });
-      const fm = buildEcfrFrontmatter(
-        node,
-        makeContext({ titleNum: "17", titleName: "Commodity and Securities Exchanges" }),
-        "2026-01-01",
-      );
+      // A title-level node has no title ancestor (a title isn't its own
+      // ancestor). title_name must come from node.heading.
+      const node = makeSection({
+        levelType: "title",
+        numValue: "17",
+        heading: "Commodity and Securities Exchanges",
+      });
+      const fm = buildEcfrFrontmatter(node, { ancestors: [], documentMeta: {} }, "2026-01-01");
 
       expect(fm.title).toBe("Title 17 — Commodity and Securities Exchanges");
+      expect(fm.title_name).toBe("Commodity and Securities Exchanges");
     });
   });
 

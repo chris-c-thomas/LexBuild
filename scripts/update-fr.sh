@@ -156,17 +156,20 @@ if [ "$DEPLOY_ONLY" = false ]; then
 
   # Step 3: Regenerate FR nav
   echo "--- Step 3/4: Generating FR nav JSON"
-  cd apps/astro
-  npx tsx scripts/generate-nav.ts --source fr
-  cd "$REPO_ROOT"
+  ( cd apps/astro && npx tsx scripts/generate-nav.ts --source fr ) || exit 1
   echo ""
 
-  # Step 4: Regenerate sitemaps (full rebuild to update sitemap index)
-  echo "--- Step 4/4: Generating sitemaps"
-  cd apps/astro
-  npx tsx scripts/generate-sitemap.ts
-  cd "$REPO_ROOT"
-  echo ""
+  # Step 4: Regenerate sitemaps (full rebuild to update sitemap index).
+  # Skipped when LEXBUILD_DEFER_SITEMAP=1 (set by update.sh to avoid
+  # regenerating the full sitemap index once per source).
+  if [ "${LEXBUILD_DEFER_SITEMAP:-}" != "1" ]; then
+    echo "--- Step 4/4: Generating sitemaps"
+    ( cd apps/astro && npx tsx scripts/generate-sitemap.ts ) || exit 1
+    echo ""
+  else
+    echo "--- Step 4/4: Skipping sitemap (deferred to update.sh)"
+    echo ""
+  fi
 fi
 
 # --- Step 5–6: Deploy to VPS (skip if --skip-deploy) ---
@@ -192,12 +195,14 @@ if [ -d "apps/astro/public/nav" ]; then
   rsync -avz --delete apps/astro/public/nav/ "${VPS_HOST}:~/lexbuild/apps/astro/dist/client/nav/"
 fi
 
-SITEMAP_FILES=(apps/astro/public/sitemap*.xml)
-[ -f apps/astro/public/robots.txt ] && SITEMAP_FILES+=(apps/astro/public/robots.txt)
-if [ ${#SITEMAP_FILES[@]} -gt 0 ] && [ -e "${SITEMAP_FILES[0]}" ]; then
-  echo "    Sitemaps"
-  rsync -avz "${SITEMAP_FILES[@]}" "${VPS_HOST}:~/lexbuild/apps/astro/public/"
-  rsync -avz "${SITEMAP_FILES[@]}" "${VPS_HOST}:~/lexbuild/apps/astro/dist/client/"
+if [ "${LEXBUILD_DEFER_SITEMAP:-}" != "1" ]; then
+  SITEMAP_FILES=(apps/astro/public/sitemap*.xml)
+  [ -f apps/astro/public/robots.txt ] && SITEMAP_FILES+=(apps/astro/public/robots.txt)
+  if [ ${#SITEMAP_FILES[@]} -gt 0 ] && [ -e "${SITEMAP_FILES[0]}" ]; then
+    echo "    Sitemaps"
+    rsync -avz "${SITEMAP_FILES[@]}" "${VPS_HOST}:~/lexbuild/apps/astro/public/"
+    rsync -avz "${SITEMAP_FILES[@]}" "${VPS_HOST}:~/lexbuild/apps/astro/dist/client/"
+  fi
 fi
 echo ""
 

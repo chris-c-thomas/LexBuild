@@ -26,7 +26,10 @@ export function buildEcfrFrontmatter(
   const titleNum = parseInt(titleAncestor?.numValue ?? node.numValue ?? "0", 10);
   const sectionNum = node.numValue ?? "0";
   const sectionName = node.heading?.trim() ?? "";
-  const titleName = titleAncestor?.heading?.trim() ?? context.documentMeta.dcTitle ?? "";
+  // A title node is not its own ancestor, so fall back to node.heading when the
+  // emitted node itself is the title (title-granularity emission).
+  const titleHeading = node.levelType === "title" ? node.heading : titleAncestor?.heading;
+  const titleName = titleHeading?.trim() ?? context.documentMeta.dcTitle ?? "";
 
   // Build display title based on level type
   let displayTitle: string;

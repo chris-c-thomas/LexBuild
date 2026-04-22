@@ -107,6 +107,13 @@ fi
 
 if [ "$DEPLOY_ONLY" = false ]; then
 
+  # Pipeline-start marker: used after convert to verify that downloaded XML
+  # files produced corresponding Markdown output. Catches silent regressions
+  # where download succeeds but convert writes nothing (mirror of the guard
+  # in update-fr.sh).
+  PIPELINE_MARKER="$(mktemp -t lexbuild-usc-update.XXXXXX)"
+  trap 'rm -f "$PIPELINE_MARKER"' EXIT
+
   # Step 1: Check for new release point
   echo "--- Step 1/7: Checking OLRC release point"
   LATEST=$(node -e "
@@ -140,6 +147,8 @@ if [ "$DEPLOY_ONLY" = false ]; then
   $CLI download-usc --all
   echo ""
 
+  NEW_XML_COUNT=$(find downloads/usc -name "*.xml" -newer "$PIPELINE_MARKER" 2>/dev/null | wc -l | tr -d ' ')
+
   # Step 3: Convert at every granularity. Section is the default output; title
   # and chapter re-emit the same parsed AST at higher levels for the Astro
   # app's browsable landing pages. writeFileIfChanged preserves mtimes.
@@ -152,30 +161,44 @@ if [ "$DEPLOY_ONLY" = false ]; then
   $CLI convert-usc --all -g chapter -o ./output-chapter
   echo ""
 
+  # Sanity check: if download fetched new XML, convert must produce new .md files.
+  # writeFileIfChanged preserves mtimes on unchanged content, so a fresh release
+  # point should always yield at least one new/modified .md.
+  if [ "$NEW_XML_COUNT" -gt 0 ]; then
+    NEW_MD_COUNT=$(find output/usc -name "*.md" -newer "$PIPELINE_MARKER" 2>/dev/null | wc -l | tr -d ' ')
+    if [ "$NEW_MD_COUNT" -eq 0 ]; then
+      echo "Error: download-usc added $NEW_XML_COUNT XML file(s) but convert-usc produced 0 new .md files." >&2
+      echo "       Aborting before deploy to prevent publishing a stale sitemap." >&2
+      exit 1
+    fi
+    echo "    Pipeline check: $NEW_XML_COUNT XML in → $NEW_MD_COUNT .md out"
+    echo ""
+  fi
+
   # Step 4: Highlights (optional)
   if [ "$SKIP_HIGHLIGHTS" = true ]; then
     echo "--- Step 4/7: Skipping highlights (--skip-highlights)"
   else
     echo "--- Step 4/7: Generating USC highlights"
-    cd apps/astro
-    npx tsx scripts/generate-highlights.ts --source usc
-    cd "$REPO_ROOT"
+    ( cd apps/astro && npx tsx scripts/generate-highlights.ts --source usc ) || exit 1
   fi
   echo ""
 
   # Step 5: Nav
   echo "--- Step 5/7: Generating USC nav JSON"
-  cd apps/astro
-  npx tsx scripts/generate-nav.ts --source usc
-  cd "$REPO_ROOT"
+  ( cd apps/astro && npx tsx scripts/generate-nav.ts --source usc ) || exit 1
   echo ""
 
-  # Step 6: Sitemaps
-  echo "--- Step 6/7: Generating sitemaps"
-  cd apps/astro
-  npx tsx scripts/generate-sitemap.ts
-  cd "$REPO_ROOT"
-  echo ""
+  # Step 6: Sitemaps. Skipped when LEXBUILD_DEFER_SITEMAP=1 (set by update.sh
+  # to avoid regenerating the full sitemap index once per source).
+  if [ "${LEXBUILD_DEFER_SITEMAP:-}" != "1" ]; then
+    echo "--- Step 6/7: Generating sitemaps"
+    ( cd apps/astro && npx tsx scripts/generate-sitemap.ts ) || exit 1
+    echo ""
+  else
+    echo "--- Step 6/7: Skipping sitemap (deferred to update.sh)"
+    echo ""
+  fi
 
   # Step 7: Save checkpoint
   echo "--- Step 7/7: Saving USC checkpoint"
@@ -197,7 +220,10 @@ echo "--- Step 8/9: Syncing to VPS"
 
 if [ -d "output/usc" ]; then
   echo "    USC sections"
-  rsync -avz --checksum output/usc/ "${VPS_HOST}:${CONTENT_DEST}/usc/sections/"
+  # mtime+size comparison (not --checksum) — writeFileIfChanged preserves
+  # mtimes on unchanged content, so rsync's default is sufficient and avoids
+  # a full-content hash scan of ~60k files on every run.
+  rsync -avz output/usc/ "${VPS_HOST}:${CONTENT_DEST}/usc/sections/"
 fi
 
 if [ -d "output-title/usc" ]; then
@@ -216,12 +242,14 @@ if [ -d "apps/astro/public/nav" ]; then
   rsync -avz --delete apps/astro/public/nav/ "${VPS_HOST}:~/lexbuild/apps/astro/dist/client/nav/"
 fi
 
-SITEMAP_FILES=(apps/astro/public/sitemap*.xml)
-[ -f apps/astro/public/robots.txt ] && SITEMAP_FILES+=(apps/astro/public/robots.txt)
-if [ ${#SITEMAP_FILES[@]} -gt 0 ] && [ -e "${SITEMAP_FILES[0]}" ]; then
-  echo "    Sitemaps"
-  rsync -avz "${SITEMAP_FILES[@]}" "${VPS_HOST}:~/lexbuild/apps/astro/public/"
-  rsync -avz "${SITEMAP_FILES[@]}" "${VPS_HOST}:~/lexbuild/apps/astro/dist/client/"
+if [ "${LEXBUILD_DEFER_SITEMAP:-}" != "1" ]; then
+  SITEMAP_FILES=(apps/astro/public/sitemap*.xml)
+  [ -f apps/astro/public/robots.txt ] && SITEMAP_FILES+=(apps/astro/public/robots.txt)
+  if [ ${#SITEMAP_FILES[@]} -gt 0 ] && [ -e "${SITEMAP_FILES[0]}" ]; then
+    echo "    Sitemaps"
+    rsync -avz "${SITEMAP_FILES[@]}" "${VPS_HOST}:~/lexbuild/apps/astro/public/"
+    rsync -avz "${SITEMAP_FILES[@]}" "${VPS_HOST}:~/lexbuild/apps/astro/dist/client/"
+  fi
 fi
 echo ""
 

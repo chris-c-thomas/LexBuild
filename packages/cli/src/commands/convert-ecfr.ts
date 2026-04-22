@@ -45,8 +45,13 @@ interface ConvertEcfrCommandOptions {
 
 type EcfrGranularityName = "section" | "part" | "chapter" | "title";
 
-/** Parse --granularities list and pair with per-granularity output flags. */
-function parseEcfrGranularityList(
+/**
+ * Parse `--granularities` list and pair with per-granularity output flags.
+ *
+ * Exported for unit testing. Rejects unknown granularity names, duplicate
+ * entries, and missing matching `--output-<g>` flags.
+ */
+export function parseEcfrGranularityList(
   options: ConvertEcfrCommandOptions,
 ): Array<{ granularity: EcfrGranularityName; output: string }> {
   const spec = (options.granularities ?? "").trim();
@@ -57,11 +62,16 @@ function parseEcfrGranularityList(
     .filter(Boolean);
 
   const valid: ReadonlySet<string> = new Set(["section", "part", "chapter", "title"]);
+  const seen = new Set<string>();
   const pairs: Array<{ granularity: EcfrGranularityName; output: string }> = [];
   for (const name of names) {
     if (!valid.has(name)) {
       throw new Error(`Unknown granularity "${name}". Choose from section, part, chapter, title.`);
     }
+    if (seen.has(name)) {
+      throw new Error(`Duplicate granularity "${name}" in --granularities list.`);
+    }
+    seen.add(name);
     const g = name as EcfrGranularityName;
     const out =
       g === "section"
@@ -89,7 +99,7 @@ function buildConvertOptions(
   const hasSelectiveFlags = options.includeEditorialNotes || options.includeStatutoryNotes || options.includeAmendments;
   const includeNotes = hasSelectiveFlags ? false : options.includeNotes;
 
-  const base: Omit<EcfrConvertOptions, "output" | "granularity" | "granularities"> = {
+  const base = {
     input: inputPath,
     linkStyle: options.linkStyle,
     includeSourceCredits: options.includeSourceCredits,
@@ -146,11 +156,12 @@ async function runConversion(
   options: ConvertEcfrCommandOptions,
 ): Promise<ConversionRun> {
   const startTime = performance.now();
-  const converted = (await convertEcfrTitle(
-    buildConvertOptions(inputPath, outputPath, options) as Parameters<typeof convertEcfrTitle>[0],
-  )) as unknown;
+  const opts = buildConvertOptions(inputPath, outputPath, options);
+  // Narrow on the discriminant so each overload is called with its exact
+  // input type — no casts, and the return type is concrete per branch.
+  const results: EcfrConvertResult[] =
+    opts.granularities !== undefined ? await convertEcfrTitle(opts) : [await convertEcfrTitle(opts)];
   const elapsed = performance.now() - startTime;
-  const results = Array.isArray(converted) ? (converted as EcfrConvertResult[]) : [converted as EcfrConvertResult];
   return { results, elapsed };
 }
 

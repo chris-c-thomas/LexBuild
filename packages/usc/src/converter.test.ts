@@ -4,12 +4,12 @@ import { mkdtemp, rm, readFile, readdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { convertTitle } from "./converter.js";
-import type { ConvertOptions } from "./converter.js";
+import type { SingleConvertOptions } from "./converter.js";
 
 const FIXTURES_DIR = resolve(import.meta.dirname, "../../../fixtures/fragments");
 
-/** Default options for tests */
-const DEFAULTS: Omit<ConvertOptions, "input" | "output"> = {
+/** Default options for tests (single-granularity mode) */
+const DEFAULTS: Omit<SingleConvertOptions, "input" | "output"> = {
   granularity: "section",
   linkStyle: "plaintext",
   includeSourceCredits: true,
@@ -553,14 +553,17 @@ describe("convertTitle", () => {
     });
 
     it("rejects granularity+output combined with granularities", async () => {
-      await expect(
-        convertTitle({
-          ...DEFAULTS,
-          input: resolve(FIXTURES_DIR, "simple-section.xml"),
-          output: outputDir,
-          granularities: [{ granularity: "title", output: outputDir }],
-        }),
-      ).rejects.toThrow(/mutually exclusive/);
+      // The discriminated union already prevents this shape at compile time;
+      // cast to `any` to verify the runtime guard still fires for untyped
+      // callers (e.g. JSON-decoded options).
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- testing runtime validation for illegal shape
+      const illegal: any = {
+        ...DEFAULTS,
+        input: resolve(FIXTURES_DIR, "simple-section.xml"),
+        output: outputDir,
+        granularities: [{ granularity: "title", output: outputDir }],
+      };
+      await expect(convertTitle(illegal)).rejects.toThrow(/mutually exclusive/);
     });
 
     it("requires at least one entry in granularities", async () => {

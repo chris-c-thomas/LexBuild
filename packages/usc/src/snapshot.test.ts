@@ -12,13 +12,13 @@ import { resolve, join } from "node:path";
 import { mkdtemp, rm, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { convertTitle } from "./converter.js";
-import type { ConvertOptions } from "./converter.js";
+import type { SingleConvertOptions } from "./converter.js";
 
 const FIXTURES_DIR = resolve(import.meta.dirname, "../../../fixtures/fragments");
 const EXPECTED_DIR = resolve(import.meta.dirname, "../../../fixtures/expected");
 
 /** Default options — all notes included, section granularity, plaintext links */
-const DEFAULTS: Omit<ConvertOptions, "input" | "output"> = {
+const DEFAULTS: Omit<SingleConvertOptions, "input" | "output"> = {
   granularity: "section",
   linkStyle: "plaintext",
   includeSourceCredits: true,

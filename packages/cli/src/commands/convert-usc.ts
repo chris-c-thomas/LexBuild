@@ -7,7 +7,7 @@ import { Command, Option } from "commander";
 import { existsSync, readdirSync } from "node:fs";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { convertTitle } from "@lexbuild/usc";
-import type { ConvertResult } from "@lexbuild/usc";
+import type { ConvertOptions, ConvertResult } from "@lexbuild/usc";
 import {
   createSpinner,
   summaryBlock,
@@ -43,8 +43,13 @@ interface ConvertCommandOptions {
 
 type UscGranularity = "section" | "chapter" | "title";
 
-/** Parse `--granularities` list and pair with per-granularity output flags. */
-function parseGranularityList(
+/**
+ * Parse `--granularities` list and pair with per-granularity output flags.
+ *
+ * Exported for unit testing. Rejects unknown granularity names, duplicate
+ * entries, and missing matching `--output-<g>` flags.
+ */
+export function parseGranularityList(
   options: ConvertCommandOptions,
 ): Array<{ granularity: UscGranularity; output: string }> {
   const spec = (options.granularities ?? "").trim();
@@ -55,11 +60,16 @@ function parseGranularityList(
     .filter(Boolean);
 
   const valid: ReadonlySet<string> = new Set(["section", "chapter", "title"]);
+  const seen = new Set<string>();
   const pairs: Array<{ granularity: UscGranularity; output: string }> = [];
   for (const name of names) {
     if (!valid.has(name)) {
       throw new Error(`Unknown granularity "${name}". Choose from section, chapter, title.`);
     }
+    if (seen.has(name)) {
+      throw new Error(`Duplicate granularity "${name}" in --granularities list.`);
+    }
+    seen.add(name);
     const g = name as UscGranularity;
     // Section uses `-o/--output` for back-compat; others take `--output-<g>`.
     const out =
@@ -78,7 +88,11 @@ function parseGranularityList(
 }
 
 /** Build the shared convert options from CLI flags. */
-function buildConvertOptions(inputPath: string, outputPath: string, options: ConvertCommandOptions) {
+function buildConvertOptions(
+  inputPath: string,
+  outputPath: string,
+  options: ConvertCommandOptions,
+): ConvertOptions {
   const hasSelectiveFlags = options.includeEditorialNotes || options.includeStatutoryNotes || options.includeAmendments;
   const includeNotes = hasSelectiveFlags ? false : options.includeNotes;
 
@@ -158,11 +172,12 @@ async function runConversion(
   options: ConvertCommandOptions,
 ): Promise<ConversionRun> {
   const startTime = performance.now();
-  const converted = (await convertTitle(
-    buildConvertOptions(inputPath, outputPath, options) as Parameters<typeof convertTitle>[0],
-  )) as unknown;
+  const opts = buildConvertOptions(inputPath, outputPath, options);
+  // Narrow on the discriminant so each overload is called with its exact
+  // input type — no casts, and the return type is concrete per branch.
+  const results: ConvertResult[] =
+    opts.granularities !== undefined ? await convertTitle(opts) : [await convertTitle(opts)];
   const elapsed = performance.now() - startTime;
-  const results = Array.isArray(converted) ? (converted as ConvertResult[]) : [converted as ConvertResult];
   return { results, elapsed };
 }
 

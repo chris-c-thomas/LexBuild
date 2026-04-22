@@ -45,19 +45,10 @@ export interface UscGranularityOutput {
   output: string;
 }
 
-/** Options for converting a USC XML file */
-export interface ConvertOptions {
+/** Fields shared by single- and multi-granularity conversion options. */
+export interface BaseConvertOptions {
   /** Path to the input XML file */
   input: string;
-  /** Output directory root (single-granularity mode). Mutually exclusive with `granularities`. */
-  output?: string;
-  /** Output granularity (single-granularity mode). Defaults to "section". */
-  granularity?: UscGranularity;
-  /**
-   * Multiple (granularity, output) pairs to produce in a single parse.
-   * Mutually exclusive with `granularity`/`output`.
-   */
-  granularities?: UscGranularityOutput[];
   /** How to render cross-references */
   linkStyle: "relative" | "canonical" | "plaintext";
   /** Include source credits in output */
@@ -73,6 +64,35 @@ export interface ConvertOptions {
   /** Dry-run mode: parse and report structure without writing files */
   dryRun: boolean;
 }
+
+/** Single-granularity mode: one output directory, one granularity. */
+export interface SingleConvertOptions extends BaseConvertOptions {
+  /** Output directory root */
+  output: string;
+  /** Output granularity. Defaults to "section" when omitted. */
+  granularity?: UscGranularity | undefined;
+  /** @internal — must not be set in single-granularity mode */
+  granularities?: undefined;
+}
+
+/** Multi-granularity mode: a set of `{granularity, output}` pairs emitted from one parse. */
+export interface MultiConvertOptions extends BaseConvertOptions {
+  /** Multiple `{granularity, output}` pairs to produce in a single parse. */
+  granularities: readonly UscGranularityOutput[];
+  /** @internal — must not be set in multi-granularity mode */
+  output?: undefined;
+  /** @internal — must not be set in multi-granularity mode */
+  granularity?: undefined;
+}
+
+/**
+ * Options for converting a USC XML file.
+ *
+ * Discriminated union: pass either `output` (+ optional `granularity`) for
+ * single-granularity output, or `granularities` for multi-granularity output
+ * from a single parse. The two modes are mutually exclusive at the type level.
+ */
+export type ConvertOptions = SingleConvertOptions | MultiConvertOptions;
 
 /** Result of a conversion */
 export interface ConvertResult {
@@ -109,7 +129,18 @@ const DEFAULTS = {
   dryRun: false,
 };
 
-/** Resolve the normalized granularity list from options. */
+/** Map a granularity to the builder's emit level. Direct 1:1 for USC. */
+function emitLevelFor(granularity: UscGranularity): LevelType {
+  return granularity;
+}
+
+/**
+ * Resolve the normalized granularity list from options.
+ *
+ * The type-level mutex already prevents illegal shapes at compile time; these
+ * runtime checks defend against callers who bypass TypeScript (e.g. dynamic
+ * JS, JSON-decoded options).
+ */
 function resolveGranularities(options: ConvertOptions): UscGranularityOutput[] {
   const hasMulti = options.granularities !== undefined;
   const hasSingle = options.granularity !== undefined || options.output !== undefined;
@@ -125,7 +156,16 @@ function resolveGranularities(options: ConvertOptions): UscGranularityOutput[] {
     if (list.length === 0) {
       throw new Error("convertTitle: `granularities` must contain at least one entry");
     }
-    return list;
+    const seen = new Set<UscGranularity>();
+    for (const entry of list) {
+      if (seen.has(entry.granularity)) {
+        throw new Error(
+          `convertTitle: duplicate granularity "${entry.granularity}" in \`granularities\``,
+        );
+      }
+      seen.add(entry.granularity);
+    }
+    return [...list];
   }
 
   const granularity = options.granularity ?? "section";
@@ -164,22 +204,20 @@ interface CollectedSection {
 /**
  * Convert a single USC XML file.
  *
- * - Single-granularity mode (`granularity` + `output`) returns one `ConvertResult`.
+ * - Single-granularity mode (`output` + optional `granularity`) returns one `ConvertResult`.
  * - Multi-granularity mode (`granularities`) parses once and returns one result per entry.
  */
-export async function convertTitle(
-  options: ConvertOptions & { granularities: UscGranularityOutput[] },
-): Promise<ConvertResult[]>;
-export async function convertTitle(options: ConvertOptions): Promise<ConvertResult>;
+export async function convertTitle(options: MultiConvertOptions): Promise<ConvertResult[]>;
+export async function convertTitle(options: SingleConvertOptions): Promise<ConvertResult>;
 export async function convertTitle(
   options: ConvertOptions,
 ): Promise<ConvertResult | ConvertResult[]> {
-  const opts = { ...DEFAULTS, ...options } as ConvertOptions;
+  const opts: ConvertOptions = { ...DEFAULTS, ...options };
   const granularityList = resolveGranularities(opts);
 
   // Emit set: section→section, chapter→chapter, title→title (direct mapping).
   const emitSet = new Set<LevelType>();
-  for (const g of granularityList) emitSet.add(g.granularity as LevelType);
+  for (const g of granularityList) emitSet.add(emitLevelFor(g.granularity));
 
   // --- Parse phase (single pass) ---
   let peakMemory = process.memoryUsage.rss();
@@ -208,7 +246,7 @@ export async function convertTitle(
   // --- Write phase per requested granularity ---
   const results: ConvertResult[] = [];
   for (const { granularity, output } of granularityList) {
-    const bucket = collectedByLevel.get(granularity as LevelType) ?? [];
+    const bucket = collectedByLevel.get(emitLevelFor(granularity)) ?? [];
     const result = await writeGranularity(opts, granularity, output, bucket, docMeta);
     if (result.peakMemoryBytes > peakMemory) peakMemory = result.peakMemoryBytes;
     result.peakMemoryBytes = peakMemory;

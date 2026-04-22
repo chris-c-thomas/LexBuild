@@ -45,21 +45,10 @@ export interface EcfrGranularityOutput {
   output: string;
 }
 
-/** Options for converting an eCFR XML file */
-export interface EcfrConvertOptions {
+/** Fields shared by single- and multi-granularity conversion options. */
+export interface BaseEcfrConvertOptions {
   /** Path to input eCFR XML file */
   input: string;
-  /** Output root directory (single-granularity mode). Mutually exclusive with `granularities`. */
-  output?: string;
-  /** Output granularity: section (default), part, chapter, or title. Single-granularity mode. */
-  granularity?: EcfrGranularity;
-  /**
-   * Multiple (granularity, output) pairs to produce in a single parse.
-   * Mutually exclusive with `granularity`/`output`. The builder emits at the
-   * union of required levels and each output directory is written from the
-   * matching bucket.
-   */
-  granularities?: EcfrGranularityOutput[];
   /** Link style for cross-references */
   linkStyle: "relative" | "canonical" | "plaintext";
   /** Include source credits in output */
@@ -77,6 +66,35 @@ export interface EcfrConvertOptions {
   /** Currency date (YYYY-MM-DD) from eCFR API metadata. Defaults to today if not provided. */
   currencyDate?: string | undefined;
 }
+
+/** Single-granularity mode: one output directory, one granularity. */
+export interface SingleEcfrConvertOptions extends BaseEcfrConvertOptions {
+  /** Output root directory */
+  output: string;
+  /** Output granularity. Defaults to "section" when omitted. */
+  granularity?: EcfrGranularity | undefined;
+  /** @internal — must not be set in single-granularity mode */
+  granularities?: undefined;
+}
+
+/** Multi-granularity mode: a set of `{granularity, output}` pairs emitted from one parse. */
+export interface MultiEcfrConvertOptions extends BaseEcfrConvertOptions {
+  /** Multiple `{granularity, output}` pairs to produce in a single parse. */
+  granularities: readonly EcfrGranularityOutput[];
+  /** @internal — must not be set in multi-granularity mode */
+  output?: undefined;
+  /** @internal — must not be set in multi-granularity mode */
+  granularity?: undefined;
+}
+
+/**
+ * Options for converting an eCFR XML file.
+ *
+ * Discriminated union: pass either `output` (+ optional `granularity`) for
+ * single-granularity output, or `granularities` for multi-granularity output
+ * from a single parse. The two modes are mutually exclusive at the type level.
+ */
+export type EcfrConvertOptions = SingleEcfrConvertOptions | MultiEcfrConvertOptions;
 
 /** Result of an eCFR conversion */
 export interface EcfrConvertResult {
@@ -147,7 +165,16 @@ function resolveGranularities(options: EcfrConvertOptions): EcfrGranularityOutpu
     if (list.length === 0) {
       throw new Error("convertEcfrTitle: `granularities` must contain at least one entry");
     }
-    return list;
+    const seen = new Set<EcfrGranularity>();
+    for (const entry of list) {
+      if (seen.has(entry.granularity)) {
+        throw new Error(
+          `convertEcfrTitle: duplicate granularity "${entry.granularity}" in \`granularities\``,
+        );
+      }
+      seen.add(entry.granularity);
+    }
+    return [...list];
   }
 
   const granularity = options.granularity ?? "section";
@@ -161,13 +188,15 @@ function resolveGranularities(options: EcfrConvertOptions): EcfrGranularityOutpu
 /**
  * Convert an eCFR XML file to structured Markdown.
  *
- * - Single-granularity mode (`granularity` + `output`) returns one `EcfrConvertResult`.
+ * - Single-granularity mode (`output` + optional `granularity`) returns one `EcfrConvertResult`.
  * - Multi-granularity mode (`granularities`) parses once and returns one result per entry.
  */
 export async function convertEcfrTitle(
-  options: EcfrConvertOptions & { granularities: EcfrGranularityOutput[] },
+  options: MultiEcfrConvertOptions,
 ): Promise<EcfrConvertResult[]>;
-export async function convertEcfrTitle(options: EcfrConvertOptions): Promise<EcfrConvertResult>;
+export async function convertEcfrTitle(
+  options: SingleEcfrConvertOptions,
+): Promise<EcfrConvertResult>;
 export async function convertEcfrTitle(
   options: EcfrConvertOptions,
 ): Promise<EcfrConvertResult | EcfrConvertResult[]> {

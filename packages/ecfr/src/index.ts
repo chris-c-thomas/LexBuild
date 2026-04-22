@@ -2,7 +2,15 @@
 
 // Converter
 export { convertEcfrTitle } from "./converter.js";
-export type { EcfrConvertOptions, EcfrConvertResult } from "./converter.js";
+export type {
+  BaseEcfrConvertOptions,
+  EcfrConvertOptions,
+  EcfrConvertResult,
+  EcfrGranularity,
+  EcfrGranularityOutput,
+  MultiEcfrConvertOptions,
+  SingleEcfrConvertOptions,
+} from "./converter.js";
 
 // Downloader (govinfo bulk data)
 export { downloadEcfrTitles, buildEcfrDownloadUrl, ECFR_TITLE_COUNT, ECFR_TITLE_NUMBERS } from "./downloader.js";

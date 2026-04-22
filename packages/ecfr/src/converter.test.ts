@@ -9,11 +9,12 @@ import { mkdtemp, rm, readFile, readdir, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { convertEcfrTitle } from "./converter.js";
-import type { EcfrConvertOptions, EcfrGranularity } from "./converter.js";
+import type { BaseEcfrConvertOptions, EcfrGranularity } from "./converter.js";
 
 const FIXTURES_DIR = resolve(import.meta.dirname, "../../../fixtures/fragments/ecfr");
 
-const BASE: Omit<EcfrConvertOptions, "input" | "output" | "granularity"> = {
+const BASE: BaseEcfrConvertOptions = {
+  input: "", // overridden per test
   linkStyle: "plaintext",
   includeSourceCredits: true,
   includeNotes: true,
@@ -120,15 +121,18 @@ describe("convertEcfrTitle multi-granularity parity", () => {
   });
 
   it("rejects granularity+output combined with granularities", async () => {
-    await expect(
-      convertEcfrTitle({
-        ...BASE,
-        input: resolve(FIXTURES_DIR, "title-structure.xml"),
-        granularity: "section",
-        output: multiDirs.section,
-        granularities: [{ granularity: "title", output: multiDirs.title }],
-      }),
-    ).rejects.toThrow(/mutually exclusive/);
+    // The discriminated union already prevents this shape at compile time;
+    // cast to `any` to verify the runtime guard still fires for untyped
+    // callers (e.g. JSON-decoded options).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- testing runtime validation for illegal shape
+    const illegal: any = {
+      ...BASE,
+      input: resolve(FIXTURES_DIR, "title-structure.xml"),
+      granularity: "section",
+      output: multiDirs.section,
+      granularities: [{ granularity: "title", output: multiDirs.title }],
+    };
+    await expect(convertEcfrTitle(illegal)).rejects.toThrow(/mutually exclusive/);
   });
 
   it("requires at least one entry in granularities", async () => {

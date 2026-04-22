@@ -1,7 +1,15 @@
 /** @lexbuild/usc — U.S. Code-specific element handlers and downloader */
 
 export { convertTitle } from "./converter.js";
-export type { ConvertOptions, ConvertResult } from "./converter.js";
+export type {
+  BaseConvertOptions,
+  ConvertOptions,
+  ConvertResult,
+  MultiConvertOptions,
+  SingleConvertOptions,
+  UscGranularity,
+  UscGranularityOutput,
+} from "./converter.js";
 
 export {
   downloadTitles,

@@ -147,6 +147,7 @@ pnpm turbo build:api --filter=@lexbuild/api        # Production build
 ./scripts/update.sh --skip-search                  # Rsync content/nav, but skip search reindex
 ./scripts/update.sh --deploy-only                  # Push existing local output + reindex
 ./scripts/update.sh --dry-run                      # Print plan, exit 0
+./scripts/update.sh -v / --verbose                 # Pass --verbose through to each convert step
 ```
 
 Sub-scripts (`update-ecfr.sh`, `update-fr.sh`, `update-usc.sh`) accept the same flag grammar

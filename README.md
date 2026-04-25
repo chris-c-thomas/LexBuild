@@ -154,6 +154,9 @@ A single script handles change detection, download, convert, and deploy across e
 
 # Preview without running
 ./scripts/update.sh --dry-run
+
+# Verbose convert output
+./scripts/update.sh -v
 ```
 
 Each source has a checkpoint in `downloads/<source>/`. eCFR/USC bootstrap automatically into a full first-run if their checkpoint is missing; FR errors with a hint and requires `--from`. Run `./scripts/update.sh --help` (or any sub-script with `--help`) for the full grammar.

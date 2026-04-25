@@ -15,6 +15,10 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 - eCFR/USC bootstrap (missing `.ecfr-titles-state.json` / `.usc-release-point`) now logs the bootstrap explicitly and falls back to a full first-run automatically.
 - When `--force` runs against all three sources, the orchestrator now performs a single full `deploy.sh --search-docker` reindex at the end instead of three per-source incremental indexes.
 
+### Fixed
+
+- `--verbose` / `-v` on `update.sh` and the three sub-scripts now actually works. Previously the orchestrator parsed it and forwarded `--verbose` to each sub-script, but the sub-scripts rejected it as "Unknown option" and exited 1. Each sub-script now accepts `-v` / `--verbose` and threads `--verbose` through to its `convert-*` CLI invocation.
+
 ## [1.25.0]
 
 ### Added

@@ -138,6 +138,7 @@ A single orchestrator handles change detection, download, convert, and deploy ac
 ./scripts/update.sh --source usc --force           # USC full redownload + reconvert
 ./scripts/update.sh --skip-deploy                  # Local pipeline only
 ./scripts/update.sh --dry-run                      # Print plan, exit 0
+./scripts/update.sh -v                             # Pass --verbose through to each convert step
 ```
 
 `update-usc.sh` and `update-ecfr.sh` convert all granularities in one call using `--granularities` (see above), so the convert step parses the XML once per title rather than once per granularity. See [Incremental Updates](/docs/guides/bulk-download#incremental-updates) for details on checkpoints and bootstrap behavior.

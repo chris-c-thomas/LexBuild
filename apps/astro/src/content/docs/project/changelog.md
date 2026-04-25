@@ -18,6 +18,7 @@ For the complete changelog, see [CHANGELOG.md on GitHub](https://github.com/chri
 - New `--skip-search`, `--dry-run`, and consistent `--force` semantics across all four scripts
 - New FR checkpoint at `downloads/fr/.fr-state.json` (`{ lastRun, lastDate }`). Default `update-fr.sh` resumes from `lastDate`. Missing checkpoint errors with a hint requiring `--from` or `--days`
 - eCFR/USC bootstrap (missing checkpoint) now logs explicitly and runs a full first-run automatically
+- Fixed: `--verbose` / `-v` on the update scripts now actually works — sub-scripts accept the flag and pass `--verbose` through to their `convert-*` CLI step (previously exited 1 with "Unknown option")
 
 ### 1.17.2
 

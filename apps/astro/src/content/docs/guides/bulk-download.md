@@ -166,6 +166,9 @@ A single orchestrator handles change detection, download, convert, and deploy ac
 
 # Preview without running
 ./scripts/update.sh --dry-run
+
+# Verbose convert output
+./scripts/update.sh -v
 ```
 
 Checkpoints live in `downloads/<source>/`:

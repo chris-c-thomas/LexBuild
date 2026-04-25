@@ -355,46 +355,39 @@ run_source() {
   fi
 }
 
-# Emit one common-flag arg per line on stdout. Empty output means no common
-# flags are set (the caller's `while IFS= read` loop will simply not iterate).
-build_common_args() {
-  [ "$FORCE" = true ] && echo --force
-  [ "$SKIP_DEPLOY" = true ] && echo --skip-deploy
-  [ "$EFFECTIVE_SKIP_SEARCH" = true ] && echo --skip-search
-  [ "$SKIP_HIGHLIGHTS" = true ] && echo --skip-highlights
-  [ "$DEPLOY_ONLY" = true ] && echo --deploy-only
-  [ "$VERBOSE" = true ] && echo --verbose
-  return 0
-}
+# Build the array of flags shared by every sub-script. --skip-highlights is
+# not included here because FR doesn't accept it; eCFR/USC append it themselves.
+COMMON_ARGS=()
+[ "$FORCE" = true ] && COMMON_ARGS+=(--force)
+[ "$SKIP_DEPLOY" = true ] && COMMON_ARGS+=(--skip-deploy)
+[ "$EFFECTIVE_SKIP_SEARCH" = true ] && COMMON_ARGS+=(--skip-search)
+[ "$DEPLOY_ONLY" = true ] && COMMON_ARGS+=(--deploy-only)
+[ "$VERBOSE" = true ] && COMMON_ARGS+=(--verbose)
 
 # eCFR
 if should_run "ecfr"; then
   ECFR_ARGS=()
   [ -n "$TITLES" ] && ECFR_ARGS+=(--titles "$TITLES")
-  while IFS= read -r a; do [ -n "$a" ] && ECFR_ARGS+=("$a"); done < <(build_common_args)
+  [ "$SKIP_HIGHLIGHTS" = true ] && ECFR_ARGS+=(--skip-highlights)
+  ECFR_ARGS+=(${COMMON_ARGS[@]+"${COMMON_ARGS[@]}"})
   run_source "eCFR" "$SCRIPT_DIR/update-ecfr.sh" ${ECFR_ARGS[@]+"${ECFR_ARGS[@]}"}
 fi
 
-# FR
+# FR — no --skip-highlights support (no highlights step in FR pipeline).
 if should_run "fr"; then
   FR_ARGS=()
   [ -n "$DAYS" ] && FR_ARGS+=(--days "$DAYS")
   [ -n "$FROM" ] && FR_ARGS+=(--from "$FROM")
   [ -n "$TO" ]   && FR_ARGS+=(--to   "$TO")
-  while IFS= read -r a; do [ -n "$a" ] && FR_ARGS+=("$a"); done < <(build_common_args)
-  # FR doesn't support --skip-highlights (no highlights step). Strip it.
-  filtered_fr=()
-  for arg in ${FR_ARGS[@]+"${FR_ARGS[@]}"}; do
-    [ "$arg" = "--skip-highlights" ] && continue
-    filtered_fr+=("$arg")
-  done
-  run_source "FR" "$SCRIPT_DIR/update-fr.sh" ${filtered_fr[@]+"${filtered_fr[@]}"}
+  FR_ARGS+=(${COMMON_ARGS[@]+"${COMMON_ARGS[@]}"})
+  run_source "FR" "$SCRIPT_DIR/update-fr.sh" ${FR_ARGS[@]+"${FR_ARGS[@]}"}
 fi
 
 # USC
 if should_run "usc"; then
   USC_ARGS=()
-  while IFS= read -r a; do [ -n "$a" ] && USC_ARGS+=("$a"); done < <(build_common_args)
+  [ "$SKIP_HIGHLIGHTS" = true ] && USC_ARGS+=(--skip-highlights)
+  USC_ARGS+=(${COMMON_ARGS[@]+"${COMMON_ARGS[@]}"})
   run_source "USC" "$SCRIPT_DIR/update-usc.sh" ${USC_ARGS[@]+"${USC_ARGS[@]}"}
 fi
 

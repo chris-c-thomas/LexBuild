@@ -24,7 +24,7 @@
 #   6. Regenerate sitemaps
 #   7. Save new release point
 #   8. Rsync content (all granularities) + nav + sitemaps to VPS
-#   9. Incremental search index on VPS
+#   9. Incremental search index via local Docker (shipped to VPS)
 #
 # Requires:
 #   - Built CLI: pnpm turbo build (or at least @lexbuild/usc + @lexbuild/cli)

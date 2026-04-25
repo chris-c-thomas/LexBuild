@@ -33,7 +33,7 @@
 #     --skip-search           Skip search reindex (still rsync content/nav/sitemaps)
 #
 #   SOURCE-SPECIFIC SCOPING
-#     --titles <spec>         eCFR/USC only. "1", "1-5", "1,3,8", "1-5,8,11"
+#     --titles <spec>         eCFR only. "1", "1-5", "1,3,8", "1-5,8,11"
 #     --from <YYYY-MM-DD>     FR only. Override checkpoint-derived start date.
 #     --to <YYYY-MM-DD>       FR only. Defaults to today.
 #     --days <N>              FR only. Last N days. Mutually exclusive with --from/--to.
@@ -132,8 +132,11 @@ while [[ $# -gt 0 ]]; do
       ;;
 
     # --- Migration errors for removed flags ---
+    # ${2:-<placeholder>} keeps `set -u` from killing the shell when the user
+    # types a value-taking removed flag without a value (e.g. bare
+    # `--ecfr-titles`). The migration hint should fire even in that case.
     --ecfr-titles)
-      removed_flag "--ecfr-titles" "./scripts/update.sh --source ecfr --titles $2"
+      removed_flag "--ecfr-titles" "./scripts/update.sh --source ecfr --titles ${2:-<spec>}"
       ;;
     --ecfr-all)
       removed_flag "--ecfr-all" "./scripts/update.sh --source ecfr --force"
@@ -142,13 +145,13 @@ while [[ $# -gt 0 ]]; do
       removed_flag "--ecfr-skip-highlights" "./scripts/update.sh --source ecfr --skip-highlights"
       ;;
     --fr-days)
-      removed_flag "--fr-days" "./scripts/update.sh --source fr --days $2"
+      removed_flag "--fr-days" "./scripts/update.sh --source fr --days ${2:-N}"
       ;;
     --fr-from)
-      removed_flag "--fr-from" "./scripts/update.sh --source fr --from $2"
+      removed_flag "--fr-from" "./scripts/update.sh --source fr --from ${2:-YYYY-MM-DD}"
       ;;
     --fr-to)
-      removed_flag "--fr-to" "./scripts/update.sh --source fr --to $2"
+      removed_flag "--fr-to" "./scripts/update.sh --source fr --to ${2:-YYYY-MM-DD}"
       ;;
     --usc-force)
       removed_flag "--usc-force" "./scripts/update.sh --source usc --force"
@@ -204,11 +207,13 @@ should_run() {
 }
 
 # Flag/source compatibility checks.
-if [ -n "$TITLES" ]; then
-  if should_run "fr" && ! should_run "usc" && ! should_run "ecfr"; then
-    echo "Error: --titles requires --source to include usc or ecfr." >&2
-    exit 1
-  fi
+# --titles is currently eCFR-only — the USC sub-script doesn't accept --titles
+# (USC pipeline operates on the full corpus per release point, not by title).
+# A `--source usc --titles X` invocation would silently run the full USC
+# pipeline with no filtering, which is the opposite of what the user asked for.
+if [ -n "$TITLES" ] && ! should_run "ecfr"; then
+  echo "Error: --titles requires --source to include ecfr." >&2
+  exit 1
 fi
 
 if [ -n "$DAYS" ] || [ -n "$FROM" ] || [ -n "$TO" ]; then
@@ -337,27 +342,29 @@ run_source() {
 
   echo "===== ${src} Update ====="
   echo ""
-  if "$script" "${args[@]}"; then
+  # ${args[@]+"${args[@]}"} keeps `set -u` happy on bash 3.2 when args is empty.
+  if "$script" ${args[@]+"${args[@]}"}; then
     SUCCEEDED="$SUCCEEDED $src"
     echo ""
   else
     local rc=$?
     echo ""
-    echo "WARNING: $src update failed (exit code $rc)"
+    echo "WARNING: $src update failed (exit code $rc)" >&2
     FAILED="$FAILED $src"
     echo ""
   fi
 }
 
+# Emit one common-flag arg per line on stdout. Empty output means no common
+# flags are set (the caller's `while IFS= read` loop will simply not iterate).
 build_common_args() {
-  local args=()
-  [ "$FORCE" = true ] && args+=(--force)
-  [ "$SKIP_DEPLOY" = true ] && args+=(--skip-deploy)
-  [ "$EFFECTIVE_SKIP_SEARCH" = true ] && args+=(--skip-search)
-  [ "$SKIP_HIGHLIGHTS" = true ] && args+=(--skip-highlights)
-  [ "$DEPLOY_ONLY" = true ] && args+=(--deploy-only)
-  [ "$VERBOSE" = true ] && args+=(--verbose)
-  printf '%s\n' "${args[@]}"
+  [ "$FORCE" = true ] && echo --force
+  [ "$SKIP_DEPLOY" = true ] && echo --skip-deploy
+  [ "$EFFECTIVE_SKIP_SEARCH" = true ] && echo --skip-search
+  [ "$SKIP_HIGHLIGHTS" = true ] && echo --skip-highlights
+  [ "$DEPLOY_ONLY" = true ] && echo --deploy-only
+  [ "$VERBOSE" = true ] && echo --verbose
+  return 0
 }
 
 # eCFR
@@ -365,7 +372,7 @@ if should_run "ecfr"; then
   ECFR_ARGS=()
   [ -n "$TITLES" ] && ECFR_ARGS+=(--titles "$TITLES")
   while IFS= read -r a; do [ -n "$a" ] && ECFR_ARGS+=("$a"); done < <(build_common_args)
-  run_source "eCFR" "$SCRIPT_DIR/update-ecfr.sh" "${ECFR_ARGS[@]}"
+  run_source "eCFR" "$SCRIPT_DIR/update-ecfr.sh" ${ECFR_ARGS[@]+"${ECFR_ARGS[@]}"}
 fi
 
 # FR
@@ -377,18 +384,18 @@ if should_run "fr"; then
   while IFS= read -r a; do [ -n "$a" ] && FR_ARGS+=("$a"); done < <(build_common_args)
   # FR doesn't support --skip-highlights (no highlights step). Strip it.
   filtered_fr=()
-  for arg in "${FR_ARGS[@]}"; do
+  for arg in ${FR_ARGS[@]+"${FR_ARGS[@]}"}; do
     [ "$arg" = "--skip-highlights" ] && continue
     filtered_fr+=("$arg")
   done
-  run_source "FR" "$SCRIPT_DIR/update-fr.sh" "${filtered_fr[@]}"
+  run_source "FR" "$SCRIPT_DIR/update-fr.sh" ${filtered_fr[@]+"${filtered_fr[@]}"}
 fi
 
 # USC
 if should_run "usc"; then
   USC_ARGS=()
   while IFS= read -r a; do [ -n "$a" ] && USC_ARGS+=("$a"); done < <(build_common_args)
-  run_source "USC" "$SCRIPT_DIR/update-usc.sh" "${USC_ARGS[@]}"
+  run_source "USC" "$SCRIPT_DIR/update-usc.sh" ${USC_ARGS[@]+"${USC_ARGS[@]}"}
 fi
 
 # --- Post-run: regenerate sitemap index once, covering all sources ---

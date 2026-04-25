@@ -117,19 +117,37 @@ fi
 
 # --- Resolve mode + date range ---
 
-# read_checkpoint_date prints lastDate from .fr-state.json, or empty if missing/invalid
+# read_checkpoint_date prints lastDate from .fr-state.json on stdout.
+# Empty stdout means: file is missing OR malformed in some way. The two cases
+# are distinguished for the user by emitting a Warning to stderr when the
+# file exists but can't be parsed (so a corrupt checkpoint isn't surfaced as
+# a misleading "no checkpoint" bootstrap-error). The path is passed via env
+# rather than substituted into the JS source to avoid single-quote injection.
 read_checkpoint_date() {
   if [ ! -f "$CHECKPOINT_PATH" ]; then
     return 0
   fi
-  node -e "
+  local result rc
+  result=$(CHECKPOINT_PATH="$CHECKPOINT_PATH" node -e '
     try {
-      const d = JSON.parse(require('fs').readFileSync('$CHECKPOINT_PATH', 'utf-8'));
-      if (typeof d.lastDate === 'string' && /^\\d{4}-\\d{2}-\\d{2}$/.test(d.lastDate)) {
+      const d = JSON.parse(require("fs").readFileSync(process.env.CHECKPOINT_PATH, "utf-8"));
+      if (typeof d.lastDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d.lastDate)) {
         process.stdout.write(d.lastDate);
+      } else {
+        process.stderr.write("lastDate missing or wrong shape");
+        process.exit(3);
       }
-    } catch (_) { /* missing or malformed: silent */ }
-  " 2>/dev/null
+    } catch (e) {
+      process.stderr.write(e.message);
+      process.exit(3);
+    }
+  ' 2>&1)
+  rc=$?
+  if [ $rc -ne 0 ]; then
+    echo "Warning: $CHECKPOINT_PATH exists but is malformed ($result). Treating as missing." >&2
+    return 0
+  fi
+  printf '%s' "$result"
 }
 
 CHECKPOINT_DATE="$(read_checkpoint_date)"
@@ -235,7 +253,7 @@ if [ "$DEPLOY_ONLY" = true ] && [ -z "${VPS_HOST:-}" ]; then
   exit 1
 fi
 
-# --- Step 1–6: Local pipeline (skip if --deploy-only) ---
+# --- Steps 2–6: Local pipeline (skip if --deploy-only) ---
 
 if [ "$DEPLOY_ONLY" = false ]; then
   echo "==> FR update ($MODE: $DATE_FROM → $DATE_TO)"
@@ -248,15 +266,15 @@ if [ "$DEPLOY_ONLY" = false ]; then
   PIPELINE_MARKER="$(mktemp -t lexbuild-fr-update.XXXXXX)"
   trap 'rm -f "$PIPELINE_MARKER"' EXIT
 
-  # Step 1: Download
-  echo "--- Step 1/6: Downloading FR documents ($DATE_FROM to $DATE_TO)"
+  # Step 2: Download
+  echo "--- Step 2/8: Downloading FR documents ($DATE_FROM to $DATE_TO)"
   $CLI download-fr --from "$DATE_FROM" --to "$DATE_TO"
   echo ""
 
   NEW_XML_COUNT=$(find downloads/fr -name "*.xml" -newer "$PIPELINE_MARKER" 2>/dev/null | wc -l | tr -d ' ')
 
-  # Step 2: Convert (date-filtered — only converts files in the date range)
-  echo "--- Step 2/6: Converting FR documents ($DATE_FROM to $DATE_TO)"
+  # Step 3: Convert (date-filtered — only converts files in the date range)
+  echo "--- Step 3/8: Converting FR documents ($DATE_FROM to $DATE_TO)"
   $CLI convert-fr --all --from "$DATE_FROM" --to "$DATE_TO"
   echo ""
 
@@ -275,39 +293,55 @@ if [ "$DEPLOY_ONLY" = false ]; then
     echo ""
   fi
 
-  # Step 3: Regenerate FR nav
-  echo "--- Step 3/6: Generating FR nav JSON"
+  # Step 4: Regenerate FR nav
+  echo "--- Step 4/8: Generating FR nav JSON"
   ( cd apps/astro && npx tsx scripts/generate-nav.ts --source fr ) || exit 1
   echo ""
 
-  # Step 4: Regenerate sitemaps (full rebuild to update sitemap index).
+  # Step 5: Regenerate sitemaps (full rebuild to update sitemap index).
   # Skipped when LEXBUILD_DEFER_SITEMAP=1 (set by update.sh to avoid
   # regenerating the full sitemap index once per source).
   if [ "${LEXBUILD_DEFER_SITEMAP:-}" != "1" ]; then
-    echo "--- Step 4/6: Generating sitemaps"
+    echo "--- Step 5/8: Generating sitemaps"
     ( cd apps/astro && npx tsx scripts/generate-sitemap.ts ) || exit 1
     echo ""
   else
-    echo "--- Step 4/6: Skipping sitemap (deferred to update.sh)"
+    echo "--- Step 5/8: Skipping sitemap (deferred to update.sh)"
     echo ""
   fi
 
-  # Step 5: Write checkpoint with today's date as the new resume point.
-  # Using DATE_TO (which is today on default runs, or the explicit --to value)
-  # ensures the next default invocation resumes from a contiguous date.
-  echo "--- Step 5/6: Writing FR checkpoint ($DATE_TO)"
+  # Step 6: Write checkpoint as the new resume point.
+  #
+  # New lastDate = max(CHECKPOINT_DATE, DATE_TO). Without the max guard, a
+  # historical backfill (e.g. `--from 2020-01-01 --to 2020-12-31` on a machine
+  # whose checkpoint is already 2026-04-20) would regress the resume cursor to
+  # 2020-12-31 and trigger a multi-year redownload on the next default run.
+  # Atomic write (tmp + rename) prevents a partial-write crash from corrupting
+  # .fr-state.json into something read_checkpoint_date can't parse.
+  #
+  # Intentionally inside the DEPLOY_ONLY=false block: --deploy-only pushes
+  # existing output without ingesting anything new, so we must not advance
+  # the cursor past data we haven't actually downloaded.
+  NEW_LAST_DATE="$DATE_TO"
+  if [ -n "$CHECKPOINT_DATE" ] && [ "$CHECKPOINT_DATE" \> "$NEW_LAST_DATE" ]; then
+    NEW_LAST_DATE="$CHECKPOINT_DATE"
+  fi
+  echo "--- Step 6/8: Writing FR checkpoint (lastDate=$NEW_LAST_DATE)"
   mkdir -p "$(dirname "$CHECKPOINT_PATH")"
-  node -e "
-    const fs = require('fs');
-    fs.writeFileSync('$CHECKPOINT_PATH', JSON.stringify({
+  CHECKPOINT_PATH="$CHECKPOINT_PATH" NEW_LAST_DATE="$NEW_LAST_DATE" node -e '
+    const fs = require("fs");
+    const path = process.env.CHECKPOINT_PATH;
+    const tmp = path + ".tmp." + process.pid;
+    fs.writeFileSync(tmp, JSON.stringify({
       lastRun: new Date().toISOString(),
-      lastDate: '$DATE_TO',
-    }, null, 2) + '\\n');
-  "
+      lastDate: process.env.NEW_LAST_DATE,
+    }, null, 2) + "\n");
+    fs.renameSync(tmp, path);
+  ' || { echo "Error: failed to write FR checkpoint to $CHECKPOINT_PATH" >&2; exit 1; }
   echo ""
 fi
 
-# --- Step 7–8: Deploy to VPS (skip if --skip-deploy) ---
+# --- Steps 7–8: Deploy to VPS (skip if --skip-deploy) ---
 
 if [ "$SKIP_DEPLOY" = true ]; then
   echo "==> Local pipeline complete (--skip-deploy). Files ready in output/fr/"
@@ -315,7 +349,7 @@ if [ "$SKIP_DEPLOY" = true ]; then
 fi
 
 # Step 7: Rsync content + nav + sitemaps
-echo "--- Step 6/6 (deploy): Syncing to VPS"
+echo "--- Step 7/8: Syncing to VPS"
 
 if [ -d "output/fr" ]; then
   echo "    FR documents"
@@ -348,9 +382,9 @@ echo ""
 # Docker Meilisearch, incremental indexing, tar+scp of the LMDB data dir,
 # and the atomic PM2 swap on the VPS.
 if [ "$SKIP_SEARCH" = true ]; then
-  echo "--- Skipping search index step (--skip-search)"
+  echo "--- Step 8/8: Skipping search index step (--skip-search)"
 else
-  echo "--- Building and shipping search index via local Docker"
+  echo "--- Step 8/8: Building and shipping search index via local Docker"
   "$SCRIPT_DIR/deploy.sh" --search-docker --source fr
 fi
 

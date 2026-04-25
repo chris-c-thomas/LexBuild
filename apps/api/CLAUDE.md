@@ -142,6 +142,8 @@ All endpoints: API key auth (optional), tiered rate limiting, X-RateLimit header
 
 ## Common Pitfalls
 
+- **Search proxy queries an index built elsewhere**: `routes/search.ts` proxies Meilisearch but does not maintain the index. The index is built by `apps/astro/scripts/index-search.ts` (full) and `index-search-incremental.ts` (incremental). See `apps/astro/CLAUDE.md` for the indexer's flags, checkpoint files, and ECONNRESET retry behavior.
+- **API key persistence across ingestion**: `lexbuild ingest` rebuilds the content DB but never touches the keys DB. Create API keys at any time — they survive the next `lexbuild ingest --prune` regardless of source/scope.
 - **Hono v4 intercepts HTTPException before middleware catch blocks**: `errorHandler()` middleware's try-catch never fires for `HTTPException`. Use `app.onError()` for HTTPException handling and `app.notFound()` for unmatched routes. Both are configured in `app.ts` to return structured JSON `{ error: { status, code, message } }`.
 - **`app.onError()` context has no typed variables**: `c.get("requestId")` fails to compile in `onError` because the context type doesn't include custom variables set by middleware. Read the server-generated request ID from `c.res?.headers.get("X-Request-ID")` instead, falling back to `c.req.header("X-Request-ID")`.
 - **Route `{identifier}` matches a single path segment**: Shorthand identifiers containing `/` (e.g., `t1/s1`) must be URL-encoded as `t1%2Fs1` in the URL path. Hono's `:param` does not match across `/` boundaries.

@@ -107,6 +107,8 @@ The downloader auto-detects the latest OLRC release point by scraping the downlo
 
 The `--release-point` CLI flag overrides auto-detection for reproducible builds.
 
+For deterministic output (CI snapshots, comparison runs), pin `--release-point <id>` — USC frontmatter `currency` is derived from the release point, so an unpinned run can shift fixtures whenever OLRC publishes a new release.
+
 ### Download Modes
 
 Two download modes:

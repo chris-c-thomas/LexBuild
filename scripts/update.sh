@@ -76,10 +76,24 @@ removed_flag() {
   exit 1
 }
 
+# require_value asserts that a value-taking flag was given a value. Without
+# this, `script --source` (no value) would crash under set -u with
+# `bash: $2: unbound variable` before any user-facing error could print.
+require_value() {
+  local flag="$1"
+  local val="${2:-}"
+  if [ -z "$val" ]; then
+    echo "Error: $flag requires a value." >&2
+    echo "       Run with --help for usage." >&2
+    exit 1
+  fi
+  printf '%s' "$val"
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --source)
-      SOURCES="$2"
+      SOURCES="$(require_value --source "${2:-}")"
       shift 2
       ;;
     --force)
@@ -103,19 +117,19 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --titles)
-      TITLES="$2"
+      TITLES="$(require_value --titles "${2:-}")"
       shift 2
       ;;
     --from)
-      FROM="$2"
+      FROM="$(require_value --from "${2:-}")"
       shift 2
       ;;
     --to)
-      TO="$2"
+      TO="$(require_value --to "${2:-}")"
       shift 2
       ;;
     --days)
-      DAYS="$2"
+      DAYS="$(require_value --days "${2:-}")"
       shift 2
       ;;
     --dry-run)
@@ -190,17 +204,25 @@ if [ -z "$SOURCES" ] || [ "$SOURCES" = "all" ]; then
   SOURCES="ecfr,fr,usc"
 fi
 
-# Validate source names
-IFS=',' read -ra SOURCE_LIST <<< "$SOURCES"
-for src in "${SOURCE_LIST[@]}"; do
+# Validate source names. Trim surrounding whitespace per entry so that the
+# common `--source ecfr, fr` shape (with a space after the comma) works
+# instead of failing with "unknown source ' fr'".
+IFS=',' read -ra RAW_SOURCE_LIST <<< "$SOURCES"
+SOURCE_LIST=()
+for src in "${RAW_SOURCE_LIST[@]}"; do
+  src="${src#"${src%%[![:space:]]*}"}"
+  src="${src%"${src##*[![:space:]]}"}"
   case "$src" in
-    usc|ecfr|fr) ;;
+    usc|ecfr|fr)
+      SOURCE_LIST+=("$src")
+      ;;
     *)
       echo "Error: unknown source '$src'. Valid: usc, ecfr, fr, all." >&2
       exit 1
       ;;
   esac
 done
+SOURCES="$(IFS=,; echo "${SOURCE_LIST[*]}")"
 
 should_run() {
   echo "$SOURCES" | grep -qw "$1"
@@ -414,17 +436,28 @@ if [ -n "$SUCCEEDED" ] && [ "$SKIP_DEPLOY" = false ]; then
 fi
 
 # --- Post-run: full search reindex (only when --force on all sources) ---
+#
+# `deploy.sh --search-docker` (no --source) hard-errors on missing VPS_HOST
+# because it ultimately rsyncs the prebuilt index to the VPS. Sub-scripts
+# auto-fall-back to local-only when VPS_HOST is unset; mirror that here so
+# a local-only `./scripts/update.sh --force` doesn't fail at the very end.
 
 if [ "$RUN_FULL_SEARCH_AFTER" = true ] && [ -n "$SUCCEEDED" ]; then
-  echo "===== Full search reindex (Docker) ====="
-  echo ""
-  if "$SCRIPT_DIR/deploy.sh" --search-docker; then
+  if [ -z "${VPS_HOST:-}" ]; then
+    echo "===== Skipping full search reindex ====="
+    echo "    VPS_HOST is not set; local-only update completed without remote reindex."
     echo ""
   else
+    echo "===== Full search reindex (Docker) ====="
     echo ""
-    echo "WARNING: full search reindex failed"
-    FAILED="$FAILED search-full"
-    echo ""
+    if "$SCRIPT_DIR/deploy.sh" --search-docker; then
+      echo ""
+    else
+      echo ""
+      echo "WARNING: full search reindex failed" >&2
+      FAILED="$FAILED search-full"
+      echo ""
+    fi
   fi
 fi
 

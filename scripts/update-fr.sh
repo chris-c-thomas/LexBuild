@@ -61,18 +61,32 @@ SKIP_SEARCH=false
 DRY_RUN=false
 VERBOSE=false
 
+# require_value asserts that a value-taking flag was given a value. Without
+# this, `script --days` (no value) would crash under set -u with
+# `bash: $2: unbound variable` before any user-facing error could print.
+require_value() {
+  local flag="$1"
+  local val="${2:-}"
+  if [ -z "$val" ]; then
+    echo "Error: $flag requires a value." >&2
+    echo "       Run with --help for usage." >&2
+    exit 1
+  fi
+  printf '%s' "$val"
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --days)
-      DAYS="$2"
+      DAYS="$(require_value --days "${2:-}")"
       shift 2
       ;;
     --from)
-      FROM="$2"
+      FROM="$(require_value --from "${2:-}")"
       shift 2
       ;;
     --to)
-      TO="$2"
+      TO="$(require_value --to "${2:-}")"
       shift 2
       ;;
     --force)
